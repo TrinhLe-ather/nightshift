@@ -1,0 +1,48 @@
+{
+  "name": "@nightshift/daemon",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "nightshift": "src/index.ts"
+  },
+  "scripts": {
+    "bun:env": "bun --env-file ../../.env.local",
+    "dev": "bun bun:env --watch ./src/server/serve.ts",
+    "cli": "bun bun:env .",
+    "build": "bun build src/index.ts --compile --outfile=dist/nightshift",
+    "lint": "oxlint --fix src/",
+    "format": "oxfmt src/",
+    "typecheck": "tsgo --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@nightshift/shared": "workspace:*",
+    "@orpc/client": "catalog:orpc",
+    "@orpc/openapi": "catalog:orpc",
+    "@orpc/server": "catalog:orpc",
+    "@orpc/zod": "catalog:orpc",
+    "@tanstack/react-query": "^5.90.12",
+    "autoprefixer": "^10.4.23",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "catalog:db",
+    "lucide-react": "^0.562.0",
+    "postcss": "^8.5.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-router-dom": "^7.11.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.18",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "bun-plugin-tailwind": "^0.1.2",
+    "drizzle-kit": "catalog:db"
+  }
+}

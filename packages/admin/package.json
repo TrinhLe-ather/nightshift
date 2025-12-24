@@ -1,0 +1,10 @@
+{
+  "name": "@nightshift/admin",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "src/index.ts",
+  "description": "NightShift Control Center UI (Phase 1)",
+  "scripts": {
+    "typecheck": "tsgo --noEmit"
+  }
+}

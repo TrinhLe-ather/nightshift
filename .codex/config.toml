@@ -1,0 +1,7 @@
+model = "gpt-5.2"
+model_reasoning_effort = "high"
+[projects."/Volumes/Data/Projects/claude-swarm"]
+trust_level = "untrusted"
+
+[notice.model_migrations]
+"gpt-5.2" = "gpt-5.2-codex"

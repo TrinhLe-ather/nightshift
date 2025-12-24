@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/admin"
+    },
+    {
+      "path": "./packages/backend"
+    },
+    {
+      "path": "./packages/daemon"
+    },
+    {
+      "path": "./packages/shared"
+    }
+  ]
+}

@@ -1,0 +1,274 @@
+/**
+ * Task Repository
+ *
+ * Handles all database operations for tasks using Drizzle ORM.
+ */
+
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { getDb, tasks } from "../db/drizzle";
+import type { CreateTask, Priority, Task, TaskState, UpdateTask } from "@nightshift/shared";
+import { TaskState as TaskStateEnum } from "@nightshift/shared";
+
+/**
+ * Generate a unique task ID
+ */
+function generateTaskId(): string {
+  return `task_${crypto.randomUUID().replace(/-/g, "").substring(0, 16)}`;
+}
+
+/**
+ * Create a new task
+ */
+export function createTask(input: CreateTask): Task {
+  const db = getDb();
+
+  const now = new Date().toISOString();
+  const id = generateTaskId();
+
+  const newTask = {
+    id,
+    prompt: input.prompt,
+    repoId: input.repoId ?? null,
+    repoPath: input.repoPath ?? null,
+    priority: input.priority ?? "medium",
+    status: TaskStateEnum.PENDING as const,
+    githubIssueUrl: input.githubIssueUrl ?? null,
+    branch: input.branch ?? null,
+    createdAt: now,
+    source: "local" as const,
+  };
+
+  db.insert(tasks).values(newTask).run();
+
+  return mapDbTaskToTask(newTask as typeof tasks.$inferSelect);
+}
+
+/**
+ * Get task by ID
+ */
+export function getTaskById(taskId: string): Task | null {
+  const db = getDb();
+
+  const result = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
+
+  return result ? mapDbTaskToTask(result) : null;
+}
+
+/**
+ * Get all tasks with optional filtering
+ */
+export interface GetTasksOptions {
+  status?: TaskState | TaskState[];
+  repoId?: string;
+  priority?: Priority | Priority[];
+  limit?: number;
+  offset?: number;
+}
+
+export function getTasks(options: GetTasksOptions = {}): Task[] {
+  const db = getDb();
+
+  // Build conditions array
+  const conditions = [];
+
+  if (options.status) {
+    if (Array.isArray(options.status)) {
+      conditions.push(inArray(tasks.status, options.status));
+    } else {
+      conditions.push(eq(tasks.status, options.status));
+    }
+  }
+
+  if (options.repoId) {
+    conditions.push(eq(tasks.repoId, options.repoId));
+  }
+
+  if (options.priority) {
+    if (Array.isArray(options.priority)) {
+      conditions.push(inArray(tasks.priority, options.priority));
+    } else {
+      conditions.push(eq(tasks.priority, options.priority));
+    }
+  }
+
+  // Build query
+  let query = db.select().from(tasks);
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as typeof query;
+  }
+
+  query = query.orderBy(desc(tasks.createdAt)) as typeof query;
+
+  if (options.limit) {
+    query = query.limit(options.limit) as typeof query;
+  }
+
+  if (options.offset) {
+    query = query.offset(options.offset) as typeof query;
+  }
+
+  const results = query.all();
+
+  return results.map(mapDbTaskToTask);
+}
+
+/**
+ * Update task
+ */
+export function updateTask(taskId: string, updates: UpdateTask): Task | null {
+  const db = getDb();
+
+  // Build the set object dynamically
+  const setValues: Partial<typeof tasks.$inferInsert> = {};
+
+  if (updates.status !== undefined) setValues.status = updates.status;
+  if (updates.priority !== undefined) setValues.priority = updates.priority;
+  if (updates.clarificationResponse !== undefined)
+    setValues.clarificationResponse = updates.clarificationResponse;
+  if (updates.failureCode !== undefined) setValues.failureCode = updates.failureCode;
+  if (updates.needsHumanCode !== undefined) setValues.needsHumanCode = updates.needsHumanCode;
+  if (updates.needsHumanQuestion !== undefined)
+    setValues.needsHumanQuestion = updates.needsHumanQuestion;
+  if (updates.prUrl !== undefined) setValues.prUrl = updates.prUrl;
+  if (updates.claimedAt !== undefined) setValues.claimedAt = updates.claimedAt;
+  if (updates.startedAt !== undefined) setValues.startedAt = updates.startedAt;
+  if (updates.completedAt !== undefined) setValues.completedAt = updates.completedAt;
+
+  // Worktree & execution mode fields
+  if (updates.executionMode !== undefined) setValues.executionMode = updates.executionMode;
+  if (updates.workDir !== undefined) setValues.workDir = updates.workDir;
+  if (updates.baseCommitSha !== undefined) setValues.baseCommitSha = updates.baseCommitSha;
+  if (updates.originalBranch !== undefined) setValues.originalBranch = updates.originalBranch;
+  if (updates.branch !== undefined) setValues.branch = updates.branch;
+
+  // Pause/resume fields
+  if (updates.pausedAt !== undefined) setValues.pausedAt = updates.pausedAt;
+  if (updates.pauseReason !== undefined) setValues.pauseReason = updates.pauseReason;
+  if (updates.humanQuestion !== undefined) setValues.humanQuestion = updates.humanQuestion;
+  if (updates.humanResponse !== undefined) setValues.humanResponse = updates.humanResponse;
+
+  if (Object.keys(setValues).length === 0) {
+    // No updates provided
+    return getTaskById(taskId);
+  }
+
+  db.update(tasks).set(setValues).where(eq(tasks.id, taskId)).run();
+
+  return getTaskById(taskId);
+}
+
+/**
+ * Delete task
+ */
+export function deleteTask(taskId: string): boolean {
+  const db = getDb();
+
+  // Check if task exists before deleting
+  const existing = db.select({ id: tasks.id }).from(tasks).where(eq(tasks.id, taskId)).get();
+  if (!existing) return false;
+
+  db.delete(tasks).where(eq(tasks.id, taskId)).run();
+  return true;
+}
+
+/**
+ * Get count of tasks by status
+ */
+export function getTaskCountByStatus(): Record<string, number> {
+  const db = getDb();
+
+  const results = db
+    .select({
+      status: tasks.status,
+      count: count(),
+    })
+    .from(tasks)
+    .groupBy(tasks.status)
+    .all();
+
+  const counts: Record<string, number> = {};
+  for (const row of results) {
+    if (row.status) {
+      counts[row.status] = row.count;
+    }
+  }
+
+  return counts;
+}
+
+/**
+ * Get total task count
+ */
+export function getTaskCount(): number {
+  const db = getDb();
+
+  const result = db.select({ count: count() }).from(tasks).get();
+
+  return result?.count ?? 0;
+}
+
+/**
+ * Get next pending task (for executor)
+ */
+export function getNextPendingTask(): Task | null {
+  const db = getDb();
+
+  // Priority order: urgent > high > medium > low
+  const priorityOrder = sql`CASE
+    WHEN ${tasks.priority} = 'urgent' THEN 1
+    WHEN ${tasks.priority} = 'high' THEN 2
+    WHEN ${tasks.priority} = 'medium' THEN 3
+    WHEN ${tasks.priority} = 'low' THEN 4
+    ELSE 5
+  END`;
+
+  const result = db
+    .select()
+    .from(tasks)
+    .where(eq(tasks.status, "pending"))
+    .orderBy(priorityOrder, tasks.createdAt)
+    .limit(1)
+    .get();
+
+  return result ? mapDbTaskToTask(result) : null;
+}
+
+/**
+ * Map database task to shared Task type
+ *
+ * Converts null values to undefined for optional fields
+ */
+function mapDbTaskToTask(row: typeof tasks.$inferSelect): Task {
+  return {
+    id: row.id,
+    prompt: row.prompt,
+    repoId: row.repoId ?? undefined,
+    repoPath: row.repoPath ?? undefined,
+    priority: row.priority as Priority,
+    status: row.status as TaskState,
+    failureCode: row.failureCode ?? undefined,
+    needsHumanCode: row.needsHumanCode ?? undefined,
+    needsHumanQuestion: row.needsHumanQuestion ?? undefined,
+    clarificationResponse: row.clarificationResponse ?? undefined,
+    githubIssueUrl: row.githubIssueUrl ?? undefined,
+    branch: row.branch ?? undefined,
+    prUrl: row.prUrl ?? undefined,
+    createdAt: row.createdAt,
+    claimedAt: row.claimedAt ?? undefined,
+    startedAt: row.startedAt ?? undefined,
+    completedAt: row.completedAt ?? undefined,
+    remoteId: row.remoteId ?? undefined,
+    source: row.source as "local" | "remote",
+    // Worktree & execution mode fields
+    executionMode: (row.executionMode as "worktree" | "direct") ?? undefined,
+    workDir: row.workDir ?? undefined,
+    baseCommitSha: row.baseCommitSha ?? undefined,
+    originalBranch: row.originalBranch ?? undefined,
+    // Pause/resume fields
+    pausedAt: row.pausedAt ?? undefined,
+    pauseReason: (row.pauseReason as "manual" | "needs_human" | "rate_limit") ?? undefined,
+    humanQuestion: row.humanQuestion ?? undefined,
+    humanResponse: row.humanResponse ?? undefined,
+  };
+}

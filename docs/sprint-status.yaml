@@ -1,0 +1,159 @@
+# generated: 2025-12-23
+# project: claude-swarm
+# project_key: night-shift
+# tracking_system: file-system
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2025-12-23
+project: claude-swarm
+project_key: night-shift
+tracking_system: file-system
+
+development_status:
+  # ============================================
+  # PHASE 0: STANDALONE VALUE
+  # ============================================
+
+  # Epic 1: Daemon Foundation
+  epic-1: in-progress
+  1-1-initialize-monorepo-structure: done
+  1-2-implement-shared-contracts: review
+  1-3-set-up-sqlite-with-schema: review
+  1-4-implement-daemon-cli-basics: review
+  1-5-implement-nightshift-doctor-command: review
+  1-6-implement-cli-task-add: review
+  1-7-implement-local-config-management: review
+  epic-1-retrospective: optional
+
+  # Epic 2: Local Web UI Shell
+  epic-2: backlog
+  2-1-create-hono-server-with-static-serving: backlog
+  2-2-create-react-app-shell-with-routing: backlog
+  2-3-implement-dashboard-page: backlog
+  2-4-implement-design-system-foundation: backlog
+  2-5-implement-keyboard-shortcuts-foundation: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Local Task Queue & Creation
+  epic-3: backlog
+  3-1-implement-task-data-model-and-api: backlog
+  3-2-implement-command-palette: backlog
+  3-3-implement-github-url-detection: backlog
+  3-4-implement-task-priority-and-options: backlog
+  3-5-create-task-list-view: backlog
+  3-6-implement-task-detail-view: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Task Execution & Results
+  epic-4: backlog
+  4-1-implement-task-executor: backlog
+  4-2-implement-preflight-checks-repo-safety-gate: backlog
+  4-3-implement-claude-code-sdk-integration: backlog
+  4-4-implement-self-triaging-behavior: backlog
+  4-5-implement-git-operations-and-pr-creation: backlog
+  4-6-implement-session-logging: backlog
+  4-7-create-session-log-viewer-component: backlog
+  4-8-display-pr-link-in-task-detail: backlog
+  4-9-implement-local-notifications: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Repo Configuration
+  epic-5: backlog
+  5-1-implement-repo-data-model-and-api: backlog
+  5-2-create-repo-management-ui: backlog
+  5-3-implement-cli-repo-commands: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Auto-Update System
+  epic-6: backlog
+  6-1-implement-version-check-on-startup: backlog
+  6-2-implement-binary-download-and-verification: backlog
+  6-3-implement-safe-binary-replacement: backlog
+  6-4-implement-update-ui-in-settings: backlog
+  epic-6-retrospective: optional
+
+  # ============================================
+  # PHASE 1: CONNECTED MODE
+  # ============================================
+
+  # Epic 7: Authentication & Server Registration
+  epic-7: backlog
+  7-1-implement-oauth-flow: backlog
+  7-2-implement-token-storage-and-refresh: backlog
+  7-3-implement-pc-registration: backlog
+  7-4-implement-mode-detection: backlog
+  epic-7-retrospective: optional
+
+  # Epic 8: Remote Queue & Sync
+  epic-8: backlog
+  8-1-set-up-convex-backend: backlog
+  8-2-implement-remote-task-queue-subscription: backlog
+  8-3-implement-heartbeat-mechanism: backlog
+  8-4-implement-session-log-upload: backlog
+  8-5-implement-schedule-based-availability: backlog
+  8-6-implement-local-vs-remote-queue-tabs-hybrid: backlog
+  epic-8-retrospective: optional
+
+  # Epic 9: Control Center UI
+  epic-9: backlog
+  9-1-create-control-center-app-shell: backlog
+  9-2-implement-authentication-flow: backlog
+  9-3-create-task-list-with-filtering: backlog
+  9-4-create-pc-list-view: backlog
+  9-5-create-task-detail-view-control-center: backlog
+  epic-9-retrospective: optional
+
+  # Epic 10: Notifications & Clarification Flow
+  epic-10: backlog
+  10-1-configure-slack-integration: backlog
+  10-2-implement-completion-notifications: backlog
+  10-3-implement-clarification-notifications: backlog
+  10-4-implement-clarification-response-ui: backlog
+  10-5-implement-task-resume-after-clarification: backlog
+  epic-10-retrospective: optional
+
+  # ============================================
+  # PHASE 2: PRODUCTION HARDENING
+  # ============================================
+
+  # Epic 11: Task Lifecycle Management
+  epic-11: backlog
+  11-1-implement-task-cancellation: backlog
+  11-2-implement-task-retry: backlog
+  11-3-implement-manual-pc-assignment: backlog
+  epic-11-retrospective: optional
+
+  # Epic 12: Analytics & Advanced Features
+  epic-12: backlog
+  12-1-implement-task-history-view: backlog
+  12-2-implement-statistics-dashboard: backlog
+  12-3-implement-file-attachments: backlog
+  epic-12-retrospective: optional
