@@ -13,7 +13,6 @@ import { SessionManager, setSessionManager } from "./session-manager";
 import { PreflightChecker } from "./preflight-checker";
 import { GitOperations } from "./git-operations";
 import { SdkRunner, type SdkRunResult, type SdkMessage } from "./sdk";
-import { RepoLock } from "./repo-lock";
 import { RepoLockManager } from "./repo-lock-manager";
 import { type TaskSetupResult, setupTaskExecution, teardownTaskExecution } from "./task-setup";
 import { buildResumePrompt, pauseTask } from "./task-lifecycle";
@@ -48,7 +47,6 @@ export class TaskExecutor {
   private sessionManager: SessionManager;
   private preflightChecker: PreflightChecker;
   private gitOperations: GitOperations;
-  private repoLock: RepoLock;
   private repoLockManager: RepoLockManager;
 
   // Track current SDK runners for terminal preview access
@@ -66,7 +64,6 @@ export class TaskExecutor {
     setSessionManager(this.sessionManager);
     this.preflightChecker = new PreflightChecker(this.sessionManager);
     this.gitOperations = new GitOperations(this.sessionManager);
-    this.repoLock = new RepoLock(this.dataDir);
     this.repoLockManager = new RepoLockManager();
   }
 
@@ -289,6 +286,13 @@ export class TaskExecutor {
       });
 
       // Step 6: Execute workflow
+      // Update task object with execution details (updateTask only updates DB, not the object)
+      task.workDir = setup.workDir;
+      task.executionMode = setup.executionMode;
+      task.baseCommitSha = setup.baseCommitSha;
+      task.originalBranch = setup.originalBranch;
+      task.branch = setup.taskBranch;
+
       const workflowExecutor = new WorkflowExecutor(this.sessionManager);
       await workflowExecutor.executeWorkflow(task);
 
@@ -361,44 +365,6 @@ export class TaskExecutor {
 
       // Remove from running tasks
       this.runningTasks.delete(task.id);
-    }
-  }
-
-  private async transitionToRunning(task: Task): Promise<void> {
-    updateTask(task.id, {
-      status: TaskState.RUNNING,
-      startedAt: new Date().toISOString(),
-    });
-
-    this.sessionManager.emit(EventType.TASK_STARTED, EventLevel.INFO, {
-      taskId: task.id,
-    });
-
-    // Generate task name in parallel (non-blocking)
-    generateAndStoreTaskName(task);
-  }
-
-  private async runClaude(task: Task, setup: TaskSetupResult): Promise<SdkRunResult> {
-    // Build prompt - include resume context if this is a resumed task
-    let prompt = task.prompt;
-    if (task.humanResponse || task.pauseReason) {
-      prompt = buildResumePrompt(task, task.prompt);
-    }
-
-    // Create a new SdkRunner for this task (each task gets its own runner for isolation)
-    const runner = new SdkRunner(this.sessionManager);
-    this.currentSdkRunners.set(task.id, runner);
-
-    try {
-      const result = await runner.run({
-        prompt,
-        workDir: setup.workDir,
-        timeout: this.timeoutMs,
-      });
-
-      return result;
-    } finally {
-      this.currentSdkRunners.delete(task.id);
     }
   }
 

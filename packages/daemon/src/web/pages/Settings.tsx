@@ -19,11 +19,11 @@ import {
   Download,
   Loader2,
   RefreshCw,
-  Settings,
-  Server,
-  Database,
+  Settings as SettingsIcon,
+  Folder,
+  FolderGit2,
   Clock,
-  Cpu,
+  Activity,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
@@ -249,7 +249,7 @@ export function Settings() {
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-                <Settings className="h-5 w-5 text-primary" />
+                <SettingsIcon className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">Settings</h1>
@@ -408,7 +408,7 @@ export function Settings() {
         <SettingsCard
           title="Operating Mode"
           description="Daemon execution configuration"
-          icon={Server}
+          icon={Folder}
           iconColor={modeStyle.color}
           iconBg={modeStyle.bgColor}
           iconBorder={modeStyle.borderColor}
@@ -463,7 +463,7 @@ export function Settings() {
         <SettingsCard
           title="Configuration"
           description="Runtime settings"
-          icon={Cpu}
+          icon={SettingsIcon}
           iconColor="text-violet-400"
           iconBg="bg-violet-500/10"
           iconBorder="border-violet-500/30"
@@ -487,7 +487,7 @@ export function Settings() {
         <SettingsCard
           title="System"
           description="Database and runtime info"
-          icon={Database}
+          icon={FolderGit2}
           iconColor="text-amber-400"
           iconBg="bg-amber-500/10"
           iconBorder="border-amber-500/30"

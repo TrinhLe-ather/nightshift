@@ -17,25 +17,10 @@ export {
   type ExecutionModeConfig,
   type ExecutionModeResult,
   detectExecutionMode,
-  getExecutionModeDescription,
-  supportsParallelExecution,
-  DirectModeReasons,
-  WorktreeModeReasons,
 } from "./execution-mode";
 
 // Worktree management
-export {
-  type WorktreeInfo,
-  type CreateWorktreeOptions,
-  WorktreeManager,
-  worktreeManager,
-} from "./worktree";
+export { type WorktreeInfo, type CreateWorktreeOptions, WorktreeManager } from "./worktree";
 
 // Direct mode management
-export {
-  type DirectModeSetup,
-  type DirectModeResult,
-  DirectModeError,
-  DirectModeManager,
-  directModeManager,
-} from "./direct-mode";
+export { type DirectModeSetup, DirectModeManager } from "./direct-mode";

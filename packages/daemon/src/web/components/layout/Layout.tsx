@@ -41,7 +41,19 @@ export function Layout() {
         style={{ "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}
       >
         <AppSidebar />
-        <SidebarInset className="overflow-hidden">
+        <SidebarInset className="relative overflow-hidden">
+          {/* Global grid pattern background */}
+          <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
+            <div
+              className="h-full w-full"
+              style={{
+                backgroundImage:
+                  "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+                backgroundSize: "20px 20px",
+              }}
+            />
+          </div>
+
           <div className="md:hidden shrink-0 border-b border-border bg-card text-card-foreground sticky top-0 z-20">
             <div className="flex h-12 items-center gap-2 px-3 pt-[env(safe-area-inset-top)]">
               <SidebarTrigger />

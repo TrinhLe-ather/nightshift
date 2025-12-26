@@ -12,7 +12,6 @@ import { useNavigate } from "react-router-dom";
 import { useWorkflows, useDeleteWorkflow } from "@/hooks/useWorkflows";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -34,6 +33,7 @@ import {
   Workflow,
   Activity,
   Play,
+  X,
 } from "@/components/ui/icons";
 import { CloneWorkflowDialog } from "@/components/CloneWorkflowDialog";
 import { cn } from "@/lib/utils";
@@ -348,66 +348,82 @@ export function Workflows() {
           </Button>
         </div>
 
-        {/* Stats bar */}
-        <div className="mt-6 flex items-center gap-6 border-y border-border/50 py-3">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Total:</span>
-            <span className="font-medium text-foreground">{workflows.length}</span>
+        {/* Stats + Search/Filter row */}
+        <div className="mt-4 flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-4 border-b border-border/50 py-3">
+          {/* Stats - left side */}
+          <div className="flex flex-wrap items-center gap-4 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Total:</span>
+              <span className="font-medium text-foreground">{workflows.length}</span>
+            </div>
+            <div className="h-3 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">System:</span>
+              <span className="font-medium text-foreground">
+                {workflows.filter((w) => w.isBuiltin).length}
+              </span>
+            </div>
+            <div className="h-3 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Custom:</span>
+              <span className="font-medium text-primary">
+                {workflows.filter((w) => !w.isBuiltin).length}
+              </span>
+            </div>
           </div>
-          <div className="h-3 w-px bg-border" />
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">System:</span>
-            <span className="font-medium text-foreground">
-              {workflows.filter((w) => w.isBuiltin).length}
-            </span>
-          </div>
-          <div className="h-3 w-px bg-border" />
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Custom:</span>
-            <span className="font-medium text-primary">
-              {workflows.filter((w) => !w.isBuiltin).length}
-            </span>
-          </div>
-        </div>
-      </div>
 
-      {/* Search and Filter */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search workflows..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-9 bg-card pl-10 text-sm"
-          />
+          {/* Search/Filter - right side */}
+          <div className="flex flex-wrap lg:justify-end flex-1 lg:ml-auto items-center gap-2">
+            <div className="relative w-full min-w-[120px] max-w-full lg:max-w-[240px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search workflows..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 bg-card pl-9 text-sm"
+              />
+            </div>
+            <ButtonGroup>
+              <Button
+                variant={filterCategory === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterCategory("all")}
+                className="h-8 text-xs"
+              >
+                All
+              </Button>
+              <Button
+                variant={filterCategory === "builtin" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterCategory("builtin")}
+                className="h-8 text-xs"
+              >
+                System
+              </Button>
+              <Button
+                variant={filterCategory === "custom" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFilterCategory("custom")}
+                className="h-8 text-xs"
+              >
+                Custom
+              </Button>
+            </ButtonGroup>
+            {(searchQuery || filterCategory !== "all") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-xs"
+                onClick={() => {
+                  setSearchQuery("");
+                  setFilterCategory("all");
+                }}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
-        <ButtonGroup>
-          <Button
-            variant={filterCategory === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterCategory("all")}
-            className="h-9 text-xs"
-          >
-            All
-          </Button>
-          <Button
-            variant={filterCategory === "builtin" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterCategory("builtin")}
-            className="h-9 text-xs"
-          >
-            System
-          </Button>
-          <Button
-            variant={filterCategory === "custom" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setFilterCategory("custom")}
-            className="h-9 text-xs"
-          >
-            Custom
-          </Button>
-        </ButtonGroup>
       </div>
 
       {/* Loading State */}

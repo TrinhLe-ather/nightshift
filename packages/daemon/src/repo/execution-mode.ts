@@ -33,7 +33,7 @@ export interface ExecutionModeResult {
 /**
  * Reasons for choosing direct mode
  */
-export const DirectModeReasons = {
+const DirectModeReasons = {
   UNREAL_PROJECT: "Unreal Engine project detected - worktrees would duplicate large assets",
   HEAVY_LFS: "Heavy Git LFS usage detected - worktrees would require re-downloading assets",
   SHALLOW_CLONE: "Shallow clone detected - worktrees may not work correctly",
@@ -43,7 +43,7 @@ export const DirectModeReasons = {
 /**
  * Reasons for choosing worktree mode
  */
-export const WorktreeModeReasons = {
+const WorktreeModeReasons = {
   DEFAULT: "Standard repository - using worktrees for parallel execution",
   USER_CONFIG: "Worktree mode configured by user",
 } as const;
@@ -120,21 +120,4 @@ async function autoDetectMode(repoPath: string): Promise<ExecutionModeResult> {
     reason: WorktreeModeReasons.DEFAULT,
     source: "auto",
   };
-}
-
-/**
- * Get a human-readable description of execution mode
- */
-export function getExecutionModeDescription(mode: ExecutionMode): string {
-  if (mode === "worktree") {
-    return "Creates isolated copy for each task (parallel execution enabled)";
-  }
-  return "Runs directly in repository (one task at a time, no extra disk space)";
-}
-
-/**
- * Check if parallel execution is possible with the given mode
- */
-export function supportsParallelExecution(mode: ExecutionMode): boolean {
-  return mode === "worktree";
 }

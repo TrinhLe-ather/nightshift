@@ -27,33 +27,6 @@ export class GitOperations {
   constructor(private sessionManager: SessionManager) {}
 
   /**
-   * Create a branch for the task
-   */
-  async createBranch(repoPath: string, taskId: string): Promise<string> {
-    const branchName = `nightshift/${taskId}`;
-
-    try {
-      // Get current branch to return to if needed
-      const { stdout: currentBranch } = await execa("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
-        cwd: repoPath,
-      });
-
-      // Create and checkout new branch
-      await execa("git", ["checkout", "-b", branchName], { cwd: repoPath });
-
-      this.sessionManager.emit(EventType.REPO_BRANCH_CREATED, EventLevel.INFO, {
-        branch: branchName,
-        fromBranch: currentBranch.trim(),
-      });
-
-      return branchName;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to create branch";
-      throw new Error(`Failed to create branch ${branchName}: ${message}`);
-    }
-  }
-
-  /**
    * Check if there are changes to commit
    */
   async hasChanges(repoPath: string): Promise<boolean> {
@@ -73,26 +46,6 @@ export class GitOperations {
    */
   async isWorkingTreeClean(repoPath: string): Promise<boolean> {
     return !(await this.hasChanges(repoPath));
-  }
-
-  /**
-   * Get list of modified files
-   */
-  async getModifiedFiles(repoPath: string): Promise<string[]> {
-    try {
-      const { stdout } = await execa("git", ["status", "--porcelain"], {
-        cwd: repoPath,
-      });
-      const files = stdout
-        .trim()
-        .split("\n")
-        .filter(Boolean)
-        .map((line) => line.substring(3)); // Remove status prefix
-
-      return files;
-    } catch {
-      return [];
-    }
   }
 
   /**
@@ -218,26 +171,4 @@ export class GitOperations {
     }
   }
 
-  /**
-   * Checkout a specific branch
-   */
-  async checkout(repoPath: string, branch: string): Promise<void> {
-    await execa("git", ["checkout", branch], { cwd: repoPath });
-
-    this.sessionManager.emit(EventType.REPO_CHECKOUT, EventLevel.INFO, {
-      branch,
-    });
-  }
-
-  /**
-   * Pull latest changes
-   */
-  async pull(repoPath: string): Promise<boolean> {
-    try {
-      await execa("git", ["pull"], { cwd: repoPath });
-      return true;
-    } catch {
-      return false;
-    }
-  }
 }

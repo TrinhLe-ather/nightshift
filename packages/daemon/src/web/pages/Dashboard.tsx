@@ -130,22 +130,10 @@ function StatCard({ label, value, icon: Icon, color, bgColor, borderColor, index
       )}
       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
     >
-      {/* Grid pattern background */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-            backgroundSize: "16px 16px",
-          }}
-        />
-      </div>
-
       {/* Left indicator strip */}
       <div className={cn("absolute left-0 top-0 h-full w-1", bgColor)} />
 
-      <div className="relative flex items-center justify-between p-4">
+      <div className="flex items-center justify-between p-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {label}
@@ -271,7 +259,7 @@ export function Dashboard() {
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
-                <Zap className="h-5 w-5 text-primary" />
+                <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">
@@ -382,18 +370,7 @@ export function Dashboard() {
           {/* Repos Count */}
           {status.stats.repoCount === 0 ? (
             <div className="mb-8 overflow-hidden rounded-lg border border-dashed border-border bg-card/50">
-              {/* Grid pattern background */}
-              <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
-                <div
-                  className="h-full w-full"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                    backgroundSize: "20px 20px",
-                  }}
-                />
-              </div>
-              <div className="relative flex flex-col items-center justify-center py-16">
+              <div className="flex flex-col items-center justify-center py-16">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
                   <FolderGit2 className="h-8 w-8 text-muted-foreground" />
                 </div>
@@ -433,19 +410,9 @@ export function Dashboard() {
         </>
       ) : (
         <div className="mb-8 overflow-hidden rounded-lg border border-rose-500/30 bg-rose-500/5">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
-            <div
-              className="h-full w-full"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-            />
-          </div>
-          <div className="relative flex flex-col items-center justify-center py-16">
+          <div className="flex flex-col items-center justify-center py-16">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/10">
-              <Server className="h-8 w-8 text-rose-400" />
+              <AlertCircle className="h-8 w-8 text-rose-400" />
             </div>
             <p className="mt-4 text-sm font-medium text-foreground">Daemon Not Running</p>
             <p className="mt-2 text-center text-xs text-muted-foreground">
@@ -461,17 +428,7 @@ export function Dashboard() {
       {/* Empty State */}
       {isDaemonRunning && !hasTasks && (
         <div className="overflow-hidden rounded-lg border border-dashed border-border bg-card/50">
-          <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
-            <div
-              className="h-full w-full"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-            />
-          </div>
-          <div className="relative flex flex-col items-center justify-center py-16">
+          <div className="flex flex-col items-center justify-center py-16">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
               <ListTodo className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -503,18 +460,6 @@ export function Dashboard() {
           </div>
 
           <div className="overflow-hidden rounded-lg border border-border/50 bg-card">
-            {/* Grid pattern background */}
-            <div className="pointer-events-none absolute inset-0 opacity-[0.015]">
-              <div
-                className="h-full w-full"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                  backgroundSize: "16px 16px",
-                }}
-              />
-            </div>
-
             {recentTasksLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="relative">

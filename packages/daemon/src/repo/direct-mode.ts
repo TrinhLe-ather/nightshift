@@ -69,7 +69,7 @@ export interface DirectModeSetup {
 /**
  * Error codes for direct mode operations
  */
-export const DirectModeError = {
+const DirectModeError = {
   REPO_DIRTY: "NEEDS_HUMAN_GIT_DIRTY",
   BRANCH_EXISTS: "DIRECT_MODE_BRANCH_EXISTS",
   CHECKOUT_FAILED: "DIRECT_MODE_CHECKOUT_FAILED",
@@ -78,7 +78,7 @@ export const DirectModeError = {
 /**
  * Result of a direct mode operation
  */
-export interface DirectModeResult<T> {
+interface DirectModeResult<T> {
   success: boolean;
   data?: T;
   error?: {
@@ -310,31 +310,9 @@ export class DirectModeManager {
   }
 
   /**
-   * Check if the repo is ready for direct mode execution
-   */
-  async isRepoReady(repoPath: string): Promise<DirectModeResult<void>> {
-    const dirty = await isRepoDirty(repoPath);
-    if (dirty) {
-      return {
-        success: false,
-        error: {
-          code: DirectModeError.REPO_DIRTY,
-          message:
-            "Repository has uncommitted changes. Please commit or stash your changes before running a task.",
-        },
-      };
-    }
-
-    return { success: true };
-  }
-
-  /**
    * Get diff statistics for a direct mode task
    */
   async getDiff(repoPath: string, baseSha: string): Promise<DiffStats> {
     return getDiffFromBase(repoPath, baseSha);
   }
 }
-
-// Default singleton instance
-export const directModeManager = new DirectModeManager();

@@ -309,6 +309,3 @@ export class WorktreeManager {
     return cleaned;
   }
 }
-
-// Default singleton instance
-export const worktreeManager = new WorktreeManager();

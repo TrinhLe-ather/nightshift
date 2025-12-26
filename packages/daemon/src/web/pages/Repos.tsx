@@ -8,12 +8,7 @@
  */
 
 import { useState } from "react";
-import {
-  useDeleteRepo,
-  useRepoBranches,
-  useRepos,
-  useUpdateRepo,
-} from "@/hooks/useRepos";
+import { useDeleteRepo, useRepoBranches, useRepos, useUpdateRepo } from "@/hooks/useRepos";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +40,7 @@ import {
   Clock,
   Settings,
   Search,
+  X,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { cn } from "@/lib/utils";
@@ -356,50 +352,39 @@ export function Repos() {
           </Button>
         </div>
 
-        {/* Stats bar */}
-        <div className="mt-6 flex items-center gap-6 border-y border-border/50 py-3">
+        <div className="mt-4 flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-4 border-b border-border/50 py-3">
+          {/* Stats - left side */}
           <div className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">Total:</span>
             <span className="font-medium text-foreground">{repos?.length ?? 0}</span>
           </div>
-          <div className="h-3 w-px bg-border" />
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Worktree:</span>
-            <span className="font-medium text-violet-400">
-              {repos?.filter((r) => r.executionMode === "worktree").length ?? 0}
-            </span>
-          </div>
-          <div className="h-3 w-px bg-border" />
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Direct:</span>
-            <span className="font-medium text-amber-400">
-              {repos?.filter((r) => r.executionMode === "direct").length ?? 0}
-            </span>
-          </div>
-          <div className="h-3 w-px bg-border" />
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Auto:</span>
-            <span className="font-medium text-emerald-400">
-              {repos?.filter((r) => !r.executionMode || r.executionMode === "auto").length ?? 0}
-            </span>
-          </div>
+
+          {/* Search - right side */}
+          {repos && repos.length > 0 && (
+            <div className="flex flex-wrap lg:justify-end flex-1 lg:ml-auto items-center gap-2">
+              <div className="relative w-full min-w-[120px] max-w-full lg:max-w-[240px]">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search repositories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-8 bg-card pl-9 text-sm"
+                />
+              </div>
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 text-xs"
+                  onClick={() => setSearchQuery("")}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Search */}
-      {repos && repos.length > 0 && (
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search repositories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-9 bg-card pl-10 text-sm"
-            />
-          </div>
-        </div>
-      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -437,12 +422,7 @@ export function Repos() {
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">No matching repositories</p>
           <p className="mt-1 text-xs text-muted-foreground">Try adjusting your search query</p>
-          <Button
-            variant="outline"
-            className="mt-6"
-            size="sm"
-            onClick={() => setSearchQuery("")}
-          >
+          <Button variant="outline" className="mt-6" size="sm" onClick={() => setSearchQuery("")}>
             Clear search
           </Button>
         </div>
@@ -480,9 +460,7 @@ export function Repos() {
               <Settings className="h-5 w-5 text-primary" />
               Edit Repository
             </DialogTitle>
-            <DialogDescription>
-              Configure execution settings for this repository.
-            </DialogDescription>
+            <DialogDescription>Configure execution settings for this repository.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             {/* Repository info */}

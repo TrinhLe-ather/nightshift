@@ -184,77 +184,6 @@ export async function resumeTask(
 }
 
 /**
- * Cancel a task
- *
- * Can cancel tasks in: PENDING, CLAIMED, RUNNING, PAUSED, NEEDS_HUMAN states.
- */
-export async function cancelTask(
-  taskId: string,
-  sessionManager?: SessionManager,
-): Promise<LifecycleResult> {
-  const task = getTaskById(taskId);
-
-  if (!task) {
-    return {
-      success: false,
-      error: {
-        code: "TASK_NOT_FOUND",
-        message: `Task ${taskId} not found`,
-      },
-    };
-  }
-
-  // Check if task can be canceled
-  const cancelableStates = [
-    TaskState.PENDING,
-    TaskState.CLAIMED,
-    TaskState.RUNNING,
-    TaskState.PAUSED,
-    TaskState.NEEDS_HUMAN,
-  ];
-
-  if (!cancelableStates.includes(task.status as any)) {
-    return {
-      success: false,
-      error: {
-        code: "INVALID_STATE",
-        message: `Cannot cancel task in ${task.status} state`,
-      },
-    };
-  }
-
-  // If task was running or paused, tear down environment
-  if (task.status === TaskState.RUNNING || task.status === TaskState.PAUSED) {
-    try {
-      await teardownTaskExecution(task, "failed");
-    } catch (error) {
-      console.error(`[TaskLifecycle] Failed to tear down canceled task ${taskId}:`, error);
-    }
-  }
-
-  // Update task status
-  const updatedTask = updateTask(taskId, {
-    status: TaskState.CANCELED,
-    completedAt: new Date().toISOString(),
-  });
-
-  // Log event
-  if (sessionManager) {
-    sessionManager.emit(EventType.TASK_CANCELED, EventLevel.INFO, {
-      taskId,
-      previousStatus: task.status,
-    });
-  }
-
-  console.log(`[TaskLifecycle] Task ${taskId} canceled`);
-
-  return {
-    success: true,
-    task: updatedTask || undefined,
-  };
-}
-
-/**
  * Build a resume prompt that includes context and human response
  *
  * @param task - The task being resumed
@@ -309,13 +238,3 @@ This commit was automatically created when the task was paused.
 Resume the task to continue work.`;
 }
 
-/**
- * Get tasks that are waiting for human input
- */
-export function getTasksNeedingInput(): Task[] {
-  const { getTasks } = require("../tasks/repository");
-
-  return getTasks({
-    status: [TaskState.PAUSED, TaskState.NEEDS_HUMAN],
-  }).filter((t: Task) => t.pauseReason === "needs_human" || t.status === TaskState.NEEDS_HUMAN);
-}

@@ -79,17 +79,6 @@ export async function isRepoDirty(repoPath: string): Promise<boolean> {
   return status.length > 0;
 }
 
-/**
- * Check if a path is a git repository
- */
-export async function isGitRepo(path: string): Promise<boolean> {
-  try {
-    await gitExec(["rev-parse", "--git-dir"], path);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Check if this is a shallow clone
@@ -97,17 +86,6 @@ export async function isGitRepo(path: string): Promise<boolean> {
 export async function isShallowClone(repoPath: string): Promise<boolean> {
   const result = await gitExec(["rev-parse", "--is-shallow-repository"], repoPath);
   return result === "true";
-}
-
-/**
- * Create a new branch from a specific commit
- */
-export async function createBranch(
-  branchName: string,
-  fromSha: string,
-  repoPath: string,
-): Promise<void> {
-  await gitExec(["branch", branchName, fromSha], repoPath);
 }
 
 /**
@@ -309,9 +287,3 @@ export function isUnrealProject(repoPath: string): boolean {
   }
 }
 
-/**
- * Get the repository root path
- */
-export async function getRepoRoot(path: string): Promise<string> {
-  return gitExec(["rev-parse", "--show-toplevel"], path);
-}

@@ -14,7 +14,6 @@ export {
 } from "./session-manager";
 export { PreflightChecker, type PreflightResult } from "./preflight-checker";
 export { GitOperations, type CommitResult, type PrResult } from "./git-operations";
-export { RepoLock, type LockInfo } from "./repo-lock";
 export { TranscriptWriter, type TranscriptEntry } from "./transcript-writer";
 
 // SDK-based execution (Claude Agent SDK v2)
@@ -40,8 +39,5 @@ export {
 export {
   pauseTask,
   resumeTask,
-  cancelTask,
   buildResumePrompt,
-  getTasksNeedingInput,
-  type LifecycleResult,
 } from "./task-lifecycle";
