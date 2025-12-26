@@ -5,13 +5,10 @@
  * Ensures repo is clean and accessible.
  */
 
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import * as fs from "node:fs";
 import { SessionManager } from "./session-manager";
 import { EventLevel, EventType } from "@nightshift/shared";
-
-const execAsync = promisify(exec);
+import { execa } from "execa";
 
 export interface PreflightResult {
   passed: boolean;
@@ -27,7 +24,7 @@ export class PreflightChecker {
   /**
    * Run all preflight checks for a repository
    */
-  async check(repoPath: string, options?: { skipDirtyCheck?: boolean }): Promise<PreflightResult> {
+  async check(repoPath: string): Promise<PreflightResult> {
     this.sessionManager.emit(EventType.PREFLIGHT_STARTED, EventLevel.INFO, {
       repoPath,
     });
@@ -44,15 +41,13 @@ export class PreflightChecker {
         return this.fail("NOT_GIT_REPO", `Path is not a git repository: ${repoPath}`);
       }
 
-      // Check 3: Check for uncommitted changes (skip for interactive + direct mode)
-      if (!options?.skipDirtyCheck) {
-        const hasChanges = await this.hasUncommittedChanges(repoPath);
-        if (hasChanges) {
-          return this.fail(
-            "NEEDS_HUMAN_GIT_DIRTY",
-            "Repo has uncommitted changes. Please stash or commit before running tasks.",
-          );
-        }
+      // Check 3: Check for uncommitted changes
+      const hasChanges = await this.hasUncommittedChanges(repoPath);
+      if (hasChanges) {
+        return this.fail(
+          "NEEDS_HUMAN_GIT_DIRTY",
+          "Repo has uncommitted changes. Please stash or commit before running tasks.",
+        );
       }
 
       // Check 4: Check for untracked files (optional warning)
@@ -61,12 +56,12 @@ export class PreflightChecker {
         this.sessionManager.emit(EventType.PREFLIGHT_PASSED, EventLevel.WARN, {
           warning: "Repository has untracked files",
         });
+      } else {
+        // All checks passed
+        this.sessionManager.emit(EventType.PREFLIGHT_PASSED, EventLevel.INFO, {
+          repoPath,
+        });
       }
-
-      // All checks passed
-      this.sessionManager.emit(EventType.PREFLIGHT_PASSED, EventLevel.INFO, {
-        repoPath,
-      });
 
       return { passed: true };
     } catch (error) {
@@ -89,7 +84,7 @@ export class PreflightChecker {
 
   private async isGitRepository(repoPath: string): Promise<boolean> {
     try {
-      await execAsync("git rev-parse --git-dir", { cwd: repoPath });
+      await execa("git", ["rev-parse", "--git-dir"], { cwd: repoPath });
       return true;
     } catch {
       return false;
@@ -99,9 +94,7 @@ export class PreflightChecker {
   private async hasUncommittedChanges(repoPath: string): Promise<boolean> {
     try {
       // Check for staged and unstaged changes
-      const { stdout } = await execAsync("git status --porcelain", {
-        cwd: repoPath,
-      });
+      const { stdout } = await execa("git", ["status", "--porcelain"], { cwd: repoPath });
       const lines = stdout.trim().split("\n").filter(Boolean);
 
       // Filter out untracked files (lines starting with ??)
@@ -114,9 +107,7 @@ export class PreflightChecker {
 
   private async hasUntrackedFiles(repoPath: string): Promise<boolean> {
     try {
-      const { stdout } = await execAsync("git status --porcelain", {
-        cwd: repoPath,
-      });
+      const { stdout } = await execa("git", ["status", "--porcelain"], { cwd: repoPath });
       const lines = stdout.trim().split("\n").filter(Boolean);
 
       // Check for untracked files (lines starting with ??)

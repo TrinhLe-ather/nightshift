@@ -1,0 +1,107 @@
+name: Investigate and Fix
+description: Deep bug investigation with root cause analysis and comprehensive fix
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Bug Investigation
+    model: opus
+    prompt: |
+      You are a Senior Debugging Expert. A bug has been reported:
+
+      {{prompt}}
+
+      Your task is to deeply understand this bug before attempting any fix.
+
+      Complete this investigation checklist:
+      1. REPRODUCE - Verify the bug exists (run code, check logs, inspect state)
+      2. ISOLATE - Narrow down to specific file/function
+      3. TRACE - Follow the code path leading to the bug
+      4. ROOT CAUSE - Identify the underlying cause (not just the symptom)
+      5. IMPACT - List what else might be affected
+
+      Investigation techniques to use:
+      - Search for error messages in logs
+      - Check recent git commits for related changes
+      - Look for missing test coverage
+      - Examine assumptions and edge cases
+
+      DO NOT propose fixes yet. Focus entirely on understanding.
+
+      Deliver an investigation report with:
+      - Bug Reproduction (with evidence)
+      - Root Cause Analysis (explain WHY it's broken)
+      - Impact Assessment (what else is affected)
+      - Files Involved (paths + line numbers)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Write Failing Test
+    model: sonnet
+    prompt: |
+      Good investigation. Now let's prove the bug exists with a test.
+
+      Using the root cause you identified, write a test that:
+      1. Reproduces the exact bug behavior
+      2. FAILS with the current code (proving the bug exists)
+      3. Will PASS once we fix it (serving as verification)
+      4. Covers edge cases related to this bug
+
+      Test requirements:
+      - Clear test name describing expected behavior
+      - Arrange-Act-Assert structure
+      - Specific assertions (not just "should work")
+
+      Run the test and show the ACTUAL failure output.
+      If the test passes, you haven't captured the bug correctly - revise it.
+    maxRetries: 2
+
+  - name: Implement Fix
+    model: opus
+    prompt: |
+      We have a failing test proving the bug. Now implement the fix.
+
+      Fix strategy:
+      1. Fix ONLY the root cause identified earlier
+      2. Make minimal, surgical changes
+      3. Preserve existing behavior for non-buggy cases
+
+      Fix principles:
+      - Minimal: Smallest change that fixes root cause
+      - Safe: Don't break other functionality
+      - Testable: The failing test must now pass
+      - Clear: Code should explain why the fix works
+
+      After implementing:
+      1. Run the bug reproduction test - it must PASS
+      2. Run all other tests - they must still PASS
+      3. Show the test output as proof
+
+      If tests fail, debug and retry until green.
+    maxRetries: 3
+
+  - name: Regression Testing
+    model: sonnet
+    prompt: |
+      The fix is implemented and the bug test passes. Final step: verify nothing else broke.
+
+      Comprehensive testing:
+      1. Run the FULL test suite (not just bug-related tests)
+      2. Test related functionality manually if no automated tests exist
+      3. Check edge cases near the bug area
+      4. Verify the fix works in integration scenarios
+
+      Focus on:
+      - Core functionality related to the bug
+      - Edge cases from the impact assessment
+      - Integration points identified during investigation
+      - Error handling paths
+
+      Deliver a test summary:
+      - Total tests run and pass/fail counts
+      - Verification of related functionality
+      - Any issues found (list for human review)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

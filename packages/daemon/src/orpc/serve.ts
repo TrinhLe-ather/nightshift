@@ -1,6 +1,6 @@
 import { loadConfig } from "@/config";
 
-import { findAvailablePort, serverOptions } from "./index";
+import { findAvailablePort, serverOptions } from "./utils";
 
 export const serve = async () => {
   const config = loadConfig();

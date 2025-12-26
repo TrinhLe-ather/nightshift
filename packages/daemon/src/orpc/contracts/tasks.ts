@@ -13,6 +13,7 @@ import { pauseTask, resumeTask } from "../../executor/task-lifecycle";
 import { teardownTaskExecution } from "../../executor/task-setup";
 import { type DiffStats, getDiffFromBase } from "../../repo/git";
 import { orpc } from "../base";
+import { ensureInitialPromptInTranscript } from "../../tasks/transcript";
 
 /**
  * Generate a unique task ID
@@ -64,7 +65,7 @@ const taskSchema = z.object({
   humanQuestion: z.string().nullable(),
   humanResponse: z.string().nullable(),
   autoYes: z.boolean().nullable(),
-  type: z.enum(["interactive", "workflow"]).nullable(),
+  model: z.string().nullable(),
 });
 
 const sessionInfoSchema = z.object({
@@ -196,8 +197,8 @@ const create = orpc
       githubIssueUrl: z.string().optional(),
       branch: z.string().optional(),
       autoYes: z.boolean().optional().default(false),
-      // Dual-mode fields
-      type: z.enum(["interactive", "workflow"]).optional().default("interactive"),
+      model: z.string().optional(),
+      // Workflow fields
       workflowId: z.string().optional(),
       // Execution mode override (optional, allows overriding repo's default)
       executionMode: executionModeSchema.optional(),
@@ -220,14 +221,6 @@ const create = orpc
       throw errors.BAD_REQUEST({
         message: "Invalid priority",
         data: { field: "priority" },
-      });
-    }
-
-    // Validate workflow mode
-    if (input.type === "workflow" && !input.workflowId) {
-      throw errors.BAD_REQUEST({
-        message: "workflowId is required for workflow-type tasks",
-        data: { field: "workflowId" },
       });
     }
 
@@ -266,10 +259,9 @@ const create = orpc
         branch: input.branch || null,
         createdAt: now,
         autoYes: input.autoYes ?? false,
-        // Dual-mode fields
-        type: input.type || "interactive",
+        model: input.model || null,
+        // Workflow fields
         workflowId: input.workflowId || null,
-        messageCount: 0,
         // Execution mode override (if provided by user)
         executionMode: input.executionMode || null,
       })
@@ -280,6 +272,14 @@ const create = orpc
     if (!task) {
       throw errors.INTERNAL_SERVER_ERROR({ message: "Failed to create task" });
     }
+
+    // Ensure prompt is visible immediately in transcript (before execution starts).
+    ensureInitialPromptInTranscript({
+      taskId: id,
+      prompt: input.prompt,
+      createdAt: now,
+      dataDirOverride: process.env.NIGHTSHIFT_DATA_DIR,
+    });
 
     return task;
   });

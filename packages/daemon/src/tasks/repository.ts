@@ -8,6 +8,7 @@ import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb, repos, tasks } from "../db/drizzle";
 import type { CreateTask, Priority, Task, TaskState, UpdateTask } from "@nightshift/shared";
 import { TaskState as TaskStateEnum } from "@nightshift/shared";
+import { ensureInitialPromptInTranscript } from "./transcript";
 
 /**
  * Generate a unique task ID
@@ -63,6 +64,15 @@ export function createTask(input: CreateTask): Task {
   };
 
   db.insert(tasks).values(newTask).run();
+
+  // Ensure prompt is visible immediately in the transcript (even before execution starts).
+  // Use the same data dir override the rest of the daemon uses.
+  ensureInitialPromptInTranscript({
+    taskId: id,
+    prompt: input.prompt,
+    createdAt: now,
+    dataDirOverride: process.env.NIGHTSHIFT_DATA_DIR,
+  });
 
   return mapDbTaskToTask(newTask as typeof tasks.$inferSelect);
 }
@@ -173,15 +183,9 @@ export function updateTask(taskId: string, updates: UpdateTask): Task | null {
   if (updates.humanQuestion !== undefined) setValues.humanQuestion = updates.humanQuestion;
   if (updates.humanResponse !== undefined) setValues.humanResponse = updates.humanResponse;
 
-  // SDK session fields
-  if (updates.sdkSessionId !== undefined) setValues.sdkSessionId = updates.sdkSessionId;
-
   // Workflow fields
   if (updates.currentStep !== undefined) setValues.currentStep = updates.currentStep;
   if (updates.totalSteps !== undefined) setValues.totalSteps = updates.totalSteps;
-  if (updates.messageCount !== undefined) setValues.messageCount = updates.messageCount;
-  if (updates.lastUserMessageAt !== undefined)
-    setValues.lastUserMessageAt = updates.lastUserMessageAt;
 
   if (Object.keys(setValues).length === 0) {
     // No updates provided
@@ -358,15 +362,11 @@ function mapDbTaskToTask(row: typeof tasks.$inferSelect): Task {
     pauseReason: (row.pauseReason as "manual" | "needs_human" | "rate_limit") ?? undefined,
     humanQuestion: row.humanQuestion ?? undefined,
     humanResponse: row.humanResponse ?? undefined,
-    // Auto-yes and SDK session
+    // Auto-yes
     autoYes: row.autoYes ?? false,
-    sdkSessionId: row.sdkSessionId ?? undefined,
-    // Workflow and interactive mode fields
-    type: (row.type as "interactive" | "workflow") ?? "interactive",
+    // Workflow fields
     workflowId: row.workflowId ?? undefined,
     currentStep: row.currentStep ?? undefined,
     totalSteps: row.totalSteps ?? undefined,
-    messageCount: row.messageCount ?? 0,
-    lastUserMessageAt: row.lastUserMessageAt ?? undefined,
   };
 }

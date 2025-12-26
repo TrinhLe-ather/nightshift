@@ -16,8 +16,8 @@ import {
   setTerminalMessagesProvider,
   setTranscriptReader,
 } from "./contracts/terminal";
-import { conversationsRouter } from "./contracts/conversations";
 import { workflowsRouter } from "./contracts/workflows";
+import { streamRouter } from "./contracts/stream";
 
 const router = {
   status: statusRouter,
@@ -27,8 +27,8 @@ const router = {
   repos: reposRouter,
   update: updateRouter,
   terminal: terminalRouter,
-  conversations: conversationsRouter,
   workflows: workflowsRouter,
+  stream: streamRouter,
 };
 
 // Re-export for server setup
@@ -64,6 +64,13 @@ export const openApiHandler = new OpenAPIHandler(router, {
 });
 
 export const rpcHandler = new RPCHandler(router, {
+  // Streaming (SSE / event iterators)
+  // Keep connections alive with comments (replaces custom heartbeat events).
+  eventIteratorInitialCommentEnabled: true,
+  eventIteratorInitialComment: "start",
+  eventIteratorKeepAliveEnabled: true,
+  eventIteratorKeepAliveInterval: 15000,
+  eventIteratorKeepAliveComment: "",
   plugins: [
     new CORSPlugin({
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

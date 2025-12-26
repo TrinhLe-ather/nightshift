@@ -2,7 +2,16 @@ import { useCallback, useMemo, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { CommandPalette, KeyboardShortcutsDialog } from "@/web/components";
-import { Dashboard, Repos, Settings, TaskChat, Tasks } from "@/web/pages";
+import {
+  Dashboard,
+  Repos,
+  Settings,
+  TaskChat,
+  Tasks,
+  Workflows,
+  WorkflowDetail,
+  WorkflowForm,
+} from "@/web/pages";
 import { useKeyboardShortcuts } from "@/web/hooks";
 import { CommandPaletteProvider } from "@/web/contexts/commandPalette";
 
@@ -54,6 +63,10 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/tasks/:id" element={<TaskChat />} />
+            <Route path="/workflows" element={<Workflows />} />
+            <Route path="/workflows/new" element={<WorkflowForm mode="create" />} />
+            <Route path="/workflows/:id" element={<WorkflowDetail />} />
+            <Route path="/workflows/:id/edit" element={<WorkflowForm mode="edit" />} />
             <Route path="/repos" element={<Repos />} />
             <Route path="/settings" element={<Settings />} />
           </Route>

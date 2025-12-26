@@ -10,8 +10,8 @@ export {
   getWorkflowRecord,
   listWorkflows,
   initWorkflows,
+  createSmartCommitStep,
   type WorkflowDefinition,
-  type WorkflowInput,
   type WorkflowStep,
   type WorkflowSummary,
 } from "./loader.js";

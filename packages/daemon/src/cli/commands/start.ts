@@ -5,14 +5,13 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { VERSION } from "@nightshift/shared";
-import { stopCommand } from "./stop";
+import { getVersionDisplay } from "@nightshift/shared";
 import { NIGHTSHIFT_DIR, PID_FILE } from "../../config/paths";
 import { ensureNightShiftDirectories } from "../../config/paths";
 import { closeDb, getDbStats, initDb, runMigrations } from "../../db";
 import { loadConfig } from "../../config";
-import { serverOptions } from "../../server/options";
-import { findAvailablePort } from "../../server";
+import { serverOptions } from "../../orpc/options";
+import { findAvailablePort } from "../../orpc/utils";
 import { type TaskExecutor, createExecutor } from "../../executor";
 import { checkForUpdates } from "../../update";
 import {
@@ -140,13 +139,8 @@ export async function startCommand(): Promise<void> {
 
   // Check if already running
   if (isDaemonRunning()) {
-    if (import.meta.hot) {
-      // hot reload, stop the daemon
-      await stopCommand();
-    } else {
-      console.error("Night Shift is already running");
-      process.exit(1);
-    }
+    console.error("Night Shift is already running");
+    process.exit(1);
   }
 
   // If not interactive, spawn in background and exit
@@ -205,11 +199,12 @@ export async function startCommand(): Promise<void> {
   const server = Bun.serve({
     ...serverOptions,
     port: actualPort,
+    idleTimeout: 255,
   });
 
   const localUrl = `http://localhost:${actualPort}`;
   console.log(`Night Shift running at ${localUrl}`);
-  console.log(`Version: ${VERSION}`);
+  console.log(`Version: ${getVersionDisplay()}`);
 
   // Initialize and start task executor
   let executor: TaskExecutor | null = null;

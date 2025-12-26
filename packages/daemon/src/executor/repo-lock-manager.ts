@@ -1,8 +1,7 @@
 /**
  * Repo Lock Manager
  *
- * Implements shared/exclusive locking for task coordination:
- * - Shared locks: Multiple interactive (chat) tasks can hold simultaneously
+ * Implements exclusive locking for task coordination:
  * - Exclusive locks: Single workflow task, blocks all other direct mode tasks
  *
  * Worktree mode tasks don't use locks (always allowed).
@@ -11,7 +10,7 @@
 import { and, eq } from "drizzle-orm";
 import { getDb, repoLocks, type RepoLock } from "../db/drizzle";
 
-export type LockType = "shared" | "exclusive";
+export type LockType = "exclusive";
 
 export interface LockAcquisitionResult {
   success: boolean;
@@ -20,64 +19,6 @@ export interface LockAcquisitionResult {
 }
 
 export class RepoLockManager {
-  /**
-   * Try to acquire shared lock (for chat sessions)
-   * Multiple shared locks allowed on same repo
-   * Blocked by exclusive locks
-   *
-   * RACE CONDITION FIX:
-   * Wraps the SELECT and INSERT in a database transaction to ensure atomicity.
-   * Previously, another task could acquire an exclusive lock between the check
-   * and the insert, causing invalid concurrent access.
-   */
-  async acquireShared(repoId: string, taskId: string): Promise<boolean> {
-    const db = getDb();
-
-    try {
-      // Use a transaction to atomically check for exclusive locks and insert the shared lock
-      const result = await db.transaction(async (tx) => {
-        // Check for exclusive locks within the transaction
-        const exclusiveLock = tx
-          .select()
-          .from(repoLocks)
-          .where(and(eq(repoLocks.repoId, repoId), eq(repoLocks.type, "exclusive")))
-          .get();
-
-        if (exclusiveLock) {
-          // Exclusive lock exists → BLOCKED
-          console.log(
-            `[RepoLockManager] Cannot acquire shared lock for task ${taskId}: ` +
-              `exclusive lock held by task ${exclusiveLock.taskId}`
-          );
-          return { success: false };
-        }
-
-        // No exclusive lock → Acquire shared lock
-        const lockId = `lock_${crypto.randomUUID()}`;
-
-        tx.insert(repoLocks)
-          .values({
-            id: lockId,
-            repoId,
-            type: "shared",
-            taskId,
-            acquiredAt: new Date().toISOString(),
-          })
-          .run();
-
-        console.log(
-          `[RepoLockManager] Acquired shared lock ${lockId} for task ${taskId} on repo ${repoId}`
-        );
-        return { success: true, lockId };
-      });
-
-      return result.success;
-    } catch (error) {
-      console.error(`[RepoLockManager] Error acquiring shared lock for task ${taskId}:`, error);
-      return false;
-    }
-  }
-
   /**
    * Try to acquire exclusive lock (for workflows)
    * Requires no other locks exist (shared or exclusive)
@@ -187,21 +128,6 @@ export class RepoLockManager {
   }
 
   /**
-   * Get all tasks holding shared locks on a repo
-   */
-  async getSharedLockHolders(repoId: string): Promise<string[]> {
-    const db = getDb();
-
-    const locks = db
-      .select()
-      .from(repoLocks)
-      .where(and(eq(repoLocks.repoId, repoId), eq(repoLocks.type, "shared")))
-      .all();
-
-    return locks.map((l) => l.taskId);
-  }
-
-  /**
    * Get all locks on a repo (for debugging/UI)
    */
   async getLocksForRepo(repoId: string): Promise<RepoLock[]> {
@@ -219,22 +145,6 @@ export class RepoLockManager {
     const lock = db.select().from(repoLocks).where(eq(repoLocks.taskId, taskId)).get();
 
     return lock || null;
-  }
-
-  /**
-   * Check if a task can acquire a shared lock
-   * (doesn't actually acquire, just checks)
-   */
-  async canAcquireShared(repoId: string): Promise<boolean> {
-    const db = getDb();
-
-    const exclusiveLock = db
-      .select()
-      .from(repoLocks)
-      .where(and(eq(repoLocks.repoId, repoId), eq(repoLocks.type, "exclusive")))
-      .get();
-
-    return !exclusiveLock;
   }
 
   /**

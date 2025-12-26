@@ -1,24 +1,32 @@
 /**
  * Workflow Executor
  *
- * Executes predefined workflow steps sequentially.
- * Supports template interpolation, step tracking, and error handling.
+ * Executes predefined workflow steps in a single streaming session.
+ * Uses StreamingWorkflowRunner for continuous context preservation
+ * across all workflow steps.
  */
 
 import type { Task } from "@nightshift/shared";
-import { SdkRunner } from "./sdk";
 import { SessionManager } from "./session-manager";
-import { getWorkflow, type WorkflowDefinition, type WorkflowStep } from "../workflows/loader";
-import { updateTask, getTaskById } from "../tasks/repository";
+import { StreamingWorkflowRunner } from "./streaming-workflow-runner";
+import {
+  getWorkflow,
+  type WorkflowDefinition,
+  createSmartCommitStep,
+} from "../workflows/loader";
+import { updateTask } from "../tasks/repository";
 import { getDb, workflowRuns as workflowRunsTable } from "../db/drizzle";
 import { eq } from "drizzle-orm";
 import { TaskState, EventType, EventLevel } from "@nightshift/shared";
 
 export class WorkflowExecutor {
+  private currentWorkflow: WorkflowDefinition | null = null;
+  private streamingRunner: StreamingWorkflowRunner | null = null;
+
   constructor(private sessionManager: SessionManager) {}
 
   /**
-   * Execute a workflow task
+   * Execute a workflow task using streaming input mode
    */
   async executeWorkflow(task: Task): Promise<void> {
     if (!task.workflowId) {
@@ -30,6 +38,8 @@ export class WorkflowExecutor {
       throw new Error(`Workflow ${task.workflowId} not found`);
     }
 
+    this.currentWorkflow = workflow;
+
     console.log(`[Workflow] Executing ${workflow.name} for task ${task.id}`);
 
     // Start session
@@ -38,121 +48,81 @@ export class WorkflowExecutor {
     // Create workflow run record
     const runId = this.createWorkflowRun(task.id, task.workflowId);
 
-    // Update task
+    // Auto-append smart commit step
+    const steps = [...workflow.steps];
+    const smartCommitStep = createSmartCommitStep(task.prompt);
+    steps.push(smartCommitStep);
+
+    // Update task with initial state
     updateTask(task.id, {
       status: TaskState.RUNNING,
       startedAt: new Date().toISOString(),
       currentStep: 0,
-      totalSteps: workflow.steps.length,
+      totalSteps: steps.length,
     });
 
-    // Execute steps sequentially
-    const stepResults: Record<string, unknown> = {};
+    // Track step results for workflow run record
+    const stepResultsRecord: Record<string, string> = {};
 
-    for (let i = 0; i < workflow.steps.length; i++) {
-      const step = workflow.steps[i]!;
+    // Create streaming runner
+    this.streamingRunner = new StreamingWorkflowRunner(this.sessionManager);
 
-      console.log(`[Workflow] Step ${i + 1}/${workflow.steps.length}: ${step.name}`);
+    // Execute workflow with streaming input mode
+    const result = await this.streamingRunner.executeWorkflow({
+      task,
+      steps,
+      workflow,
+      workDir: task.workDir || task.repoPath || process.cwd(),
+      timeout: 30 * 60 * 1000, // 30 minutes for entire workflow
 
-      // Update current step
-      updateTask(task.id, { currentStep: i + 1 });
+      onStepStarted: (index, name) => {
+        console.log(`[Workflow] Step ${index + 1}/${steps.length}: ${name}`);
+        updateTask(task.id, { currentStep: index + 1 });
 
-      this.sessionManager.emit(EventType.WORKFLOW_STEP_STARTED, EventLevel.INFO, {
-        step: step.name,
-        stepIndex: i + 1,
-        totalSteps: workflow.steps.length,
-      });
+        this.sessionManager.emit(EventType.WORKFLOW_STEP_STARTED, EventLevel.INFO, {
+          step: name,
+          stepIndex: index + 1,
+          totalSteps: steps.length,
+        });
+      },
 
-      // Execute step
-      try {
-        const result = await this.executeStep(task, step, stepResults);
-        stepResults[step.name] = result;
+      onStepCompleted: (index, stepResult) => {
+        console.log(`[Workflow] Step ${index + 1} completed: ${stepResult.stepName}`);
 
         this.sessionManager.emit(EventType.WORKFLOW_STEP_COMPLETED, EventLevel.INFO, {
-          step: step.name,
-          stepIndex: i + 1,
+          step: stepResult.stepName,
+          stepIndex: index + 1,
         });
 
-        // Update workflow run
+        // Store result for workflow run record
+        stepResultsRecord[stepResult.stepName] = stepResult.output;
+
+        // Update workflow run with progress
         this.updateWorkflowRun(runId, {
-          stepResults: JSON.stringify(stepResults),
-          completedSteps: i + 1,
+          stepResults: JSON.stringify(stepResultsRecord),
+          completedSteps: index + 1,
         });
-      } catch (error) {
-        console.error(`[Workflow] Step ${step.name} failed:`, error);
+      },
+
+      onStepFailed: (index, error) => {
+        const stepName = steps[index]?.name || `Step ${index + 1}`;
+        console.error(`[Workflow] Step ${stepName} failed:`, error);
 
         this.sessionManager.emit(EventType.WORKFLOW_STEP_FAILED, EventLevel.ERROR, {
-          step: step.name,
-          error: error instanceof Error ? error.message : "Unknown error",
+          step: stepName,
+          error,
         });
+      },
+    });
 
-        // Fail the workflow
-        await this.failWorkflow(task.id, `Failed at step: ${step.name}`);
-        return;
-      }
+    // Handle result
+    if (!result.success) {
+      await this.failWorkflow(task.id, result.error || "Workflow failed");
+      return;
     }
 
     // All steps complete
     await this.completeWorkflow(task.id);
-  }
-
-  /**
-   * Execute a single workflow step
-   */
-  private async executeStep(
-    task: Task,
-    step: WorkflowStep,
-    previousResults: Record<string, unknown>,
-  ): Promise<unknown> {
-    // Map workflow inputs from task data
-    // For simple.yml: {{task}} should resolve to task.prompt
-    const workflowInputs = {
-      task: task.prompt, // Map 'task' input to prompt field
-      prompt: task.prompt, // Also support {{prompt}} for flexibility
-      repoPath: task.repoPath,
-      branch: task.branch,
-      ...previousResults, // Previous step results take precedence
-    };
-
-    // Interpolate prompt with workflow inputs and task metadata
-    const prompt = this.interpolatePrompt(step.prompt, workflowInputs);
-
-    // Run Claude for this step
-    const runner = new SdkRunner(this.sessionManager);
-
-    const result = await runner.run({
-      prompt,
-      workDir: task.workDir || task.repoPath || process.cwd(),
-      timeout: 30 * 60 * 1000, // 30 minutes
-      sdkSessionId: task.sdkSessionId,
-      permissionMode: "acceptEdits", // Workflows always auto-yes
-      enableCheckpointing: true,
-    });
-
-    // Store SDK session ID for continuation
-    if (result.sdkSessionId) {
-      updateTask(task.id, { sdkSessionId: result.sdkSessionId });
-    }
-
-    if (!result.success) {
-      throw new Error(result.error || "Step execution failed");
-    }
-
-    return {
-      output: result.output,
-      checkpointId: result.checkpointId,
-    };
-  }
-
-  /**
-   * Simple Mustache-style template interpolation
-   * Replaces {{key}} with data[key]
-   */
-  private interpolatePrompt(template: string, data: Record<string, unknown>): string {
-    return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-      const value = data[key];
-      return value !== undefined ? String(value) : match;
-    });
   }
 
   /**
@@ -179,33 +149,32 @@ export class WorkflowExecutor {
    */
   private updateWorkflowRun(
     runId: string,
-    updates: Partial<{ stepResults: string; completedSteps: number }>,
+    updates: Partial<{ stepResults: string; completedSteps: number }>
   ) {
     const db = getDb();
-    db.update(workflowRunsTable)
-      .set(updates)
-      .where(eq(workflowRunsTable.id, runId))
-      .run();
+    db.update(workflowRunsTable).set(updates).where(eq(workflowRunsTable.id, runId)).run();
   }
 
   /**
-   * Mark workflow as completed
+   * Complete workflow execution
+   * Note: Task completion (marking as COMPLETED, git operations, session cleanup) is handled by TaskExecutor
    */
-  private async completeWorkflow(taskId: string): Promise<void> {
-    updateTask(taskId, {
-      status: TaskState.COMPLETED,
-      completedAt: new Date().toISOString(),
-    });
+  private async completeWorkflow(_taskId: string): Promise<void> {
+    // Workflow completed successfully
+    // TaskExecutor will handle git operations, task completion, and session cleanup
+  }
 
-    this.sessionManager.emit(EventType.TASK_COMPLETED, EventLevel.INFO, {
-      taskId,
-    });
-
-    this.sessionManager.endSession();
+  /**
+   * Check if workflow handled git operations (commit/push/PR)
+   * Always returns true since Smart Commit step is auto-appended
+   */
+  public hasHandledGitOps(): boolean {
+    return true;
   }
 
   /**
    * Mark workflow as failed
+   * Note: Session cleanup is handled by TaskExecutor
    */
   private async failWorkflow(taskId: string, reason: string): Promise<void> {
     updateTask(taskId, {
@@ -218,6 +187,13 @@ export class WorkflowExecutor {
       reason,
     });
 
-    this.sessionManager.endSession();
+    // Session cleanup is handled by TaskExecutor's finally block
+  }
+
+  /**
+   * Abort the workflow execution
+   */
+  abort(): void {
+    this.streamingRunner?.abort();
   }
 }

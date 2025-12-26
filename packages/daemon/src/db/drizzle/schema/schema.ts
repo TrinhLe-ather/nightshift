@@ -45,12 +45,6 @@ export type EntityType = (typeof entityTypeEnum)[number];
 export const syncActionEnum = ["create", "update", "delete"] as const;
 export type SyncAction = (typeof syncActionEnum)[number];
 
-export const taskTypeEnum = ["interactive", "workflow"] as const;
-export type TaskType = (typeof taskTypeEnum)[number];
-
-export const messageRoleEnum = ["user", "assistant", "system"] as const;
-export type MessageRole = (typeof messageRoleEnum)[number];
-
 // ============================================================================
 // Tables
 // ============================================================================
@@ -100,16 +94,13 @@ export const tasks = sqliteTable(
     // Auto-yes mode (auto-accept Claude prompts)
     autoYes: integer("autoYes", { mode: "boolean" }).default(false),
 
-    // SDK session ID for Claude Agent SDK v2 resume capability
-    sdkSessionId: text("sdkSessionId"),
+    // Model selection (overrides workflow default)
+    model: text("model"),
 
-    // Dual-mode architecture fields
-    type: text("type", { enum: taskTypeEnum }).default("interactive"),
-    messageCount: integer("messageCount").default(0),
+    // Workflow fields
     workflowId: text("workflowId"),
     currentStep: integer("currentStep"),
     totalSteps: integer("totalSteps"),
-    lastUserMessageAt: text("lastUserMessageAt"),
   },
   (table) => [
     index("idx_tasks_status").on(table.status),
@@ -117,7 +108,6 @@ export const tasks = sqliteTable(
     index("idx_tasks_source").on(table.source),
     index("idx_tasks_createdAt").on(table.createdAt),
     index("idx_tasks_priority").on(table.priority),
-    index("idx_tasks_type").on(table.type),
     index("idx_tasks_workflowId").on(table.workflowId),
   ],
 );
@@ -167,37 +157,9 @@ export const sessions = sqliteTable(
 );
 
 /**
- * Messages table - Interactive task messages
+ * Repo locks table - Exclusive locking for task coordination
  *
- * Stores conversation messages for interactive tasks.
- * Part of dual-mode architecture for interactive vs workflow tasks.
- */
-export const messages = sqliteTable(
-  "messages",
-  {
-    id: text("id").primaryKey(),
-    taskId: text("taskId")
-      .notNull()
-      .references(() => tasks.id, { onDelete: "cascade" }),
-    role: text("role", { enum: messageRoleEnum }).notNull(),
-    content: text("content").notNull(),
-    timestamp: text("timestamp").notNull(),
-    checkpointId: text("checkpointId"),
-    toolCalls: text("toolCalls"), // JSON serialized
-  },
-  (table) => [
-    index("idx_messages_taskId").on(table.taskId),
-    index("idx_messages_timestamp").on(table.timestamp),
-    index("idx_messages_checkpointId").on(table.checkpointId),
-  ],
-);
-
-/**
- * Repo locks table - Shared/Exclusive locking for task coordination
- *
- * Implements shared/exclusive lock pattern:
- * - Shared locks: Multiple interactive (chat) tasks can hold simultaneously
- * - Exclusive locks: Single workflow task, blocks all other direct mode tasks
+ * Implements exclusive lock pattern for direct mode workflow tasks.
  * Worktree mode tasks don't use locks (always allowed)
  */
 export const repoLocks = sqliteTable(
@@ -210,7 +172,7 @@ export const repoLocks = sqliteTable(
     taskId: text("taskId")
       .notNull()
       .references(() => tasks.id, { onDelete: "cascade" }),
-    type: text("type", { enum: ["shared", "exclusive"] as const }).notNull(),
+    type: text("type", { enum: ["exclusive"] as const }).notNull(),
     acquiredAt: text("acquiredAt").notNull(),
   },
   (table) => [
@@ -230,6 +192,7 @@ export const workflows = sqliteTable("workflows", {
   name: text("name").notNull(),
   description: text("description"),
   definition: text("definition").notNull(), // JSON serialized
+  model: text("model"),
   isBuiltin: integer("isBuiltin", { mode: "boolean" }).default(false),
   createdAt: text("createdAt").notNull(),
   updatedAt: text("updatedAt").notNull(),
@@ -305,7 +268,6 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [workflows.id],
   }),
   sessions: many(sessions),
-  messages: many(messages),
   workflowRuns: many(workflowRuns),
 }));
 
@@ -316,13 +278,6 @@ export const reposRelations = relations(repos, ({ many }) => ({
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   task: one(tasks, {
     fields: [sessions.taskId],
-    references: [tasks.id],
-  }),
-}));
-
-export const messagesRelations = relations(messages, ({ one }) => ({
-  task: one(tasks, {
-    fields: [messages.taskId],
     references: [tasks.id],
   }),
 }));
@@ -372,9 +327,6 @@ export type NewConfig = typeof config.$inferInsert;
 
 export type SyncQueueItem = typeof syncQueue.$inferSelect;
 export type NewSyncQueueItem = typeof syncQueue.$inferInsert;
-
-export type Message = typeof messages.$inferSelect;
-export type NewMessage = typeof messages.$inferInsert;
 
 export type RepoLock = typeof repoLocks.$inferSelect;
 export type NewRepoLock = typeof repoLocks.$inferInsert;

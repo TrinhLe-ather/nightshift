@@ -4,11 +4,11 @@
  * Displays the current Night Shift version.
  */
 
-import { VERSION } from "@nightshift/shared";
+import { getVersionDisplay } from "@nightshift/shared";
 
 /**
  * Display version
  */
 export function versionCommand(): void {
-  console.log(VERSION);
+  console.log(getVersionDisplay());
 }

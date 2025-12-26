@@ -4,11 +4,9 @@
  * Manage configured repositories for task execution.
  */
 
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useState } from "react";
 import {
-  useAddRepo,
   useDeleteRepo,
-  useInspectRepo,
   useRepoBranches,
   useRepos,
   useUpdateRepo,
@@ -16,6 +14,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AddRepoDialog } from "@/components";
 import {
   Card,
   CardAction,
@@ -42,7 +41,6 @@ import {
 } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  AlertCircle,
   FileEdit,
   Folder,
   GitBranch,
@@ -68,10 +66,8 @@ function formatDate(dateStr: string): string {
 
 export function Repos() {
   const { data: repos, isLoading } = useRepos();
-  const addRepoMutation = useAddRepo();
   const updateRepoMutation = useUpdateRepo();
   const deleteRepoMutation = useDeleteRepo();
-  const inspectRepoMutation = useInspectRepo();
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -87,27 +83,12 @@ export function Repos() {
     defaultBranch: string | null;
     executionMode: "auto" | "worktree" | "direct" | null;
   } | null>(null);
-  const [newRepoPath, setNewRepoPath] = useState("");
-  const [addError, setAddError] = useState<string | null>(null);
-  const [inspectResult, setInspectResult] = useState<Awaited<
-    ReturnType<typeof inspectRepoMutation.mutateAsync>
-  > | null>(null);
-  const [inspectError, setInspectError] = useState<string | null>(null);
-  const inspectReqIdRef = useRef(0);
 
   const [editName, setEditName] = useState("");
   const [editDefaultBranch, setEditDefaultBranch] = useState("");
   const [editExecutionMode, setEditExecutionMode] = useState<"auto" | "worktree" | "direct">(
     "auto",
   );
-
-  const closeAddDialog = () => {
-    setAddDialogOpen(false);
-    setNewRepoPath("");
-    setAddError(null);
-    setInspectResult(null);
-    setInspectError(null);
-  };
 
   const closeEditDialog = () => {
     setEditDialogOpen(false);
@@ -120,58 +101,6 @@ export function Repos() {
   const closeDeleteDialog = () => {
     setDeleteDialogOpen(false);
     setRepoToDelete(null);
-  };
-
-  const inspectRepo = useEffectEvent(async (path: string) => {
-    if (!addDialogOpen) return;
-
-    const reqId = ++inspectReqIdRef.current;
-    const timer = setTimeout(async () => {
-      try {
-        setInspectError(null);
-        const result = await inspectRepoMutation.mutateAsync({ path });
-        if (inspectReqIdRef.current !== reqId) return; // stale
-        setInspectResult(result);
-      } catch (err) {
-        if (inspectReqIdRef.current !== reqId) return; // stale
-        setInspectResult(null);
-        setInspectError(err instanceof Error ? err.message : "Failed to inspect repo");
-      }
-    }, 350);
-
-    return timer;
-  });
-
-  useEffect(() => {
-    if (!addDialogOpen) return;
-
-    const path = newRepoPath.trim();
-    if (!path) {
-      setInspectResult(null);
-      setInspectError(null);
-      return;
-    }
-
-    inspectRepo(path);
-  }, [addDialogOpen, newRepoPath]);
-
-  const handleAddRepo = async () => {
-    if (!newRepoPath.trim()) {
-      setAddError("Path is required");
-      return;
-    }
-
-    try {
-      const repo = await addRepoMutation.mutateAsync({
-        path: newRepoPath.trim(),
-      });
-      toast.success("Repo added", {
-        description: `${repo.name} is now configured for task execution.`,
-      });
-      closeAddDialog();
-    } catch (err) {
-      setAddError(err instanceof Error ? err.message : "Failed to add repo");
-    }
   };
 
   const openEditDialog = (repo: {
@@ -347,135 +276,7 @@ export function Repos() {
       )}
 
       {/* Add Repo Dialog */}
-      <Dialog
-        open={addDialogOpen}
-        onOpenChange={(open) => {
-          setAddDialogOpen(open);
-          if (!open) closeAddDialog();
-        }}
-      >
-        <DialogContent className="md:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Add Repository</DialogTitle>
-            <DialogDescription>
-              Enter the absolute path to a git repository on your machine.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="repo-path"
-                className="mb-2 block text-sm font-medium text-(--color-text-primary)"
-              >
-                Repository Path
-              </label>
-              <Input
-                id="repo-path"
-                placeholder="/Users/you/projects/my-repo"
-                value={newRepoPath}
-                onChange={(e) => {
-                  setNewRepoPath(e.target.value);
-                  setAddError(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !addRepoMutation.isPending) {
-                    handleAddRepo();
-                  }
-                }}
-                autoFocus
-              />
-              <p className="mt-2 text-xs text-(--color-text-muted)">
-                The name and default branch will be auto-detected from git.
-              </p>
-            </div>
-
-            {(inspectRepoMutation.isPending || inspectResult || inspectError) && (
-              <div className="rounded-md border border-border bg-(--color-background) px-3 py-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-(--color-text-primary)">Auto-detected</p>
-                  {inspectRepoMutation.isPending && (
-                    <div className="flex items-center gap-2 text-xs text-(--color-text-muted)">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      Inspecting…
-                    </div>
-                  )}
-                </div>
-
-                {inspectError && (
-                  <div className="mt-2 flex items-center gap-2 text-xs text-(--color-destructive)">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    {inspectError}
-                  </div>
-                )}
-
-                {inspectResult && (
-                  <div className="mt-3 space-y-2 text-xs text-(--color-text-secondary)">
-                    <div className="grid grid-cols-[120px_1fr] gap-2">
-                      <div className="text-(--color-text-muted)">Name</div>
-                      <div className="font-mono text-(--color-text-primary)">
-                        {inspectResult.name ?? "—"}
-                      </div>
-                      <div className="text-(--color-text-muted)">Default branch</div>
-                      <div className="font-mono text-(--color-text-primary)">
-                        {inspectResult.defaultBranch ?? "—"}
-                      </div>
-                      <div className="text-(--color-text-muted)">GitHub</div>
-                      <div className="font-mono text-(--color-text-primary)">
-                        {inspectResult.github?.repoId ?? "—"}
-                      </div>
-                      <div className="text-(--color-text-muted)">Origin remote</div>
-                      <div className="font-mono text-(--color-text-primary) break-all">
-                        {inspectResult.remoteUrl ?? "—"}
-                      </div>
-                      <div className="text-(--color-text-muted)">Suggested mode</div>
-                      <div className="text-(--color-text-primary)">
-                        {inspectResult.suggestedExecution
-                          ? `${inspectResult.suggestedExecution.mode} — ${inspectResult.suggestedExecution.reason}`
-                          : "—"}
-                      </div>
-                    </div>
-
-                    {inspectResult.stack?.tags?.length ? (
-                      <div className="pt-1">
-                        <div className="text-(--color-text-muted)">Stack</div>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          {inspectResult.stack.tags.map((t) => (
-                            <Badge key={t} variant="secondary" className="text-xs">
-                              {t}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {addError && (
-              <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-(--color-destructive)">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                {addError}
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={closeAddDialog}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddRepo} disabled={addRepoMutation.isPending}>
-              {addRepoMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Adding...
-                </>
-              ) : (
-                "Add Repo"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddRepoDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
 
       {/* Edit Repo Dialog */}
       <Dialog

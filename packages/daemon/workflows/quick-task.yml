@@ -1,0 +1,34 @@
+name: Quick Task
+description: Fast execution for simple, well-defined tasks
+version: 1.0.0
+model: sonnet
+
+steps:
+  - name: Execute Task
+    prompt: |
+      You are a Senior Developer. Execute this task:
+
+      {{prompt}}
+
+      Approach:
+      1. Understand exactly what's being requested
+      2. Execute the task completely
+      3. Verify your work
+      4. Clean up any temporary files
+
+      Quality standards:
+      - Follow existing code patterns in the repository
+      - Write clear, readable code
+      - Add comments only for non-obvious logic
+      - Test your changes if applicable
+
+      Completion criteria:
+      - Task fully completed (not partially)
+      - Code follows repository conventions
+      - No errors or warnings introduced
+      - Changes are minimal and focused
+
+      Before finishing, verify:
+      - Did I complete what was asked?
+      - Did I introduce any new issues?
+      - Is the code production-ready?

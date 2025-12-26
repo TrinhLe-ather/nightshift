@@ -8,7 +8,7 @@
  * - Full message content (not truncated)
  */
 
-import { useEffect, useRef, useState, useMemo, useCallback } from "react";
+import { useEffect, useEffectEvent, useRef, useState, useMemo, useCallback } from "react";
 import { cn } from "@/web/lib/utils";
 import {
   ChevronDown,
@@ -20,7 +20,6 @@ import {
   Search,
   Globe,
   FolderSearch,
-  MessageSquare,
   CheckCircle2,
   XCircle,
   Activity,
@@ -28,6 +27,8 @@ import {
   GitPullRequest,
 } from "@/components/ui/icons";
 import { FileDiffView } from "./FileDiffView";
+import { useTaskStream } from "@/hooks/useTaskStream";
+import { Button } from "./ui/button";
 
 export interface SdkMessage {
   type: "system" | "assistant" | "tool" | "result" | "error" | "user";
@@ -55,12 +56,12 @@ export type TimelineItem =
   | { itemType: "event"; data: SessionEvent };
 
 interface TranscriptViewerProps {
-  messages: SdkMessage[];
+  taskId: string;
   events?: SessionEvent[];
   prompt?: string;
+  promptTimestamp?: string;
   className?: string;
   autoScroll?: boolean;
-  isLive?: boolean;
   /** Callback when file changes are detected */
   onFileChanges?: (changes: FileChange[]) => void;
 }
@@ -541,18 +542,6 @@ function ThinkingBlock({
   );
 }
 
-// User prompt display
-function UserPrompt({ content }: { content: string }) {
-  return (
-    <div className="mb-4 p-3 rounded-lg bg-zinc-800/50 border border-zinc-700">
-      <div className="flex items-start gap-2">
-        <MessageSquare className="size-5 text-blue-400" />
-        <p className="text-zinc-100 whitespace-pre-wrap">{content}</p>
-      </div>
-    </div>
-  );
-}
-
 // Session event display
 function SessionEventItem({ event }: { event: SessionEvent }) {
   const eventConfig: Record<string, { icon: typeof Activity; color: string; label: string }> = {
@@ -601,40 +590,6 @@ function SessionEventItem({ event }: { event: SessionEvent }) {
         {config.label} {detail && <span className="text-zinc-500 font-mono">{detail}</span>}
       </p>
       <span className="text-zinc-600 font-mono ml-auto shrink-0">{timestamp}</span>
-    </div>
-  );
-}
-
-// Tool result with collapsible content
-function ToolResultMessage({ content, isError }: { content: string; isError: boolean }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const previewLength = 200;
-  const hasMore = content.length > previewLength;
-
-  if (!content) return null;
-
-  return (
-    <div className={cn("my-1 pl-6", isError ? "text-red-400" : "text-zinc-500")}>
-      {hasMore ? (
-        <div>
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="flex items-center gap-1.5 text-xs hover:text-zinc-300 transition-colors"
-          >
-            {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-            <span>
-              {isError ? "Error" : "Result"} ({content.length} chars)
-            </span>
-          </button>
-          {isOpen && (
-            <pre className="mt-1 p-2 rounded bg-zinc-800/50 text-xs font-mono whitespace-pre-wrap overflow-x-auto max-h-[300px] overflow-y-auto">
-              {content}
-            </pre>
-          )}
-        </div>
-      ) : (
-        <span className="text-xs">{content}</span>
-      )}
     </div>
   );
 }
@@ -747,11 +702,12 @@ function TranscriptMessage({
 }
 
 export function TranscriptViewer({
-  messages,
+  taskId,
   events = [],
   prompt,
+  promptTimestamp,
+  className,
   autoScroll = true,
-  isLive = false,
   onFileChanges,
 }: TranscriptViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -761,11 +717,22 @@ export function TranscriptViewer({
     newContent: string;
     isNewFile: boolean;
   } | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
-  // Merge messages and events chronologically
+  const { messages, isTyping, isComplete, isConnected, error } = useTaskStream(taskId);
+
+  const clearUIState = useEffectEvent(() => {
+    setActiveDiff(null);
+    onFileChanges?.([]);
+    setIsAtBottom(true);
+  });
+
+  useEffect(() => {
+    clearUIState();
+  }, [taskId]);
+
   const timeline = useMemo(() => {
     // Filter out agent-related events (AGENT_TOOL_*, AGENT_MESSAGE)
-    // Only keep task/session lifecycle events
     const filteredEvents = events.filter(
       (evt) =>
         !evt.type.startsWith("AGENT_TOOL") &&
@@ -776,7 +743,24 @@ export function TranscriptViewer({
         evt.type !== "SESSION_ENDED",
     );
 
+    const normalizedPrompt = (prompt ?? "").trim();
+    const hasPromptMessage =
+      normalizedPrompt.length > 0 &&
+      messages.some((m) => m.type === "user" && m.content.trim() === normalizedPrompt);
+
+    const initialPromptMessage: SdkMessage | null =
+      normalizedPrompt.length > 0 && !hasPromptMessage
+        ? {
+            type: "user",
+            timestamp: promptTimestamp ?? new Date().toISOString(),
+            content: normalizedPrompt,
+          }
+        : null;
+
     const items: TimelineItem[] = [
+      ...(initialPromptMessage
+        ? ([{ itemType: "message", data: initialPromptMessage }] as const)
+        : []),
       ...messages.map((msg): TimelineItem => ({ itemType: "message", data: msg })),
       ...filteredEvents.map((evt): TimelineItem => ({ itemType: "event", data: evt })),
     ];
@@ -789,9 +773,23 @@ export function TranscriptViewer({
     });
 
     return items;
-  }, [messages, events]);
+  }, [messages, events, prompt, promptTimestamp]);
 
-  // Track file changes
+  const getTimelineKey = useCallback((item: TimelineItem, idx: number) => {
+    if (item.itemType === "event") {
+      // Drizzle session events have stable (runId, seq) ordering.
+      return `event:${item.data.runId}:${item.data.seq}:${item.data.type}`;
+    }
+
+    const msg = item.data;
+    // Avoid using array index as key: timeline order can change (merge + sort),
+    // and switching tasks should not reuse old message component state.
+    const sessionPart = msg.sessionId ? `:${msg.sessionId}` : "";
+    const toolPart = msg.toolName ? `:${msg.toolName}` : "";
+    const contentSig = `${msg.content.length}:${msg.content.slice(0, 32)}`;
+    return `msg:${msg.type}:${msg.timestamp}${sessionPart}${toolPart}:${contentSig}:${idx}`;
+  }, []);
+
   const fileChanges = useMemo(() => {
     const changes: Map<string, FileChange> = new Map();
 
@@ -845,35 +843,34 @@ export function TranscriptViewer({
     return Array.from(changes.values());
   }, [messages]);
 
-  // Notify parent of file changes
-  useEffect(() => {
-    onFileChanges?.(fileChanges);
-  }, [fileChanges, onFileChanges]);
+  const handleFileChanges = useEffectEvent((changes: FileChange[]) => {
+    onFileChanges?.(changes);
+  });
 
-  // Auto-scroll
   useEffect(() => {
-    if (autoScroll && containerRef.current) {
+    handleFileChanges(fileChanges);
+  }, [fileChanges]);
+
+  const computeIsAtBottom = useEffectEvent(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = distance <= 24;
+    setIsAtBottom(atBottom);
+  });
+
+  const jumpToEnd = useEffectEvent(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setIsAtBottom(true);
+  });
+
+  useEffect(() => {
+    if (autoScroll && isAtBottom && containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [autoScroll, timeline]);
-
-  // Check if we should show the prompt (avoid duplication with first message)
-  const shouldShowPrompt = useMemo(() => {
-    if (!prompt) return false;
-    if (timeline.length === 0) return true; // No messages yet, show prompt
-
-    // Find first user message in timeline
-    const firstUserMessage = timeline.find(
-      (item) => item.itemType === "message" && item.data.type === "user",
-    );
-
-    // Don't show UserPrompt if first message matches prompt (avoid duplication)
-    if (firstUserMessage && firstUserMessage.itemType === "message") {
-      return firstUserMessage.data.content !== prompt;
-    }
-
-    return true; // Show prompt if no user messages found
-  }, [prompt, timeline]);
+  }, [autoScroll, timeline, isAtBottom]);
 
   const handleShowDiff = useCallback(
     (filePath: string, oldContent: string, newContent: string, isNewFile: boolean) => {
@@ -883,36 +880,43 @@ export function TranscriptViewer({
   );
 
   return (
-    <div className="pr-1">
-      {isLive && (
-        <div className="flex items-center gap-1.5 text-xs">
+    <div className={cn("relative pr-1 h-full min-h-0 flex flex-col", className)}>
+      {/* Connection status indicator */}
+      {isConnected && !isComplete && (
+        <div className="flex items-center gap-1.5 text-xs mb-2">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
           </span>
-          Live
+          <span className="text-emerald-400">Live</span>
+        </div>
+      )}
+
+      {/* Error indicator */}
+      {error && (
+        <div className="mb-2 p-2 rounded bg-red-900/20 border border-red-500/30 text-red-300 text-sm">
+          {error}
         </div>
       )}
 
       <div
         ref={containerRef}
-        className="text-sm"
+        className="flex-1 min-h-0 overflow-auto text-sm"
+        onScroll={computeIsAtBottom}
         // style={{ maxHeight }}
       >
-        {shouldShowPrompt && prompt && <UserPrompt content={prompt} />}
-
         {timeline.length > 0 ? (
           <div className="space-y-0">
             {timeline.map((item, idx) => {
               if (item.itemType === "event") {
-                return <SessionEventItem key={`event-${idx}`} event={item.data} />;
+                return <SessionEventItem key={getTimelineKey(item, idx)} event={item.data} />;
               } else {
                 const prevItem = idx > 0 ? timeline[idx - 1] : undefined;
                 const prevToolName =
                   prevItem?.itemType === "message" ? prevItem.data.toolName : undefined;
                 return (
                   <TranscriptMessage
-                    key={`message-${idx}`}
+                    key={getTimelineKey(item, idx)}
                     message={item.data}
                     previousToolName={prevToolName}
                     onShowDiff={handleShowDiff}
@@ -923,10 +927,43 @@ export function TranscriptViewer({
           </div>
         ) : (
           <span className="text-zinc-500">
-            {isLive ? "Waiting for output..." : "No transcript available"}
+            {isConnected ? "Waiting for output..." : "No transcript available"}
           </span>
         )}
+
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex items-center gap-2 text-zinc-400 text-sm mt-2">
+            <span className="flex gap-1">
+              <span
+                className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"
+                style={{ animationDelay: "0ms" }}
+              />
+              <span
+                className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"
+                style={{ animationDelay: "150ms" }}
+              />
+              <span
+                className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"
+                style={{ animationDelay: "300ms" }}
+              />
+            </span>
+            <span>Clauding...</span>
+          </div>
+        )}
       </div>
+
+      {/* Jump to end */}
+      {!isAtBottom && timeline.length > 0 && (
+        <Button
+          onClick={jumpToEnd}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2"
+          variant="secondary"
+        >
+          <ChevronDown />
+          Jump to latest
+        </Button>
+      )}
 
       {/* Diff modal */}
       {activeDiff && (

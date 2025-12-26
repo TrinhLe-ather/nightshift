@@ -14,7 +14,7 @@ export interface SessionEvent {
   schemaVersion: number;
   ts: string;
   seq: number;
-  level: "info" | "warn" | "error" | "debug";
+  level: string;
   type: string;
   taskId: string;
   runId: string;

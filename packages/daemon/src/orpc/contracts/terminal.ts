@@ -130,4 +130,4 @@ const getPreview = orpc
 
 export const terminalRouter = {
   getPreview,
-} as const;
+};

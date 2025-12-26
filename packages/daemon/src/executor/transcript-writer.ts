@@ -27,7 +27,8 @@ export class TranscriptWriter {
    */
   start(taskId: string): string {
     this.transcriptPath = path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
-    this.sequence = 0;
+    // Resume sequence if file already exists (e.g. initial prompt written at task creation)
+    this.sequence = TranscriptWriter.getLastSeq(this.transcriptPath);
 
     // Open write stream (append mode in case of resume)
     this.writeStream = fs.createWriteStream(this.transcriptPath, { flags: "a" });
@@ -129,5 +130,52 @@ export class TranscriptWriter {
     }
 
     return entries;
+  }
+
+  /**
+   * Get the last sequence number in a transcript file (0 if missing/empty).
+   */
+  static getLastSeq(transcriptPath: string): number {
+    if (!fs.existsSync(transcriptPath)) return 0;
+    try {
+      const content = fs.readFileSync(transcriptPath, "utf-8");
+      const lines = content.trim().split("\n").filter(Boolean);
+      if (lines.length === 0) return 0;
+      // Walk backwards for the last valid entry
+      for (let i = lines.length - 1; i >= 0; i--) {
+        try {
+          const entry = JSON.parse(lines[i]!) as Partial<TranscriptEntry>;
+          if (typeof entry.seq === "number" && Number.isFinite(entry.seq)) {
+            return entry.seq;
+          }
+        } catch {
+          // keep scanning backwards
+        }
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
+  }
+
+  /**
+   * Append a message to a transcript file without requiring an active session.
+   * Useful for writing the initial task prompt at creation time.
+   */
+  static appendMessage(transcriptPath: string, message: SdkMessage, ts?: string): TranscriptEntry {
+    const dir = path.dirname(transcriptPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    const lastSeq = TranscriptWriter.getLastSeq(transcriptPath);
+    const entry: TranscriptEntry = {
+      seq: lastSeq + 1,
+      ts: ts ?? new Date().toISOString(),
+      message,
+    };
+
+    fs.appendFileSync(transcriptPath, JSON.stringify(entry) + "\n", "utf-8");
+    return entry;
   }
 }

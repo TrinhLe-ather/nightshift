@@ -15,6 +15,7 @@ import {
 } from "@anthropic-ai/claude-agent-sdk";
 import { EventLevel, EventType } from "@nightshift/shared";
 import type { SessionManager } from "../session-manager";
+import { streamEventBus } from "../../streaming/event-bus";
 
 export interface SdkRunnerOptions {
   /** The prompt to send to Claude */
@@ -111,6 +112,12 @@ export class SdkRunner {
         error: message,
       });
 
+      // Emit streaming events for error
+      if (this.sessionManager.taskId) {
+        streamEventBus.emitTyping(this.sessionManager.taskId, false);
+        streamEventBus.emitError(this.sessionManager.taskId, message);
+      }
+
       return {
         success: false,
         messages: this.messages,
@@ -139,6 +146,11 @@ export class SdkRunner {
     const timeoutId = setTimeout(() => {
       this.abort();
     }, timeout);
+
+    // Emit typing indicator when starting
+    if (this.sessionManager.taskId) {
+      streamEventBus.emitTyping(this.sessionManager.taskId, true);
+    }
 
     try {
       // Build query options
@@ -181,6 +193,11 @@ export class SdkRunner {
           this.messages.push(sdkMessage);
           // Write to transcript for persistence
           this.sessionManager.writeTranscriptMessage(sdkMessage);
+
+          // Emit to stream bus for real-time updates
+          if (this.sessionManager.taskId) {
+            streamEventBus.emitMessage(this.sessionManager.taskId, sdkMessage);
+          }
         }
 
         // Extract session ID from init message
@@ -236,6 +253,12 @@ export class SdkRunner {
 
       // Check if aborted
       if (this.aborted) {
+        // Emit error for abort
+        if (this.sessionManager.taskId) {
+          streamEventBus.emitTyping(this.sessionManager.taskId, false);
+          streamEventBus.emitError(this.sessionManager.taskId, "Task execution timed out or was aborted");
+        }
+
         return {
           success: false,
           sdkSessionId: newSdkSessionId,
@@ -243,6 +266,12 @@ export class SdkRunner {
           error: "Task execution timed out or was aborted",
           ...(enableCheckpointing && { checkpointId, checkpoints: checkpoints.length > 0 ? checkpoints : undefined }),
         };
+      }
+
+      // Emit completion/stop typing on success
+      if (this.sessionManager.taskId) {
+        streamEventBus.emitTyping(this.sessionManager.taskId, false);
+        streamEventBus.emitComplete(this.sessionManager.taskId);
       }
 
       return {
@@ -257,6 +286,16 @@ export class SdkRunner {
         },
         ...(enableCheckpointing && { checkpointId, checkpoints: checkpoints.length > 0 ? checkpoints : undefined }),
       };
+    } catch (error) {
+      // Emit error
+      if (this.sessionManager.taskId) {
+        streamEventBus.emitTyping(this.sessionManager.taskId, false);
+        streamEventBus.emitError(
+          this.sessionManager.taskId,
+          error instanceof Error ? error.message : "Unknown error"
+        );
+      }
+      throw error;
     } finally {
       clearTimeout(timeoutId);
       this.abortController = null;

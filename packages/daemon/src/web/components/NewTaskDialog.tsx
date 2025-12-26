@@ -1,9 +1,8 @@
 /**
  * New Task Dialog
  *
- * Unified task creation dialog with dual-mode support:
- * - Interactive: Chat-based conversation with Claude
- * - Workflow: Structured, automated task execution
+ * Task creation dialog for workflow execution.
+ * Workflows can be predefined or ad-hoc (leave workflow selection empty).
  */
 
 import { useState, useEffect } from "react";
@@ -22,7 +21,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -30,25 +28,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useRepos } from "@/hooks/useRepos";
-import { MessageSquare, Workflow, Loader2 } from "@/components/ui/icons";
+import { useWorkflow } from "@/hooks/useWorkflows";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ExternalLink } from "@/components/ui/icons";
 
 interface NewTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-type TaskMode = "interactive" | "workflow";
 type ExecutionModeOverride = "worktree" | "direct" | "default";
 
 export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
   const navigate = useNavigate();
   const [prompt, setPrompt] = useState("");
-  const [mode, setMode] = useState<TaskMode>("interactive");
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>("");
   const [selectedRepoId, setSelectedRepoId] = useState<string>("");
-  const [autoYes, setAutoYes] = useState(true);
   const [executionModeOverride, setExecutionModeOverride] = useState<ExecutionModeOverride>("default");
 
   const { data: repos = [] } = useRepos();
@@ -77,17 +73,21 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
     queryFn: async () => {
       return client.workflows.list({});
     },
-    enabled: mode === "workflow",
+    enabled: true,
   });
+
+  // Fetch workflow details when a workflow is selected
+  const { data: workflowDetails, isLoading: isLoadingWorkflowDetails } = useWorkflow(
+    selectedWorkflow,
+  );
 
   const createTask = useMutation({
     mutationFn: async () => {
       return client.tasks.create({
         prompt,
         repoId: selectedRepoId, // Required
-        autoYes: mode === "interactive" ? autoYes : true, // Workflows always auto-yes
-        type: mode,
-        workflowId: mode === "workflow" ? selectedWorkflow : undefined,
+        autoYes: true, // Always auto-approve
+        workflowId: selectedWorkflow || undefined,
         // Pass execution mode override if user selected one
         executionMode: executionModeOverride !== "default" ? executionModeOverride : undefined,
       });
@@ -109,10 +109,8 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
 
   const resetForm = () => {
     setPrompt("");
-    setMode("interactive");
     setSelectedWorkflow("");
     setSelectedRepoId("");
-    setAutoYes(true);
     setExecutionModeOverride("default");
   };
 
@@ -120,10 +118,7 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
   const selectedRepo = repos.find((r) => r.id === selectedRepoId);
 
   // Determine if direct mode is blocked
-  const directModeBlocked =
-    mode === "interactive"
-      ? !repoStatus?.canCreateDirectChat
-      : !repoStatus?.canCreateDirectWorkflow;
+  const directModeBlocked = !repoStatus?.canCreateDirectWorkflow;
 
   const handleSubmit = () => {
     if (!prompt.trim()) {
@@ -136,11 +131,6 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
       return;
     }
 
-    if (mode === "workflow" && !selectedWorkflow) {
-      toast.error("Please select a workflow");
-      return;
-    }
-
     createTask.mutate();
   };
 
@@ -148,7 +138,6 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
     prompt.trim().length > 0 &&
     selectedRepoId.length > 0 &&
     repos.length > 0 &&
-    (mode === "interactive" || (mode === "workflow" && selectedWorkflow)) &&
     !createTask.isPending;
 
   return (
@@ -160,76 +149,24 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
 
         {/* Prompt Input */}
         <div>
-          <Label htmlFor="prompt">
-            {mode === "interactive" ? "What do you want to do?" : "Task Description"}
-          </Label>
+          <Label htmlFor="prompt">Task Description</Label>
           <Textarea
             id="prompt"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            placeholder={
-              mode === "interactive"
-                ? "Describe your task or ask a question..."
-                : "Provide details for the workflow..."
-            }
+            placeholder="Describe your task..."
             rows={3}
             className="mt-1"
           />
         </div>
 
         <div className="space-y-4">
-          {/* Mode Selection */}
+          {/* Workflow Selection */}
           <div>
-            <Label>Mode</Label>
-            <RadioGroup
-              value={mode}
-              onValueChange={(value) => {
-                setMode(value as TaskMode);
-                // Reset workflow selection when switching modes
-                if (value === "interactive") {
-                  setSelectedWorkflow("");
-                }
-              }}
-              className="mt-2"
-            >
-              <div className="flex items-start space-x-3 rounded-none border border-input p-3 hover:bg-accent/50 transition-colors">
-                <RadioGroupItem value="interactive" id="interactive" className="mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <Label
-                    htmlFor="interactive"
-                    className="flex items-center gap-2 font-medium cursor-pointer"
-                  >
-                    <MessageSquare className="size-4" />
-                    Interactive
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Chat with Claude, iterate on ideas, explore solutions
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start space-x-3 rounded-none border border-input p-3 hover:bg-accent/50 transition-colors">
-                <RadioGroupItem value="workflow" id="workflow" className="mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <Label
-                    htmlFor="workflow"
-                    className="flex items-center gap-2 font-medium cursor-pointer"
-                  >
-                    <Workflow className="size-4" />
-                    Workflow
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Structured automation with predefined steps
-                  </p>
-                </div>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Workflow Selection (only shown in workflow mode) */}
-          {mode === "workflow" && (
-            <div>
-              <Label htmlFor="workflow-select">Select Workflow</Label>
+            <Label htmlFor="workflow-select">Workflow (optional)</Label>
+            <p className="text-xs text-muted-foreground mt-1 mb-2">
+              Leave empty for ad-hoc task execution
+            </p>
               <Select
                 value={selectedWorkflow}
                 onValueChange={(value) => setSelectedWorkflow(value || "")}
@@ -264,8 +201,61 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
                   ))}
                 </SelectContent>
               </Select>
+
+              {/* Workflow Preview */}
+              {selectedWorkflow && (
+                <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
+                  {isLoadingWorkflowDetails ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : workflowDetails ? (
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="font-medium text-sm">{workflowDetails.name}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-2">
+                            {workflowDetails.description}
+                          </div>
+                        </div>
+                        {workflowDetails.isBuiltin && (
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            Built-in
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          {workflowDetails.definition.steps.length} step
+                          {workflowDetails.definition.steps.length !== 1 ? "s" : ""}
+                        </Badge>
+                        {workflowDetails.definition.model && (
+                          <Badge variant="outline" className="text-xs">
+                            Model: {workflowDetails.definition.model}
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="h-auto p-0 text-xs"
+                        onClick={() => {
+                          window.open(`/workflows/${selectedWorkflow}`, "_blank");
+                        }}
+                      >
+                        View workflow details
+                        <ExternalLink className="ml-1 size-3" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground">
+                      Failed to load workflow details
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
 
           {/* Repository Selection (required) */}
           <div>
@@ -351,7 +341,7 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
             <div className="space-y-2">
               {/* Only show execution mode info when override buttons are not shown */}
               {!(repoStatus && directModeBlocked && repoStatus.blockedReason) &&
-                !(repoStatus && repoStatus.hasSharedLocks && mode === "workflow") &&
+                !(repoStatus && repoStatus.hasSharedLocks) &&
                 !(selectedRepo.executionMode !== "auto" && !directModeBlocked) && (
                   <div className="text-xs text-muted-foreground">
                     <strong>Execution Mode:</strong>{" "}
@@ -367,16 +357,13 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
               {repoStatus && directModeBlocked && repoStatus.blockedReason && (
                 <div className="rounded-none border border-blue-500/50 bg-blue-500/10 p-3 text-xs">
                   <strong className="text-blue-600">ℹ Info:</strong> {repoStatus.blockedReason}.{" "}
-                  {mode === "workflow"
-                    ? "Workflow will use worktree mode automatically."
-                    : "Task will use worktree mode automatically."}
+                  Workflow will use worktree mode automatically.
                 </div>
               )}
 
               {/* Shared locks info (only show if not already covered by blockedReason) */}
               {repoStatus &&
                 repoStatus.hasSharedLocks &&
-                mode === "workflow" &&
                 !directModeBlocked && (
                   <div className="rounded-none border border-orange-500/50 bg-orange-500/10 p-3 text-xs">
                     <strong className="text-orange-600">Note:</strong>{" "}
@@ -384,26 +371,6 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
                     repository. Workflow will use worktree mode to avoid conflicts.
                   </div>
                 )}
-            </div>
-          )}
-
-          {/* Auto-yes Option (only for interactive mode) */}
-          {mode === "interactive" && (
-            <div className="flex items-center space-x-2 rounded-none border border-input p-3 bg-muted/30">
-              <Checkbox
-                id="autoYes"
-                checked={autoYes}
-                onCheckedChange={(checked) => setAutoYes(checked === true)}
-              />
-              <Label htmlFor="autoYes" className="font-normal cursor-pointer flex-1">
-                Auto-approve file edits (recommended)
-              </Label>
-            </div>
-          )}
-
-          {mode === "workflow" && (
-            <div className="rounded-none border border-blue-500/50 bg-blue-500/10 p-3 text-xs">
-              <strong className="text-blue-600">ℹ Info:</strong> Workflows run with auto-approve enabled by default.
             </div>
           )}
         </div>

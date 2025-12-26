@@ -10,6 +10,7 @@ import {
   Cancel01Icon,
   CancelCircleIcon,
   CheckListIcon,
+  Tick02Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
   DashboardSquare01Icon,
@@ -79,6 +80,7 @@ export const Moon = makeIcon("Moon", MoonIcon);
 export const Settings = makeIcon("Settings", Settings01Icon);
 
 export const AlertCircle = makeIcon("AlertCircle", AlertCircleIcon);
+export const Check = makeIcon("Check", Tick02Icon);
 export const CheckCircle2 = makeIcon("CheckCircle2", CheckmarkCircle02Icon);
 export const Download = makeIcon("Download", Download01Icon);
 export const RefreshCw = makeIcon("RefreshCw", Refresh01Icon);

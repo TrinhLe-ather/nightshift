@@ -5,7 +5,7 @@
  * All packages (daemon, admin, backend) import from here.
  */
 
-export const VERSION = '0.0.1';
+export { VERSION, BUILD_COMMIT, BUILD_DATE, getVersionDisplay } from "./version";
 
 // =============================================================================
 // Task States
@@ -22,7 +22,7 @@ export {
   isCancelableState,
   isResumableState,
   isPausableState,
-} from './taskStates';
+} from "./taskStates";
 
 // =============================================================================
 // Error Codes
@@ -37,7 +37,7 @@ export {
   isFailureCode,
   isNeedsHumanCode,
   getErrorMessage,
-} from './errorCodes';
+} from "./errorCodes";
 
 // =============================================================================
 // Event Types
@@ -54,7 +54,7 @@ export {
   SessionEventType,
   EventType,
   EventLevel,
-} from './eventTypes';
+} from "./eventTypes";
 
 // =============================================================================
 // Zod Schemas
@@ -86,9 +86,18 @@ export {
   apiSuccessSchema,
   apiErrorSchema,
   apiResponseSchema,
-} from './schemas';
+} from "./schemas";
 
-export type { Priority, TaskSource, ExecutionMode, ExecutionModeConfig, PauseReason } from './schemas';
+export type {
+  Priority,
+  TaskSource,
+  ExecutionMode,
+  ExecutionModeConfig,
+  PauseReason,
+  ClaudeModel,
+} from "./schemas";
+
+export { modelSchema } from "./schemas";
 
 // =============================================================================
 // TypeScript Types
@@ -122,4 +131,4 @@ export type {
   PreflightCheck,
   UpdateInfo,
   RepoLock,
-} from './types';
+} from "./types";

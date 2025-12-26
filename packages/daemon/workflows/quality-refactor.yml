@@ -1,0 +1,127 @@
+name: Quality Refactor
+description: Safety-first refactoring with comprehensive test coverage and quality gates
+version: 1.0.0
+model: sonnet
+
+steps:
+  - name: Pre-Refactor Analysis
+    model: opus
+    prompt: |
+      You are a Code Quality Analyst. A refactoring has been requested:
+
+      {{prompt}}
+
+      Before making any changes, analyze the code and create a refactoring plan.
+
+      Complete this analysis:
+      1. MEASURE - Assess current code quality (complexity, duplication, naming)
+      2. DEPENDENCIES - Map what uses this code (imports, callers, callees)
+      3. TEST COVERAGE - Check existing test coverage
+      4. RISKS - Identify refactoring risks (breaking changes, performance)
+      5. PLAN - Create a step-by-step refactoring plan (3-7 incremental steps)
+
+      Quality metrics to document:
+      - Function/method length (lines per function)
+      - Cyclomatic complexity (nested ifs, loops)
+      - Code duplication (repeated patterns)
+      - Naming clarity (vague vs. descriptive)
+
+      DO NOT make any code changes yet. This is analysis only.
+
+      Deliver an analysis report with:
+      - Current State (metrics + specific issues)
+      - Dependencies (what might break)
+      - Test Coverage (what's protected)
+      - Refactoring Plan (numbered steps)
+      - Success Criteria (how we'll know we're done)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Expand Test Coverage
+    model: sonnet
+    prompt: |
+      Good analysis. Before we start refactoring, we need a safety net.
+
+      Based on the test coverage gaps you identified, expand the test suite to protect against regressions.
+
+      Test coverage goals:
+      1. Cover ALL public APIs of the target code
+      2. Cover critical internal logic paths
+      3. Cover edge cases and error conditions
+      4. Target 80%+ coverage of the refactoring area
+
+      Test requirements:
+      - Test current behavior (even if imperfect - we're documenting what exists)
+      - Focus on observable outcomes (not implementation details)
+      - Include integration tests if there are dependencies
+
+      Add 5-15 new test cases minimum.
+
+      Run the full test suite and show output proving 100% pass rate.
+      These tests are our safety net - they must all pass before we proceed.
+    maxRetries: 2
+
+  - name: Incremental Refactoring
+    model: sonnet
+    prompt: |
+      Test coverage is in place. Now execute the refactoring plan.
+
+      Follow these rules strictly:
+      1. Execute the plan ONE STEP AT A TIME
+      2. Run tests AFTER EACH STEP (must stay green)
+      3. If tests fail, REVERT that step immediately
+      4. Keep each change small and focused
+
+      Refactoring techniques to apply:
+      - Extract Method: Long functions → smaller, named functions
+      - Extract Variable: Magic values → named constants
+      - Rename: Vague names → intention-revealing names
+      - Simplify Conditionals: Complex ifs → guard clauses
+      - Remove Duplication: Copy-paste → shared utilities
+
+      Golden rules:
+      - NEVER change external behavior (API stays the same)
+      - NEVER skip running tests
+      - NEVER proceed if tests fail
+      - NEVER add new functionality (refactor only)
+
+      After each refactoring step, show:
+      - What was refactored
+      - Test results (must be green)
+      - Quality improvement (specific metric)
+    maxRetries: 3
+
+  - name: Quality Verification
+    model: opus
+    prompt: |
+      Refactoring complete. Let's verify we achieved our goals.
+
+      Verification checklist:
+      1. TESTS - Full test suite passes (no regressions)
+      2. METRICS - Quality metrics improved from the baseline
+      3. GOAL - Original refactoring request achieved
+      4. API - Public interface unchanged (backward compatible)
+      5. PERFORMANCE - No performance degradation
+
+      Compare before vs after:
+      - Function lengths
+      - Cyclomatic complexity
+      - Code duplication
+      - Naming clarity
+
+      Reality check:
+      - Compare git diff to the refactoring plan
+      - Verify only planned changes were made
+      - Check no accidental new features were added
+
+      Deliver a quality report with:
+      - Before/after metrics (specific numbers)
+      - Goal achievement status
+      - Test summary (all passing)
+      - API compatibility confirmation
+
+      If any goals weren't fully met, list what remains for human review.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

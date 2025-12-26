@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5f1eb0d4-652a-423b-b27e-79bf0e411a5e",
-  "prevId": "831e0690-f4ce-4249-b529-2447de15d447",
+  "id": "0ef0d18e-c0ea-4ce7-b827-a3f31f2b576d",
+  "prevId": "6d58eb05-0cdf-493f-bb7e-d34af1a0a38d",
   "tables": {
     "config": {
       "name": "config",
@@ -24,6 +24,100 @@
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "repo_locks": {
+      "name": "repo_locks",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "repoId": {
+          "name": "repoId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "taskId": {
+          "name": "taskId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "acquiredAt": {
+          "name": "acquiredAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_repo_locks_repoId": {
+          "name": "idx_repo_locks_repoId",
+          "columns": [
+            "repoId"
+          ],
+          "isUnique": false
+        },
+        "idx_repo_locks_taskId": {
+          "name": "idx_repo_locks_taskId",
+          "columns": [
+            "taskId"
+          ],
+          "isUnique": false
+        },
+        "idx_repo_locks_type": {
+          "name": "idx_repo_locks_type",
+          "columns": [
+            "type"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "repo_locks_repoId_repos_id_fk": {
+          "name": "repo_locks_repoId_repos_id_fk",
+          "tableFrom": "repo_locks",
+          "tableTo": "repos",
+          "columnsFrom": [
+            "repoId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "repo_locks_taskId_tasks_id_fk": {
+          "name": "repo_locks_taskId_tasks_id_fk",
+          "tableFrom": "repo_locks",
+          "tableTo": "tasks",
+          "columnsFrom": [
+            "taskId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -121,6 +215,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "transcriptPath": {
+          "name": "transcriptPath",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "startedAt": {
           "name": "startedAt",
           "type": "text",
@@ -144,6 +245,14 @@
         },
         "eventCount": {
           "name": "eventCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        },
+        "messageCount": {
+          "name": "messageCount",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -268,6 +377,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "repoId": {
@@ -454,6 +570,34 @@
           "notNull": false,
           "autoincrement": false,
           "default": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "workflowId": {
+          "name": "workflowId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "currentStep": {
+          "name": "currentStep",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "totalSteps": {
+          "name": "totalSteps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -491,8 +635,170 @@
             "priority"
           ],
           "isUnique": false
+        },
+        "idx_tasks_workflowId": {
+          "name": "idx_tasks_workflowId",
+          "columns": [
+            "workflowId"
+          ],
+          "isUnique": false
         }
       },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "workflow_runs": {
+      "name": "workflow_runs",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "workflowId": {
+          "name": "workflowId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "taskId": {
+          "name": "taskId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stepResults": {
+          "name": "stepResults",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "completedSteps": {
+          "name": "completedSteps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "idx_workflow_runs_taskId": {
+          "name": "idx_workflow_runs_taskId",
+          "columns": [
+            "taskId"
+          ],
+          "isUnique": false
+        },
+        "idx_workflow_runs_workflowId": {
+          "name": "idx_workflow_runs_workflowId",
+          "columns": [
+            "workflowId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "workflow_runs_workflowId_workflows_id_fk": {
+          "name": "workflow_runs_workflowId_workflows_id_fk",
+          "tableFrom": "workflow_runs",
+          "tableTo": "workflows",
+          "columnsFrom": [
+            "workflowId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "workflow_runs_taskId_tasks_id_fk": {
+          "name": "workflow_runs_taskId_tasks_id_fk",
+          "tableFrom": "workflow_runs",
+          "tableTo": "tasks",
+          "columnsFrom": [
+            "taskId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "workflows": {
+      "name": "workflows",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "definition": {
+          "name": "definition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "isBuiltin": {
+          "name": "isBuiltin",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},

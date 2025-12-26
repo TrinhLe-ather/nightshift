@@ -31,17 +31,17 @@ export type ExecutionMode = z.infer<typeof executionModeSchema>;
 export const executionModeConfigSchema = z.enum(["auto", "worktree", "direct"]);
 export type ExecutionModeConfig = z.infer<typeof executionModeConfigSchema>;
 
-export const pauseReasonSchema = z.enum([
-  "manual",
-  "needs_human",
-  "rate_limit",
-]);
+export const pauseReasonSchema = z.enum(["manual", "needs_human", "rate_limit"]);
 export type PauseReason = z.infer<typeof pauseReasonSchema>;
 
 export const taskSourceSchema = z.enum(["local", "remote"]);
 export type TaskSource = z.infer<typeof taskSourceSchema>;
 
 export const eventLevelSchema = z.enum(["info", "warn", "error", "debug"]);
+
+export const modelSchema = z.enum(["haiku", "sonnet", "opus"]).optional();
+
+export type ClaudeModel = z.infer<typeof modelSchema>;
 
 // =============================================================================
 // Task Schema
@@ -113,23 +113,17 @@ export const taskSchema = z.object({
   /** Enable auto-yes mode to auto-accept Claude prompts */
   autoYes: z.boolean().default(false),
 
-  // === SDK Session ID ===
-  /** Claude Agent SDK v2 session ID for resume capability */
-  sdkSessionId: z.string().optional(),
+  // === Model Selection ===
+  /** Claude model to use for execution (overrides workflow default) */
+  model: modelSchema,
 
-  // === Dual-Mode Architecture Fields ===
-  /** Task type: interactive or workflow */
-  type: z.enum(["interactive", "workflow"]).default("interactive"),
-  /** Message count for interactive tasks */
-  messageCount: z.number().int().nonnegative().default(0),
+  // === Workflow Fields ===
   /** Reference to workflow definition */
   workflowId: z.string().optional(),
   /** Current step in workflow (0-indexed) */
   currentStep: z.number().int().nonnegative().optional(),
   /** Total number of steps in workflow */
   totalSteps: z.number().int().nonnegative().optional(),
-  /** Last user message timestamp for interactive tasks */
-  lastUserMessageAt: z.string().datetime().optional(),
 });
 
 export const createTaskSchema = taskSchema.pick({
@@ -140,6 +134,7 @@ export const createTaskSchema = taskSchema.pick({
   githubIssueUrl: true,
   branch: true,
   autoYes: true,
+  model: true,
 });
 
 export const updateTaskSchema = taskSchema
@@ -168,15 +163,12 @@ export const updateTaskSchema = taskSchema
     humanResponse: true,
     // Auto-yes mode
     autoYes: true,
-    // SDK session ID
-    sdkSessionId: true,
-    // Dual-mode fields
-    type: true,
-    messageCount: true,
+    // Model selection
+    model: true,
+    // Workflow fields
     workflowId: true,
     currentStep: true,
     totalSteps: true,
-    lastUserMessageAt: true,
   })
   .partial();
 

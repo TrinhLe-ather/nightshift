@@ -12,6 +12,7 @@ import { getDb, sessions } from "../db/drizzle";
 import { EventLevel, EventType } from "@nightshift/shared";
 import { TranscriptWriter, type TranscriptEntry } from "./transcript-writer";
 import type { SdkMessage } from "./sdk";
+import { resolveNightShiftDir } from "../config/paths";
 
 const SESSION_SCHEMA_VERSION = 1;
 
@@ -45,8 +46,12 @@ export class SessionManager {
   private writeStream: fs.WriteStream | null = null;
   private transcriptWriter: TranscriptWriter;
 
+  /** Public taskId property for SdkRunner to access */
+  public taskId: string | null = null;
+
   constructor(dataDir: string) {
-    this.sessionsDir = path.join(dataDir, "sessions");
+    const resolvedDataDir = resolveNightShiftDir(dataDir);
+    this.sessionsDir = path.join(resolvedDataDir, "sessions");
     this.transcriptWriter = new TranscriptWriter(this.sessionsDir);
     this.ensureSessionsDir();
   }
@@ -66,6 +71,9 @@ export class SessionManager {
     const sessionId = `session_${crypto.randomUUID().replace(/-/g, "").substring(0, 16)}`;
     const eventsPath = path.join(this.sessionsDir, `${taskId}.ndjson`);
     const startedAt = new Date().toISOString();
+
+    // Set taskId for streaming events
+    this.taskId = taskId;
 
     // Start transcript writer and get path
     const transcriptPath = this.transcriptWriter.start(taskId);
@@ -194,6 +202,7 @@ export class SessionManager {
     // Clear session state (prevents double-close on subsequent calls)
     this.currentSession = null;
     this.eventSequence = 0;
+    this.taskId = null;
   }
 
   /**
@@ -260,6 +269,10 @@ export class SessionManager {
    * Write a message to the current session's transcript
    */
   writeTranscriptMessage(message: SdkMessage): void {
+    if (!this.currentSession) {
+      console.warn("No active session, cannot write transcript message");
+      return;
+    }
     this.transcriptWriter.write(message);
   }
 
@@ -274,7 +287,8 @@ export class SessionManager {
 
     // Use transcriptPath from database if available, otherwise compute it
     // This handles tasks created before the migration that don't have transcriptPath set
-    const transcriptPath = session.transcriptPath || path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
+    const transcriptPath =
+      session.transcriptPath || path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
 
     return TranscriptWriter.read(transcriptPath, afterSeq);
   }
@@ -290,7 +304,8 @@ export class SessionManager {
 
     // Use transcriptPath from database if available, otherwise compute it
     // This handles tasks created before the migration that don't have transcriptPath set
-    const transcriptPath = session.transcriptPath || path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
+    const transcriptPath =
+      session.transcriptPath || path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
 
     return TranscriptWriter.readEntries(transcriptPath, afterSeq);
   }
@@ -333,8 +348,7 @@ let globalSessionManager: SessionManager | null = null;
 export function getSessionManager(): SessionManager {
   if (!globalSessionManager) {
     // Initialize with default data directory
-    const dataDir = process.env.NIGHTSHIFT_DATA_DIR || "~/.nightshift";
-    globalSessionManager = new SessionManager(dataDir);
+    globalSessionManager = new SessionManager(process.env.NIGHTSHIFT_DATA_DIR || "");
   }
   return globalSessionManager;
 }

@@ -81,6 +81,33 @@ export function ensureNightShiftDirectories(): void {
 }
 
 /**
+ * Resolve a NightShift base directory, honoring an override and expanding "~".
+ */
+export function resolveNightShiftDir(override?: string): string {
+  if (!override || override.trim().length === 0) return NIGHTSHIFT_DIR;
+
+  const raw = override.trim();
+  if (raw === "~") return homedir();
+  if (raw.startsWith("~/")) return join(homedir(), raw.slice(2));
+
+  return raw;
+}
+
+/**
+ * Resolve sessions directory (NDJSON logs) from an optional base dir override.
+ */
+export function resolveSessionsDir(override?: string): string {
+  return join(resolveNightShiftDir(override), "sessions");
+}
+
+/**
+ * Get transcript NDJSON path for a task ID.
+ */
+export function getTaskTranscriptPath(taskId: string, baseDirOverride?: string): string {
+  return join(resolveSessionsDir(baseDirOverride), `${taskId}.transcript.ndjson`);
+}
+
+/**
  * Get session log file path for a given session ID
  */
 export function getSessionPath(sessionId: string): string {

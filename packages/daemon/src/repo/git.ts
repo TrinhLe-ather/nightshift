@@ -5,12 +5,9 @@
  * Used by WorktreeManager, DirectModeManager, and GitOperations.
  */
 
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
-
-const execAsync = promisify(exec);
+import { execa } from "execa";
 
 /**
  * Diff statistics from comparing changes
@@ -37,14 +34,14 @@ export async function gitExec(
   options: { ignoreError?: boolean } = {},
 ): Promise<string> {
   try {
-    const { stdout } = await execAsync(`git ${args.join(" ")}`, { cwd });
-    return stdout.trim();
+    const { stdout } = await execa("git", args, { cwd });
+    return stdout.trimEnd();
   } catch (error) {
     if (options.ignoreError) {
       return "";
     }
     const message = error instanceof Error ? error.message : "Git command failed";
-    throw new Error(`git ${args[0]} failed: ${message}`);
+    throw new Error(`git ${args[0] ?? "<unknown>"} failed: ${message}`);
   }
 }
 
@@ -132,7 +129,7 @@ export async function checkoutNewBranch(branchName: string, repoPath: string): P
  */
 export async function commitAll(message: string, repoPath: string): Promise<string> {
   await gitExec(["add", "-A"], repoPath);
-  await gitExec(["commit", "-m", message.replace(/"/g, '\\"')], repoPath);
+  await gitExec(["commit", "-m", message], repoPath);
   return getHeadSha(repoPath);
 }
 

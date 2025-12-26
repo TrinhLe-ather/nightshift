@@ -21,10 +21,10 @@ export {
 } from "./client";
 
 // Schema tables
-export { tasks, repos, sessions, config, syncQueue, workflows, workflowRuns, messages, repoLocks } from "./schema/schema";
+export { tasks, repos, sessions, config, syncQueue, workflows, workflowRuns, repoLocks } from "./schema/schema";
 
 // Relations
-export { tasksRelations, reposRelations, sessionsRelations, workflowsRelations, workflowRunsRelations, messagesRelations, repoLocksRelations } from "./schema/schema";
+export { tasksRelations, reposRelations, sessionsRelations, workflowsRelations, workflowRunsRelations, repoLocksRelations } from "./schema/schema";
 
 // Types (inferred from schema)
 export type {
@@ -42,8 +42,6 @@ export type {
   NewWorkflow,
   WorkflowRun,
   NewWorkflowRun,
-  Message,
-  NewMessage,
   RepoLock,
   NewRepoLock,
 } from "./schema/schema";

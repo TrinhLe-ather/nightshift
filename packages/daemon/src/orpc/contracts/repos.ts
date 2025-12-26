@@ -13,10 +13,11 @@ import { getDb, repos, tasks } from "../../db/drizzle";
 import { getDefaultBranch, getRepoName, isGitRepository } from "../../tasks/repos";
 import { detectExecutionMode } from "../../repo/execution-mode";
 import { orpc } from "../base";
-import { execSync } from "child_process";
 import { RepoLockManager } from "../../executor/repo-lock-manager";
 import { GitOperations } from "../../executor/git-operations";
 import { SessionManager } from "../../executor/session-manager";
+import { resolveNightShiftDir } from "../../config/paths";
+import { execa } from "execa";
 
 // =============================================================================
 // Zod Schemas
@@ -155,13 +156,10 @@ function parseGitHubUrl(text: string) {
   return null;
 }
 
-function getRemoteUrl(repoPath: string): string | null {
+async function getRemoteUrl(repoPath: string): Promise<string | null> {
   try {
-    const remote = execSync("git remote get-url origin", {
-      cwd: repoPath,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "ignore"],
-    }).trim();
+    const { stdout } = await execa("git", ["remote", "get-url", "origin"], { cwd: repoPath });
+    const remote = stdout.trim();
     return remote || null;
   } catch {
     return null;
@@ -538,7 +536,7 @@ const inspect = orpc
     }
     const isGitRepo = isDirectory ? isGitRepository(path) : false;
 
-    const remoteUrl = isGitRepo ? getRemoteUrl(path) : null;
+    const remoteUrl = isGitRepo ? await getRemoteUrl(path) : null;
     const github = parseGitHubRemote(remoteUrl);
 
     const name = isGitRepo ? getRepoName(path) : null;
@@ -680,18 +678,15 @@ const getBranches = orpc
 
     try {
       // Get current branch
-      const currentBranch = execSync("git rev-parse --abbrev-ref HEAD", {
-        cwd: repo.path,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "ignore"],
-      }).trim();
+      const { stdout: currentBranchStdout } = await execa(
+        "git",
+        ["rev-parse", "--abbrev-ref", "HEAD"],
+        { cwd: repo.path },
+      );
+      const currentBranch = currentBranchStdout.trim();
 
       // Get all branches (local and remote)
-      const branchOutput = execSync("git branch -a", {
-        cwd: repo.path,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "ignore"],
-      });
+      const { stdout: branchOutput } = await execa("git", ["branch", "-a"], { cwd: repo.path });
 
       const branches = branchOutput
         .split("\n")
@@ -746,18 +741,21 @@ const detect = orpc
       .orderBy(repos.name)
       .all();
 
-    const candidates = repoList
-      .map((r) => {
-        const remoteUrl = getRemoteUrl(r.path);
-        const confidence = scoreRepoMatch({
-          githubOwner: github.owner,
-          githubRepo: github.repo,
-          repoName: r.name,
-          repoPath: r.path,
-          remoteUrl,
-        });
-        return { repo: r, remoteUrl, confidence };
-      })
+    const candidates = (
+      await Promise.all(
+        repoList.map(async (r) => {
+          const remoteUrl = await getRemoteUrl(r.path);
+          const confidence = scoreRepoMatch({
+            githubOwner: github.owner,
+            githubRepo: github.repo,
+            repoName: r.name,
+            repoPath: r.path,
+            remoteUrl,
+          });
+          return { repo: r, remoteUrl, confidence };
+        }),
+      )
+    )
       .filter((c) => c.confidence > 0)
       .sort((a, b) => b.confidence - a.confidence);
 
@@ -802,7 +800,7 @@ const checkStatus = orpc
       canCreateDirectChat: z.boolean(),
       canCreateDirectWorkflow: z.boolean(),
       blockedReason: z.string().optional(),
-    })
+    }),
   )
   .handler(async ({ input, errors }) => {
     const db = getDb();
@@ -825,7 +823,9 @@ const checkStatus = orpc
 
     // Initialize managers
     const repoLockManager = new RepoLockManager();
-    const sessionManager = new SessionManager(process.env.NIGHTSHIFT_DATA_DIR || "~/.nightshift");
+    const sessionManager = new SessionManager(
+      resolveNightShiftDir(process.env.NIGHTSHIFT_DATA_DIR),
+    );
     const gitOperations = new GitOperations(sessionManager);
 
     // Check git tree status
@@ -838,26 +838,15 @@ const checkStatus = orpc
 
     // Check lock status
     const hasExclusiveLock = await repoLockManager.hasExclusiveLock(id);
-    const sharedLockHolders = await repoLockManager.getSharedLockHolders(id);
-    const hasSharedLocks = sharedLockHolders.length > 0;
 
     // Determine what can be created
-    let canCreateDirectChat = true;
     let canCreateDirectWorkflow = true;
     let blockedReason: string | undefined;
 
-    // Direct chat: Blocked by exclusive lock only
+    // Direct workflow: Blocked by exclusive locks or dirty tree
     if (hasExclusiveLock) {
-      canCreateDirectChat = false;
-      blockedReason = "Repository is locked by a workflow";
-    }
-
-    // Direct workflow: Blocked by any locks or dirty tree
-    if (hasExclusiveLock || hasSharedLocks) {
       canCreateDirectWorkflow = false;
-      blockedReason = hasExclusiveLock
-        ? "Repository is locked by another workflow"
-        : `Repository is locked by ${sharedLockHolders.length} chat session(s)`;
+      blockedReason = "Repository is locked by another workflow";
     } else if (!gitTreeClean) {
       canCreateDirectWorkflow = false;
       blockedReason = "Working tree has uncommitted changes";
@@ -866,9 +855,9 @@ const checkStatus = orpc
     return {
       gitTreeClean,
       hasExclusiveLock,
-      hasSharedLocks,
-      sharedLockHolders,
-      canCreateDirectChat,
+      hasSharedLocks: false, // No shared locks anymore
+      sharedLockHolders: [], // No shared locks anymore
+      canCreateDirectChat: !hasExclusiveLock, // Kept for UI compatibility
       canCreateDirectWorkflow,
       blockedReason,
     };

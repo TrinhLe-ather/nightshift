@@ -3,6 +3,19 @@ CREATE TABLE `config` (
 	`value` text NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `repo_locks` (
+	`id` text PRIMARY KEY NOT NULL,
+	`repoId` text NOT NULL,
+	`taskId` text NOT NULL,
+	`type` text NOT NULL,
+	`acquiredAt` text NOT NULL,
+	FOREIGN KEY (`repoId`) REFERENCES `repos`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`taskId`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `idx_repo_locks_repoId` ON `repo_locks` (`repoId`);--> statement-breakpoint
+CREATE INDEX `idx_repo_locks_taskId` ON `repo_locks` (`taskId`);--> statement-breakpoint
+CREATE INDEX `idx_repo_locks_type` ON `repo_locks` (`type`);--> statement-breakpoint
 CREATE TABLE `repos` (
 	`id` text PRIMARY KEY NOT NULL,
 	`name` text NOT NULL,
@@ -18,10 +31,12 @@ CREATE TABLE `sessions` (
 	`taskId` text NOT NULL,
 	`runId` text NOT NULL,
 	`eventsPath` text,
+	`transcriptPath` text,
 	`startedAt` text NOT NULL,
 	`completedAt` text,
 	`storageKey` text,
 	`eventCount` integer DEFAULT 0,
+	`messageCount` integer DEFAULT 0,
 	FOREIGN KEY (`taskId`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE no action
 );
 --> statement-breakpoint
@@ -41,6 +56,7 @@ CREATE INDEX `idx_sync_queue_entityType` ON `sync_queue` (`entityType`);--> stat
 CREATE TABLE `tasks` (
 	`id` text PRIMARY KEY NOT NULL,
 	`prompt` text NOT NULL,
+	`name` text,
 	`repoId` text,
 	`repoPath` text,
 	`priority` text DEFAULT 'medium',
@@ -65,11 +81,37 @@ CREATE TABLE `tasks` (
 	`pausedAt` text,
 	`pauseReason` text,
 	`humanQuestion` text,
-	`humanResponse` text
+	`humanResponse` text,
+	`autoYes` integer DEFAULT false,
+	`workflowId` text,
+	`currentStep` integer,
+	`totalSteps` integer
 );
 --> statement-breakpoint
 CREATE INDEX `idx_tasks_status` ON `tasks` (`status`);--> statement-breakpoint
 CREATE INDEX `idx_tasks_repoId` ON `tasks` (`repoId`);--> statement-breakpoint
 CREATE INDEX `idx_tasks_source` ON `tasks` (`source`);--> statement-breakpoint
 CREATE INDEX `idx_tasks_createdAt` ON `tasks` (`createdAt`);--> statement-breakpoint
-CREATE INDEX `idx_tasks_priority` ON `tasks` (`priority`);
+CREATE INDEX `idx_tasks_priority` ON `tasks` (`priority`);--> statement-breakpoint
+CREATE INDEX `idx_tasks_workflowId` ON `tasks` (`workflowId`);--> statement-breakpoint
+CREATE TABLE `workflow_runs` (
+	`id` text PRIMARY KEY NOT NULL,
+	`workflowId` text NOT NULL,
+	`taskId` text NOT NULL,
+	`stepResults` text,
+	`completedSteps` integer DEFAULT 0,
+	FOREIGN KEY (`workflowId`) REFERENCES `workflows`(`id`) ON UPDATE no action ON DELETE no action,
+	FOREIGN KEY (`taskId`) REFERENCES `tasks`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `idx_workflow_runs_taskId` ON `workflow_runs` (`taskId`);--> statement-breakpoint
+CREATE INDEX `idx_workflow_runs_workflowId` ON `workflow_runs` (`workflowId`);--> statement-breakpoint
+CREATE TABLE `workflows` (
+	`id` text PRIMARY KEY NOT NULL,
+	`name` text NOT NULL,
+	`description` text,
+	`definition` text NOT NULL,
+	`isBuiltin` integer DEFAULT false,
+	`createdAt` text NOT NULL,
+	`updatedAt` text NOT NULL
+);

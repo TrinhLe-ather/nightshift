@@ -6,7 +6,7 @@
 
 import { existsSync, readFileSync } from "fs";
 import { DEFAULT_PORT, LOCAL_URL, PID_FILE } from "../../config/paths";
-import { VERSION } from "@nightshift/shared";
+import { getVersionDisplay } from "@nightshift/shared";
 
 /**
  * Get daemon status
@@ -31,7 +31,7 @@ export async function statusCommand(): Promise<void> {
       console.log(`Port: ${DEFAULT_PORT}`);
       console.log(`URL: ${LOCAL_URL}`);
       console.log(`PID: ${pid}`);
-      console.log(`Version: ${VERSION}`);
+      console.log(`Version: ${getVersionDisplay()}`);
 
       // TODO: Once SQLite integration is complete, check for active tasks
       // For now, we just show "None"

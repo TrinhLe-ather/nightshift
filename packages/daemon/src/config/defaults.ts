@@ -31,5 +31,5 @@ export const DEFAULT_CONFIG: Config = {
   scheduleEnd: undefined,
 
   /** Maximum 1 concurrent task per repo */
-  maxConcurrentTasks: 1,
+  maxConcurrentTasks: 10,
 };

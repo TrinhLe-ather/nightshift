@@ -21,7 +21,10 @@
       "Bash(bun build:*)",
       "Bash(bun -e:*)",
       "Bash(bun run:*)",
-      "Bash(sqlite3:*)"
+      "Bash(sqlite3:*)",
+      "WebFetch(domain:orpc.dev)",
+      "Bash(bun pm:*)",
+      "Skill(frontend-design:frontend-design)"
     ]
   }
 }

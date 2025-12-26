@@ -14,15 +14,19 @@ export {
 } from "./session-manager";
 export { PreflightChecker, type PreflightResult } from "./preflight-checker";
 export { GitOperations, type CommitResult, type PrResult } from "./git-operations";
-export { ClaudeRunner, type ClaudeRunnerOptions, type ClaudeRunResult } from "./claude-runner";
 export { RepoLock, type LockInfo } from "./repo-lock";
 export { TranscriptWriter, type TranscriptEntry } from "./transcript-writer";
 
 // SDK-based execution (Claude Agent SDK v2)
 export { SdkRunner, type SdkRunnerOptions, type SdkRunResult, type SdkMessage } from "./sdk";
 
-// Interactive chat executor (dual-mode architecture)
-export { InteractiveExecutor } from "./interactive-executor";
+// Streaming workflow execution (single session with context preservation)
+export {
+  StreamingWorkflowRunner,
+  type StreamingWorkflowOptions,
+  type StreamingWorkflowResult,
+  type WorkflowStepResult,
+} from "./streaming-workflow-runner";
 
 // New modules for worktree and pause/resume support
 export {

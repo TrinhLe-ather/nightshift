@@ -38,6 +38,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Check, ChevronDown } from "@/components/ui/icons";
 
 type TaskStatus =
   | "pending"
@@ -256,7 +258,7 @@ export function Tasks() {
             </div>
 
             {/* Repo filter */}
-            <div className="w-full sm:w-[260px]">
+            <div className="w-full sm:w-[200px]">
               <Select
                 value={selectedRepoId || "__all__"}
                 onValueChange={(value) =>
@@ -277,6 +279,64 @@ export function Tasks() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Status filter */}
+            <div className="w-full sm:w-[200px]">
+              <Popover>
+                <PopoverTrigger>
+                  <Button variant="outline" className="w-full justify-start text-left font-normal">
+                    <span className="text-sm">
+                      {selectedStatuses.length === 0
+                        ? "All statuses"
+                        : selectedStatuses.length === 1
+                          ? statusFilters.find((f) => f.value === selectedStatuses[0])?.label
+                          : `${selectedStatuses.length} statuses`}
+                    </span>
+                    <ChevronDown className="ml-auto h-4 w-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0" align="start">
+                  <div className="p-1">
+                    <button
+                      onClick={() => setSelectedStatuses([])}
+                      className={`flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground ${
+                        selectedStatuses.length === 0 ? "bg-accent" : ""
+                      }`}
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${selectedStatuses.length === 0 ? "opacity-100" : "opacity-0"}`}
+                      />
+                      All statuses
+                    </button>
+                    <div className="my-1 h-px bg-border" />
+                    {statusFilters
+                      .filter((f) => f.value !== "all")
+                      .map((filter) => {
+                        const isSelected = selectedStatuses.includes(filter.value as TaskStatus);
+                        return (
+                          <button
+                            key={filter.value}
+                            onClick={() => {
+                              setSelectedStatuses((prev) => {
+                                const v = filter.value as TaskStatus;
+                                return prev.includes(v)
+                                  ? prev.filter((x) => x !== v)
+                                  : [...prev, v];
+                              });
+                            }}
+                            className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                            />
+                            {filter.label}
+                          </button>
+                        );
+                      })}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
@@ -300,35 +360,6 @@ export function Tasks() {
               </Button>
             )}
           </div>
-        </div>
-
-        {/* Status filter */}
-        <div className="mt-3 flex flex-wrap gap-1">
-          {statusFilters.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => {
-                if (filter.value === "all") {
-                  setSelectedStatuses([]);
-                  return;
-                }
-                setSelectedStatuses((prev) => {
-                  const v = filter.value as TaskStatus;
-                  const next = prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v];
-                  return next;
-                });
-              }}
-              className={`rounded-(--radius-md) px-3 py-1.5 text-sm transition-colors ${
-                filter.value === "all"
-                  ? selectedStatuses.length === 0
-                  : selectedStatuses.includes(filter.value as TaskStatus)
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
         </div>
 
         {/* Active filter chips */}

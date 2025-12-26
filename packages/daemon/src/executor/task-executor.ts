@@ -21,7 +21,6 @@ import { generateAndStoreTaskName } from "./task-name-generator";
 import { claimNextPendingTask, getTaskById, getTasks, updateTask } from "../tasks/repository";
 import { EventLevel, EventType, TaskState } from "@nightshift/shared";
 import type { Task } from "@nightshift/shared";
-import { InteractiveExecutor } from "./interactive-executor";
 import { WorkflowExecutor } from "./workflow-executor";
 
 const DEFAULT_POLL_INTERVAL_MS = 5000; // 5 seconds
@@ -228,185 +227,60 @@ export class TaskExecutor {
       // Track this task
       this.runningTasks.set(task.id, { task, setup });
 
-      // Determine task type before preflight checks
-      const taskType = (task as { type?: string }).type;
-
-      // Validate task type
-      if (taskType && taskType !== "interactive" && taskType !== "workflow") {
-        await this.failTask(
-          task,
-          setup,
-          "INVALID_TASK_TYPE",
-          `Invalid task type: "${taskType}". Must be "interactive" or "workflow".`,
-        );
-        return;
-      }
-
-      // Default to interactive if missing, but log a warning
-      const validTaskType = taskType || "interactive";
-      if (!taskType) {
-        console.warn(`[Executor] Task ${task.id} has no type field, defaulting to "interactive"`);
-        this.sessionManager.emit(EventType.TASK_STARTED, EventLevel.WARN, {
-          message: "Task type missing, defaulted to interactive",
-          taskId: task.id,
-        });
-      }
-
-      // Step 4: Preflight checks in the work directory
-      // Skip dirty check for interactive tasks in direct mode (they work in-place)
-      const skipDirtyCheck = validTaskType === "interactive" && setup.executionMode === "direct";
-      const preflight = await this.preflightChecker.check(setup.workDir, { skipDirtyCheck });
+      // Step 3: Preflight checks in the work directory
+      const preflight = await this.preflightChecker.check(setup.workDir);
 
       if (!preflight.passed) {
         await this.handlePreflightFailure(task, setup, preflight.error!);
         return;
       }
 
-      // Step 4.5: Route to specialized executor based on task type
+      // Step 4: Update task with execution details
+      updateTask(task.id, {
+        workDir: setup.workDir,
+        executionMode: setup.executionMode,
+        baseCommitSha: setup.baseCommitSha,
+        originalBranch: setup.originalBranch,
+        branch: setup.taskBranch,
+      });
 
-      if (validTaskType === "interactive") {
-        // Delegate to Interactive Executor
-        const interactiveExecutor = new InteractiveExecutor(
-          this.sessionManager,
-          this.dataDir,
-          this.repoLockManager,
-          this, // Pass TaskExecutor for runner tracking
-        );
-
-        try {
-          // Update task with work directory
-          updateTask(task.id, {
-            workDir: setup.workDir,
-            executionMode: setup.executionMode,
-            baseCommitSha: setup.baseCommitSha,
-            originalBranch: setup.originalBranch,
-            branch: setup.taskBranch,
-          });
-
-          // For direct mode, acquire shared lock
-          if (setup.executionMode === "direct") {
-            if (!task.repoId) {
-              await this.failTask(task, setup, "MISSING_REPO_ID", "Task has no repo ID");
-              return;
-            }
-
-            const locked = await this.repoLockManager.acquireShared(task.repoId, task.id);
-
-            if (!locked) {
-              // Blocked by exclusive lock (workflow running)
-              await this.failTask(
-                task,
-                setup,
-                "REPO_LOCKED",
-                "Repository is locked by a workflow. Please wait for it to complete.",
-              );
-              return;
-            }
-
-            console.log(`[TaskExecutor] Acquired shared lock for interactive task ${task.id}`);
-          }
-
-          await interactiveExecutor.startSession(task);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Unknown error";
-          await this.failTask(task, setup, "FAILED_EXECUTION", message);
-        } finally {
-          // Release shared lock if direct mode (worktree mode doesn't use locks)
-          if (setup.executionMode === "direct" && task.repoId) {
-            await this.repoLockManager.release(task.repoId, task.id);
-          }
-          this.runningTasks.delete(task.id);
-        }
-        return;
-      } else if (validTaskType === "workflow") {
-        // Delegate to Workflow Executor
-        const workflowExecutor = new WorkflowExecutor(this.sessionManager);
-
-        try {
-          // Update task with work directory
-          updateTask(task.id, {
-            workDir: setup.workDir,
-            executionMode: setup.executionMode,
-            baseCommitSha: setup.baseCommitSha,
-            originalBranch: setup.originalBranch,
-            branch: setup.taskBranch,
-          });
-
-          // For direct mode, check clean tree and acquire exclusive lock
-          if (setup.executionMode === "direct") {
-            if (!task.repoId) {
-              await this.failTask(task, setup, "MISSING_REPO_ID", "Task has no repo ID");
-              return;
-            }
-
-            // Check git tree is clean
-            const isClean = await this.gitOperations.isWorkingTreeClean(setup.repoPath);
-
-            if (!isClean) {
-              await this.failTask(
-                task,
-                setup,
-                "GIT_TREE_DIRTY",
-                "Cannot start workflow in direct mode: working tree has uncommitted changes. " +
-                  "Please commit/discard changes, or use worktree mode.",
-              );
-              return;
-            }
-
-            // Acquire exclusive lock
-            const lockResult = await this.repoLockManager.acquireExclusive(task.repoId, task.id);
-
-            if (!lockResult.success) {
-              const lockHolders = lockResult.lockHolders?.join(", ") || "unknown tasks";
-              await this.failTask(
-                task,
-                setup,
-                "REPO_LOCKED",
-                `Cannot start workflow in direct mode: repository locked by ${lockHolders}. ` +
-                  `Please wait for them to finish, or use worktree mode.`,
-              );
-              return;
-            }
-
-            console.log(`[TaskExecutor] Acquired exclusive lock for workflow task ${task.id}`);
-          }
-
-          await workflowExecutor.executeWorkflow(task);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Unknown error";
-          await this.failTask(task, setup, "FAILED_EXECUTION", message);
-        } finally {
-          // Release exclusive lock if direct mode (worktree mode doesn't use locks)
-          if (setup.executionMode === "direct" && task.repoId) {
-            await this.repoLockManager.release(task.repoId, task.id);
-          }
-          this.runningTasks.delete(task.id);
-        }
-        return;
-      }
-
-      // DEPRECATED: Legacy execution path for tasks without type (backward compatibility)
-      // This path should not be reached in normal operation as all tasks now have a type.
-      // If reached, it means a task was created without a type field (which should have been
-      // defaulted to "interactive" above).
-      console.warn(
-        `[Executor] Task ${task.id} reached legacy execution path (no type). This should not happen.`,
-      );
-
-      // For direct mode, acquire shared lock using RepoLockManager (consistent with new paths)
+      // Step 5: For direct mode, check clean tree and acquire exclusive lock
       if (setup.executionMode === "direct") {
         if (!task.repoId) {
           await this.failTask(task, setup, "MISSING_REPO_ID", "Task has no repo ID");
           return;
         }
 
-        const locked = await this.repoLockManager.acquireShared(task.repoId, task.id);
-        if (!locked) {
-          await this.failTask(task, setup, "REPO_LOCKED", "Repository is locked by another task");
+        // Check git tree is clean
+        const isClean = await this.gitOperations.isWorkingTreeClean(setup.repoPath);
+
+        if (!isClean) {
+          await this.failTask(
+            task,
+            setup,
+            "GIT_TREE_DIRTY",
+            "Cannot start task in direct mode: working tree has uncommitted changes. " +
+              "Please commit/discard changes, or use worktree mode.",
+          );
           return;
         }
 
-        console.log(`[TaskExecutor] Acquired shared lock for legacy task ${task.id}`);
+        // Acquire exclusive lock
+        const lockResult = await this.repoLockManager.acquireExclusive(task.repoId, task.id);
+
+        if (!lockResult.success) {
+          const lockHolders = lockResult.lockHolders?.join(", ") || "unknown tasks";
+          await this.failTask(
+            task,
+            setup,
+            "REPO_LOCKED",
+            `Cannot start task in direct mode: repository locked by ${lockHolders}. ` +
+              `Please wait for them to finish, or use worktree mode.`,
+          );
+          return;
+        }
+
+        console.log(`[TaskExecutor] Acquired exclusive lock for task ${task.id}`);
       }
 
       this.sessionManager.emit(EventType.REPO_LOCK_ACQUIRED, EventLevel.INFO, {
@@ -414,31 +288,66 @@ export class TaskExecutor {
         executionMode: setup.executionMode,
       });
 
-      // Step 6: Transition to RUNNING
-      await this.transitionToRunning(task);
+      // Step 6: Execute workflow
+      const workflowExecutor = new WorkflowExecutor(this.sessionManager);
+      await workflowExecutor.executeWorkflow(task);
 
-      // Step 7: Run Claude in the work directory
-      const result = await this.runClaude(task, setup);
+      // Step 7: Handle success - git operations (commit, push, PR)
+      const runningInfo = this.runningTasks.get(task.id);
+      if (runningInfo) {
+        // Check if workflow handled git operations (smart commit step)
+        // If not, fall back to auto-commit
+        let prUrl: string | undefined;
+        if (!workflowExecutor.hasHandledGitOps()) {
+          console.log("[Executor] Workflow didn't handle git ops, using fallback auto-commit");
+          prUrl = await this.handleGitOperations(task, runningInfo.setup);
+        } else {
+          console.log("[Executor] Workflow handled git ops via smart commit step");
+        }
 
-      // Step 8: Handle result
-      if (result.needsHuman) {
-        await this.handleNeedsHuman(task, setup, result.needsHuman);
-      } else if (result.success) {
-        await this.handleSuccess(task, setup);
-      } else {
-        await this.failTask(task, setup, "FAILED_EXECUTION", result.error || "Unknown error");
+        // Tear down execution environment
+        const updatedTask = getTaskById(task.id);
+        if (updatedTask) {
+          await teardownTaskExecution(
+            {
+              ...updatedTask,
+              executionMode: runningInfo.setup.executionMode,
+              workDir: runningInfo.setup.workDir,
+            } as Task,
+            "completed",
+          );
+
+          // Emit worktree removed event if applicable
+          if (runningInfo.setup.executionMode === "worktree") {
+            this.sessionManager.emit(EventType.WORKTREE_REMOVED, EventLevel.INFO, {
+              path: runningInfo.setup.workDir,
+            });
+          }
+        }
+
+        // Complete the task
+        updateTask(task.id, {
+          status: TaskState.COMPLETED,
+          completedAt: new Date().toISOString(),
+          prUrl,
+        });
+
+        this.sessionManager.emit(EventType.TASK_COMPLETED, EventLevel.INFO, {
+          taskId: task.id,
+          prUrl,
+        });
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
       const setup = this.runningTasks.get(task.id)?.setup;
       await this.failTask(task, setup, "FAILED_EXECUTION", message);
     } finally {
-      // Cleanup (for legacy execution path only)
+      // Cleanup
       const runningInfo = this.runningTasks.get(task.id);
       if (runningInfo) {
         const { setup } = runningInfo;
 
-        // Release lock using RepoLockManager (for direct mode)
+        // Release lock (for direct mode)
         if (setup.executionMode === "direct" && task.repoId) {
           await this.repoLockManager.release(task.repoId, task.id);
           this.sessionManager.emit(EventType.REPO_LOCK_RELEASED, EventLevel.INFO, {
@@ -447,7 +356,7 @@ export class TaskExecutor {
         }
       }
 
-      // End session
+      // Always end session
       this.sessionManager.endSession();
 
       // Remove from running tasks
@@ -485,13 +394,7 @@ export class TaskExecutor {
         prompt,
         workDir: setup.workDir,
         timeout: this.timeoutMs,
-        sdkSessionId: task.sdkSessionId ?? undefined, // Resume if available
       });
-
-      // Store SDK session ID for future resume
-      if (result.sdkSessionId) {
-        updateTask(task.id, { sdkSessionId: result.sdkSessionId });
-      }
 
       return result;
     } finally {
@@ -520,20 +423,6 @@ export class TaskExecutor {
    */
   readTranscript(taskId: string): SdkMessage[] {
     return this.sessionManager.readTranscript(taskId);
-  }
-
-  /**
-   * Register an SDK runner for a task (used by InteractiveExecutor)
-   */
-  registerSdkRunner(taskId: string, runner: SdkRunner): void {
-    this.currentSdkRunners.set(taskId, runner);
-  }
-
-  /**
-   * Unregister an SDK runner for a task (used by InteractiveExecutor)
-   */
-  unregisterSdkRunner(taskId: string): void {
-    this.currentSdkRunners.delete(taskId);
   }
 
   private async handleSetupFailure(
@@ -606,34 +495,55 @@ export class TaskExecutor {
     }
   }
 
-  private async handleSuccess(task: Task, setup: TaskSetupResult): Promise<void> {
-    let prUrl: string | undefined;
-
-    // Check for changes and create PR
+  /**
+   * Handle git operations after task completion (commit, push, PR)
+   * Returns prUrl if PR was created successfully
+   */
+  private async handleGitOperations(
+    task: Task,
+    setup: TaskSetupResult,
+  ): Promise<string | undefined> {
+    // Check for changes
     const hasChanges = await this.gitOperations.hasChanges(setup.workDir);
 
-    if (hasChanges) {
-      // Generate commit message
-      const commitMessage = this.generateCommitMessage(task);
-      const commitResult = await this.gitOperations.commit(setup.workDir, commitMessage);
-
-      if (commitResult.success) {
-        // Push and create PR
-        const pushed = await this.gitOperations.push(setup.workDir, setup.taskBranch);
-
-        if (pushed) {
-          const prTitle = this.generatePrTitle(task);
-          const prBody = this.generatePrBody(task);
-          const prResult = await this.gitOperations.createPr(setup.workDir, prTitle, prBody);
-
-          if (prResult.success) {
-            prUrl = prResult.prUrl;
-          } else {
-            console.log("[Executor] PR creation skipped:", prResult.error);
-          }
-        }
-      }
+    if (!hasChanges) {
+      console.log("[Executor] No changes to commit");
+      return undefined;
     }
+
+    // Generate commit message
+    const commitMessage = this.generateCommitMessage(task);
+    const commitResult = await this.gitOperations.commit(setup.workDir, commitMessage);
+
+    if (!commitResult.success) {
+      console.error("[Executor] Commit failed:", commitResult.error);
+      return undefined;
+    }
+
+    // Push branch
+    const pushed = await this.gitOperations.push(setup.workDir, setup.taskBranch);
+
+    if (!pushed) {
+      console.error("[Executor] Push failed");
+      return undefined;
+    }
+
+    // Create PR
+    const prTitle = this.generatePrTitle(task);
+    const prBody = this.generatePrBody(task);
+    const prResult = await this.gitOperations.createPr(setup.workDir, prTitle, prBody);
+
+    if (prResult.success) {
+      return prResult.prUrl;
+    } else {
+      console.log("[Executor] PR creation skipped:", prResult.error);
+      return undefined;
+    }
+  }
+
+  private async handleSuccess(task: Task, setup: TaskSetupResult): Promise<void> {
+    // Handle git operations (commit, push, PR)
+    const prUrl = await this.handleGitOperations(task, setup);
 
     // Tear down execution environment
     const updatedTask = getTaskById(task.id);

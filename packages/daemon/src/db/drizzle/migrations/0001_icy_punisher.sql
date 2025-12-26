@@ -1,1 +1,0 @@
-ALTER TABLE `tasks` ADD `autoYes` integer DEFAULT false;

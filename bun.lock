@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "nightshift",
+      "dependencies": {
+        "@orpc/experimental-publisher": "^1.13.1",
+      },
       "devDependencies": {
         "@dotenv-run/cli": "^1.3.6",
         "@total-typescript/ts-reset": "^0.6.1",
@@ -41,6 +44,7 @@
         "@hugeicons/react": "^1.1.4",
         "@nightshift/shared": "workspace:*",
         "@orpc/client": "catalog:orpc",
+        "@orpc/experimental-publisher": "^1.13.1",
         "@orpc/openapi": "catalog:orpc",
         "@orpc/server": "catalog:orpc",
         "@orpc/zod": "catalog:orpc",
@@ -262,6 +266,8 @@
 
     "@orpc/contract": ["@orpc/contract@1.13.0", "", { "dependencies": { "@orpc/client": "1.13.0", "@orpc/shared": "1.13.0", "@standard-schema/spec": "^1.0.0", "openapi-types": "^12.1.3" } }, "sha512-lNzIuR1Ezcbo0AkavtnPVC1JKHwmVqzBPPCQsmTnwmF27lu+Ks/rDtgjAipN/7x0GOt0m6B7uALJHI5nEzGJGQ=="],
 
+    "@orpc/experimental-publisher": ["@orpc/experimental-publisher@1.13.1", "", { "dependencies": { "@orpc/client": "1.13.1", "@orpc/shared": "1.13.1", "@orpc/standard-server": "1.13.1" }, "peerDependencies": { "@upstash/redis": ">=1.35.6", "ioredis": ">=5.8.1" }, "optionalPeers": ["@upstash/redis", "ioredis"] }, "sha512-hJS3//vWPxlbSd9AE9/DXJRDk+TCnkJNH2sAR4DgG8jfRm7kWlfrt4oR+UpURP460BpoZ44LhqU/N4T/iCmKGg=="],
+
     "@orpc/interop": ["@orpc/interop@1.13.0", "", {}, "sha512-bVTef8NCGhDYPHVrx+/mn1Hnxm+99IVzjTT94dZsdGe4tB6+9Eb+ihYfhglu+z9bvskWVPHd68DNKKy/XgSPDA=="],
 
     "@orpc/json-schema": ["@orpc/json-schema@1.13.0", "", { "dependencies": { "@orpc/contract": "1.13.0", "@orpc/interop": "1.13.0", "@orpc/openapi": "1.13.0", "@orpc/server": "1.13.0", "@orpc/shared": "1.13.0", "json-schema-typed": "^8.0.2" } }, "sha512-IIFBbdC9oDJmoy4eZG4mcaD5onBZid2My6h6OEA2eKzPPUjj3oZ7OdqY8tED+tp4dGxQGwLxZjuFiKkIacXn+Q=="],
@@ -272,9 +278,9 @@
 
     "@orpc/server": ["@orpc/server@1.13.0", "", { "dependencies": { "@orpc/client": "1.13.0", "@orpc/contract": "1.13.0", "@orpc/interop": "1.13.0", "@orpc/shared": "1.13.0", "@orpc/standard-server": "1.13.0", "@orpc/standard-server-aws-lambda": "1.13.0", "@orpc/standard-server-fastify": "1.13.0", "@orpc/standard-server-fetch": "1.13.0", "@orpc/standard-server-node": "1.13.0", "@orpc/standard-server-peer": "1.13.0", "cookie": "^1.0.2" }, "peerDependencies": { "crossws": ">=0.3.4", "ws": ">=8.18.1" }, "optionalPeers": ["crossws", "ws"] }, "sha512-Bj/Kdp0RRQ4IZpmuKxpIXSmgcjTUUXE4CHkz9tX05CqoNV0Tdtw3Yz2WEbf5PLyg+3LlWs2+yVw4mCdeJTYLeg=="],
 
-    "@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+    "@orpc/shared": ["@orpc/shared@1.13.1", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-PJY1l9QxxXpojea/c1BgmP2owby19ZTi/l35O7N2GIAXmvQPSvDp/BBAZr4NS0NmRPDj7LQewXMEJc3hFSysEw=="],
 
-    "@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+    "@orpc/standard-server": ["@orpc/standard-server@1.13.1", "", { "dependencies": { "@orpc/shared": "1.13.1" } }, "sha512-iLv/oGyycXh4xIOG+oBIPwTENqIHVbb9wJMir3a74CSekaA1ErFqiCkRBSjOp/RFahxdGe7fUKAktw56RCWp9Q=="],
 
     "@orpc/standard-server-aws-lambda": ["@orpc/standard-server-aws-lambda@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0", "@orpc/standard-server": "1.13.0", "@orpc/standard-server-fetch": "1.13.0", "@orpc/standard-server-node": "1.13.0" } }, "sha512-tutin8RFliIMASUUI3H9AWho18NAl8GTIS7+olxAwsj6LYFelU+DBDm/eVSvWDzCCR73dFmbco+1QWByYnDstg=="],
 
@@ -728,6 +734,50 @@
 
     "@esbuild-kit/core-utils/esbuild": ["esbuild@0.18.20", "", { "optionalDependencies": { "@esbuild/android-arm": "0.18.20", "@esbuild/android-arm64": "0.18.20", "@esbuild/android-x64": "0.18.20", "@esbuild/darwin-arm64": "0.18.20", "@esbuild/darwin-x64": "0.18.20", "@esbuild/freebsd-arm64": "0.18.20", "@esbuild/freebsd-x64": "0.18.20", "@esbuild/linux-arm": "0.18.20", "@esbuild/linux-arm64": "0.18.20", "@esbuild/linux-ia32": "0.18.20", "@esbuild/linux-loong64": "0.18.20", "@esbuild/linux-mips64el": "0.18.20", "@esbuild/linux-ppc64": "0.18.20", "@esbuild/linux-riscv64": "0.18.20", "@esbuild/linux-s390x": "0.18.20", "@esbuild/linux-x64": "0.18.20", "@esbuild/netbsd-x64": "0.18.20", "@esbuild/openbsd-x64": "0.18.20", "@esbuild/sunos-x64": "0.18.20", "@esbuild/win32-arm64": "0.18.20", "@esbuild/win32-ia32": "0.18.20", "@esbuild/win32-x64": "0.18.20" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-ceqxoedUrcayh7Y7ZX6NdbbDzGROiyVBgC4PriJThBKSVPWnnFHZAkfI1lJT8QFkOwH4qOS2SJkS4wvpGl8BpA=="],
 
+    "@orpc/client/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/client/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/contract/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/experimental-publisher/@orpc/client": ["@orpc/client@1.13.1", "", { "dependencies": { "@orpc/shared": "1.13.1", "@orpc/standard-server": "1.13.1", "@orpc/standard-server-fetch": "1.13.1", "@orpc/standard-server-peer": "1.13.1" } }, "sha512-m0v5HtBrgsq/L5UiPJQGPhpvGaSnoLJByWkH26wottSOEfMCaQHx4eC0q3MVP1Oy35Z8Id1bUXV03V4GsgbVVg=="],
+
+    "@orpc/json-schema/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/openapi/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/openapi/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/openapi-client/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/openapi-client/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/server/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/server/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/standard-server-aws-lambda/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/standard-server-aws-lambda/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/standard-server-fastify/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/standard-server-fastify/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/standard-server-fetch/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/standard-server-fetch/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/standard-server-node/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/standard-server-node/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/standard-server-peer/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
+    "@orpc/standard-server-peer/@orpc/standard-server": ["@orpc/standard-server@1.13.0", "", { "dependencies": { "@orpc/shared": "1.13.0" } }, "sha512-Sh+Vz8FiEkXJpaIERoUAe99GAK5xAN8dGl2SwkzAWm6QYex7pXVThaVOSuIG2X5UdYnkSehOB4e6/b3/lbiCNw=="],
+
+    "@orpc/zod/@orpc/shared": ["@orpc/shared@1.13.0", "", { "dependencies": { "radash": "^12.1.1", "type-fest": "^5.2.0" }, "peerDependencies": { "@opentelemetry/api": ">=1.9.0" }, "optionalPeers": ["@opentelemetry/api"] }, "sha512-NHch9ug7fX2CJNDUXNGxPRgNWmMAdIVuWpaRL04NiVKRQ1xK17NPcRzjr01cPvEbX9qwEUlhB2USU6MXWJ47rw=="],
+
     "npm-run-path/path-key": ["path-key@4.0.0", "", {}, "sha512-haREypq7xkM7ErfgIyA0z+Bj4AGKlMSdlQE2jvJo6huWD1EdkKYV+G/T4nq0YEF2vgTT8kqMFKo1uHn950r4SQ=="],
 
     "prebuild-install/detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
@@ -775,5 +825,9 @@
     "@esbuild-kit/core-utils/esbuild/@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.18.20", "", { "os": "win32", "cpu": "ia32" }, "sha512-Wv7QBi3ID/rROT08SABTS7eV4hX26sVduqDOTe1MvGMjNd3EjOz4b7zeexIR62GTIEKrfJXKL9LFxTYgkyeu7g=="],
 
     "@esbuild-kit/core-utils/esbuild/@esbuild/win32-x64": ["@esbuild/win32-x64@0.18.20", "", { "os": "win32", "cpu": "x64" }, "sha512-kTdfRcSiDfQca/y9QIkng02avJ+NCaQvrMejlsB3RRv5sE9rRoeBPISaZpKxHELzRxZyLvNts1P27W3wV+8geQ=="],
+
+    "@orpc/experimental-publisher/@orpc/client/@orpc/standard-server-fetch": ["@orpc/standard-server-fetch@1.13.1", "", { "dependencies": { "@orpc/shared": "1.13.1", "@orpc/standard-server": "1.13.1" } }, "sha512-GQb2NYHFW4psOkRxNn95QGH6s0bmIudVaS9yRgCmxO3ydCVrJFdeNusz+Kd3BniCNyq4ourk2lcqw3cncqYotQ=="],
+
+    "@orpc/experimental-publisher/@orpc/client/@orpc/standard-server-peer": ["@orpc/standard-server-peer@1.13.1", "", { "dependencies": { "@orpc/shared": "1.13.1", "@orpc/standard-server": "1.13.1" } }, "sha512-wMxhTL4OjR76Tn+sLN//xj5ByTbwVW5nNJg9BjTbCPdeL0oy+DJk96Jwf402Rz9Yq2NkKuFNUDa1BijMvW7/Kw=="],
   }
 }

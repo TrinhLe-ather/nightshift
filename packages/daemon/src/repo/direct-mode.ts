@@ -42,7 +42,7 @@ function validateTaskId(taskId: string): void {
   }
 
   // Cannot contain control characters
-  if (/[\x00-\x1f\x7f]/.test(taskId)) {
+  if (/[\x00-\x1F\x7F]/.test(taskId)) {
     throw new Error(`Invalid taskId: contains control characters`);
   }
 
@@ -103,53 +103,72 @@ export class DirectModeManager {
   /**
    * Set up direct mode execution for a task
    *
-   * 1. Records current branch
-   * 2. Gets HEAD SHA for diffing
-   * 3. Creates and checks out task branch
+   * For interactive tasks:
+   * - Stays on current branch (no branch switching)
+   * - Uses current HEAD for diffing
+   * - Sets taskBranch to current branch name
+   *
+   * For workflow tasks:
+   * - Records current branch
+   * - Gets HEAD SHA for diffing
+   * - Creates and checks out task branch
    *
    * Note: Dirty check is handled by PreflightChecker after setup completes
    */
-  async setup(taskId: string, repoPath: string): Promise<DirectModeResult<DirectModeSetup>> {
+  async setup(
+    taskId: string,
+    repoPath: string,
+    taskType: "interactive" | "workflow" = "interactive",
+  ): Promise<DirectModeResult<DirectModeSetup>> {
     // Step 1: Get current branch
     const originalBranch = await getCurrentBranch(repoPath);
 
     // Step 2: Get HEAD SHA for diffing
     const baseCommitSha = await getHeadSha(repoPath);
 
-    // Step 3: Create task branch
-    const taskBranch = this.getBranchName(taskId);
+    // Step 3: Handle branch management based on task type
+    let taskBranch: string;
 
-    // Check if branch already exists (resume scenario)
-    const exists = await branchExists(taskBranch, repoPath);
-    if (exists) {
-      // Resume: checkout existing branch
-      try {
-        await checkout(taskBranch, repoPath);
-        console.log(`[DirectMode] Resumed existing branch ${taskBranch}`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Checkout failed";
-        return {
-          success: false,
-          error: {
-            code: DirectModeError.CHECKOUT_FAILED,
-            message: `Failed to checkout branch ${taskBranch}: ${message}`,
-          },
-        };
-      }
+    if (taskType === "interactive") {
+      // Interactive: Stay on current branch
+      taskBranch = originalBranch;
+      console.log(`[DirectMode] Interactive task: staying on branch ${originalBranch}`);
     } else {
-      // New: create and checkout new branch
-      try {
-        await checkoutNewBranch(taskBranch, repoPath);
-        console.log(`[DirectMode] Created and checked out branch ${taskBranch}`);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Branch creation failed";
-        return {
-          success: false,
-          error: {
-            code: DirectModeError.CHECKOUT_FAILED,
-            message: `Failed to create branch ${taskBranch}: ${message}`,
-          },
-        };
+      // Workflow: Create task-specific branch
+      taskBranch = this.getBranchName(taskId);
+
+      // Check if branch already exists (resume scenario)
+      const exists = await branchExists(taskBranch, repoPath);
+      if (exists) {
+        // Resume: checkout existing branch
+        try {
+          await checkout(taskBranch, repoPath);
+          console.log(`[DirectMode] Resumed existing branch ${taskBranch}`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Checkout failed";
+          return {
+            success: false,
+            error: {
+              code: DirectModeError.CHECKOUT_FAILED,
+              message: `Failed to checkout branch ${taskBranch}: ${message}`,
+            },
+          };
+        }
+      } else {
+        // New: create and checkout new branch
+        try {
+          await checkoutNewBranch(taskBranch, repoPath);
+          console.log(`[DirectMode] Created and checked out branch ${taskBranch}`);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Branch creation failed";
+          return {
+            success: false,
+            error: {
+              code: DirectModeError.CHECKOUT_FAILED,
+              message: `Failed to create branch ${taskBranch}: ${message}`,
+            },
+          };
+        }
       }
     }
 
@@ -167,15 +186,27 @@ export class DirectModeManager {
   /**
    * Tear down direct mode (return to original branch)
    *
+   * For interactive tasks: No-op (stays on current branch)
+   * For workflow tasks: Returns to original branch and optionally deletes task branch
+   *
    * @param repoPath - Path to the repository
    * @param originalBranch - Branch to return to
    * @param deleteBranchAfter - Whether to delete the task branch
+   * @param taskType - Type of task (interactive or workflow)
    */
   async teardown(
     repoPath: string,
     originalBranch: string,
     deleteBranchAfter = false,
+    taskType: "interactive" | "workflow" = "interactive",
   ): Promise<void> {
+    // Interactive tasks: stay on current branch
+    if (taskType === "interactive") {
+      console.log(`[DirectMode] Interactive task: staying on current branch`);
+      return;
+    }
+
+    // Workflow tasks: return to original branch
     const currentBranch = await getCurrentBranch(repoPath);
 
     // Return to original branch
@@ -224,7 +255,8 @@ export class DirectModeManager {
   /**
    * Prepare for resume in direct mode
    *
-   * Checks that task branch exists and switches to it.
+   * For interactive tasks: Stays on current branch
+   * For workflow tasks: Checks that task branch exists and switches to it
    *
    * Note: Dirty check is handled by PreflightChecker after resume setup completes
    */
@@ -232,9 +264,11 @@ export class DirectModeManager {
     taskId: string,
     repoPath: string,
   ): Promise<DirectModeResult<DirectModeSetup>> {
-    const taskBranch = this.getBranchName(taskId);
+    // Get current branch
+    const currentBranch = await getCurrentBranch(repoPath);
+    const baseCommitSha = await getHeadSha(repoPath);
 
-    // Check task branch exists
+    const taskBranch = this.getBranchName(taskId);
     const exists = await branchExists(taskBranch, repoPath);
     if (!exists) {
       return {
@@ -246,12 +280,13 @@ export class DirectModeManager {
       };
     }
 
-    // Get current branch before switching
-    const originalBranch = await getCurrentBranch(repoPath);
+    // Get current branch before switching (for originalBranch)
+    const originalBranch = currentBranch;
 
     // Switch to task branch
     try {
       await checkout(taskBranch, repoPath);
+      console.log(`[DirectMode] Resumed workflow task on branch ${taskBranch}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Checkout failed";
       return {
@@ -262,9 +297,6 @@ export class DirectModeManager {
         },
       };
     }
-
-    // Get base commit (first commit on this branch that differs from main)
-    const baseCommitSha = await getHeadSha(repoPath);
 
     return {
       success: true,
