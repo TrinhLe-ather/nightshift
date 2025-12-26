@@ -23,8 +23,8 @@ import {
   Pause,
   Plus,
   XCircle,
-  Zap,
-  Server,
+  LayoutDashboard,
+  Folder,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { Badge } from "@/components/ui/badge";
