@@ -27,7 +27,7 @@ export class PreflightChecker {
   /**
    * Run all preflight checks for a repository
    */
-  async check(repoPath: string): Promise<PreflightResult> {
+  async check(repoPath: string, options?: { skipDirtyCheck?: boolean }): Promise<PreflightResult> {
     this.sessionManager.emit(EventType.PREFLIGHT_STARTED, EventLevel.INFO, {
       repoPath,
     });
@@ -44,13 +44,15 @@ export class PreflightChecker {
         return this.fail("NOT_GIT_REPO", `Path is not a git repository: ${repoPath}`);
       }
 
-      // Check 3: Check for uncommitted changes
-      const hasChanges = await this.hasUncommittedChanges(repoPath);
-      if (hasChanges) {
-        return this.fail(
-          "NEEDS_HUMAN_GIT_DIRTY",
-          "Repo has uncommitted changes. Please stash or commit before running tasks.",
-        );
+      // Check 3: Check for uncommitted changes (skip for interactive + direct mode)
+      if (!options?.skipDirtyCheck) {
+        const hasChanges = await this.hasUncommittedChanges(repoPath);
+        if (hasChanges) {
+          return this.fail(
+            "NEEDS_HUMAN_GIT_DIRTY",
+            "Repo has uncommitted changes. Please stash or commit before running tasks.",
+          );
+        }
       }
 
       // Check 4: Check for untracked files (optional warning)

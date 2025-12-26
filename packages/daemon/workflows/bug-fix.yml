@@ -1,0 +1,72 @@
+name: Bug Fix
+description: Systematically fix bugs using TDD approach
+version: 1.0.0
+
+inputs:
+  issueUrl:
+    type: string
+    description: URL to the bug report or issue
+    required: false
+  description:
+    type: string
+    description: Description of the bug
+    required: true
+
+steps:
+  - name: Analyze Bug
+    prompt: |
+      Analyze this bug report:
+      {{#if issueUrl}}
+      Issue: {{issueUrl}}
+      {{/if}}
+      Description: {{description}}
+
+      Investigate the codebase to understand:
+      1. What is the expected behavior?
+      2. What is the actual behavior?
+      3. Where is the bug likely located?
+
+      Provide a clear analysis.
+    tools:
+      disable: [Write, Edit]  # Read-only analysis
+
+  - name: Write Failing Test
+    prompt: |
+      Based on your analysis, write a test that reproduces the bug.
+      The test should currently FAIL, demonstrating the bug exists.
+
+      Run the test to confirm it fails.
+    tools:
+      enable: [Read, Write, Edit, Bash]
+
+  - name: Implement Fix
+    prompt: |
+      Fix the bug you identified.
+      Make minimal changes - only what's needed to fix the issue.
+
+      After fixing, run the test again to see if it passes.
+    tools:
+      enable: [Read, Write, Edit, Bash]
+    maxRetries: 3
+
+  - name: Verify All Tests
+    prompt: |
+      Run the full test suite to ensure:
+      1. The bug fix test now passes
+      2. No other tests were broken by the fix
+
+      If tests fail, investigate and fix any regressions.
+    tools:
+      enable: [Read, Edit, Bash]
+
+  - name: Create Pull Request
+    prompt: |
+      Create a pull request with your bug fix.
+
+      Use a clear commit message and PR description that explains:
+      - What the bug was
+      - How you fixed it
+      - What tests prove it's fixed
+    tools:
+      enable: [Bash]
+    autoCommit: true

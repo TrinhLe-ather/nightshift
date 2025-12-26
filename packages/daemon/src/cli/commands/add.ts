@@ -22,6 +22,7 @@ interface AddCommandArgs {
   prompt: string;
   repo?: string;
   priority?: Priority;
+  autoYes?: boolean;
 }
 
 function parseArgs(args: string[]): AddCommandArgs | null {
@@ -42,12 +43,15 @@ function parseArgs(args: string[]): AddCommandArgs | null {
       i++; // Skip next arg
     } else if (arg === "--priority" && i + 1 < args.length) {
       const priority = args[i + 1];
-      if (!["low", "medium", "high", "urgent"].includes(priority)) {
+      if (!priority || !["low", "medium", "high", "urgent"].includes(priority)) {
         console.error(`Invalid priority: ${priority}. Must be one of: low, medium, high, urgent`);
         process.exit(1);
       }
       options.priority = priority as Priority;
       i++; // Skip next arg
+    } else if (arg === "--auto-yes" || arg === "-y") {
+      // SECURITY FIX: Require explicit opt-in for auto-approval
+      options.autoYes = true;
     } else {
       console.error(`Unknown option: ${arg}`);
       process.exit(1);
@@ -66,11 +70,12 @@ export async function addCommand(): Promise<void> {
   // Parse arguments
   const parsed = parseArgs(args);
   if (!parsed) {
-    console.error('Usage: nightshift add "task prompt" [--repo path] [--priority level]');
+    console.error('Usage: nightshift add "task prompt" [--repo path] [--priority level] [--auto-yes]');
     console.error("");
     console.error("Options:");
     console.error("  --repo path        Path to git repository");
     console.error("  --priority level   Priority level (low, medium, high, urgent)");
+    console.error("  --auto-yes, -y     Auto-approve all Claude Code prompts (skip manual approval)");
     process.exit(1);
   }
 
@@ -107,11 +112,13 @@ export async function addCommand(): Promise<void> {
   }
 
   // Create task
+  // SECURITY FIX: Default autoYes to false, require explicit --auto-yes flag
   const task = createTask({
     prompt: parsed.prompt,
     repoId,
     repoPath,
     priority: parsed.priority || "medium",
+    autoYes: parsed.autoYes || false,
   });
 
   // Display confirmation

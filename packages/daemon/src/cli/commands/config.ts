@@ -22,7 +22,7 @@ function isDaemonRunning(): boolean {
     // Check if process exists by sending signal 0
     process.kill(pid, 0);
     return true;
-  } catch (error) {
+  } catch {
     // Process doesn't exist
     return false;
   }
@@ -37,7 +37,7 @@ async function openBrowser(url: string): Promise<void> {
 
   try {
     await Bun.spawn([command, url], { stdio: ["ignore", "ignore", "ignore"] });
-  } catch (error) {
+  } catch {
     console.error("Could not open browser automatically");
     console.log(`Please open manually: ${url}`);
   }

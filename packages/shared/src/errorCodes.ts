@@ -22,6 +22,8 @@ export const FailureCode = {
   FAILED_GIT_OPERATION: 'FAILED_GIT_OPERATION',
   /** Network error (connectivity issues) */
   FAILED_NETWORK: 'FAILED_NETWORK',
+  /** Daemon crashed/restarted while task was running */
+  FAILED_DAEMON_RESTART: 'FAILED_DAEMON_RESTART',
 } as const;
 
 export type FailureCode = (typeof FailureCode)[keyof typeof FailureCode];
@@ -97,6 +99,8 @@ export function getErrorMessage(code: ErrorCode): string {
       'Environment check failed - missing required tools or configuration',
     [FailureCode.FAILED_GIT_OPERATION]: 'Git operation failed',
     [FailureCode.FAILED_NETWORK]: 'Network connectivity issue',
+    [FailureCode.FAILED_DAEMON_RESTART]:
+      'Daemon crashed or restarted while task was running',
     [NeedsHumanCode.NEEDS_HUMAN_CLARIFICATION]:
       'Claude needs clarification to proceed',
     [NeedsHumanCode.NEEDS_HUMAN_APPROVAL]:

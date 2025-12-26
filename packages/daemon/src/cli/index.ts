@@ -6,6 +6,7 @@
 
 import { startCommand } from "./commands/start";
 import { stopCommand } from "./commands/stop";
+import { restartCommand } from "./commands/restart";
 import { statusCommand } from "./commands/status";
 import { versionCommand } from "./commands/version";
 import { doctorCommand } from "./commands/doctor";
@@ -21,11 +22,16 @@ function showHelp(): void {
 Night Shift - AI Agent Task Automation
 
 Usage:
-  nightshift <command>
+  nightshift <command> [options]
 
 Commands:
   start      Start the daemon (opens web UI in browser)
+             Options:
+               -i, --interactive    Run in foreground (default: background)
   stop       Stop the daemon gracefully
+  restart    Restart the daemon
+             Options:
+               -i, --interactive    Run in foreground (default: background)
   status     Show daemon status and active tasks
   add        Add a new task to the queue
   repos      Manage configured repositories
@@ -35,7 +41,9 @@ Commands:
   help       Show this help message
 
 Examples:
-  nightshift start
+  nightshift start              # Start in background
+  nightshift start -i           # Start in foreground (interactive)
+  nightshift restart            # Restart daemon
   nightshift status
   nightshift add "Fix the login bug"
   nightshift repos add /path/to/repo
@@ -59,6 +67,10 @@ export async function cli(): Promise<void> {
 
     case "stop":
       await stopCommand();
+      break;
+
+    case "restart":
+      await restartCommand();
       break;
 
     case "status":

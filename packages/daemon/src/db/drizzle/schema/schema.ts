@@ -45,6 +45,12 @@ export type EntityType = (typeof entityTypeEnum)[number];
 export const syncActionEnum = ["create", "update", "delete"] as const;
 export type SyncAction = (typeof syncActionEnum)[number];
 
+export const taskTypeEnum = ["interactive", "workflow"] as const;
+export type TaskType = (typeof taskTypeEnum)[number];
+
+export const messageRoleEnum = ["user", "assistant", "system"] as const;
+export type MessageRole = (typeof messageRoleEnum)[number];
+
 // ============================================================================
 // Tables
 // ============================================================================
@@ -60,6 +66,7 @@ export const tasks = sqliteTable(
   {
     id: text("id").primaryKey(),
     prompt: text("prompt").notNull(),
+    name: text("name"), // Generated task name (nullable)
     repoId: text("repoId"),
     repoPath: text("repoPath"),
     priority: text("priority", { enum: priorityEnum }).default("medium"),
@@ -89,6 +96,20 @@ export const tasks = sqliteTable(
     pauseReason: text("pauseReason", { enum: pauseReasonEnum }),
     humanQuestion: text("humanQuestion"),
     humanResponse: text("humanResponse"),
+
+    // Auto-yes mode (auto-accept Claude prompts)
+    autoYes: integer("autoYes", { mode: "boolean" }).default(false),
+
+    // SDK session ID for Claude Agent SDK v2 resume capability
+    sdkSessionId: text("sdkSessionId"),
+
+    // Dual-mode architecture fields
+    type: text("type", { enum: taskTypeEnum }).default("interactive"),
+    messageCount: integer("messageCount").default(0),
+    workflowId: text("workflowId"),
+    currentStep: integer("currentStep"),
+    totalSteps: integer("totalSteps"),
+    lastUserMessageAt: text("lastUserMessageAt"),
   },
   (table) => [
     index("idx_tasks_status").on(table.status),
@@ -96,6 +117,8 @@ export const tasks = sqliteTable(
     index("idx_tasks_source").on(table.source),
     index("idx_tasks_createdAt").on(table.createdAt),
     index("idx_tasks_priority").on(table.priority),
+    index("idx_tasks_type").on(table.type),
+    index("idx_tasks_workflowId").on(table.workflowId),
   ],
 );
 
@@ -130,14 +153,109 @@ export const sessions = sqliteTable(
       .references(() => tasks.id),
     runId: text("runId").notNull(),
     eventsPath: text("eventsPath"),
+    transcriptPath: text("transcriptPath"),
     startedAt: text("startedAt").notNull(),
     completedAt: text("completedAt"),
     storageKey: text("storageKey"),
     eventCount: integer("eventCount").default(0),
+    messageCount: integer("messageCount").default(0),
   },
   (table) => [
     index("idx_sessions_taskId").on(table.taskId),
     index("idx_sessions_startedAt").on(table.startedAt),
+  ],
+);
+
+/**
+ * Messages table - Interactive task messages
+ *
+ * Stores conversation messages for interactive tasks.
+ * Part of dual-mode architecture for interactive vs workflow tasks.
+ */
+export const messages = sqliteTable(
+  "messages",
+  {
+    id: text("id").primaryKey(),
+    taskId: text("taskId")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    role: text("role", { enum: messageRoleEnum }).notNull(),
+    content: text("content").notNull(),
+    timestamp: text("timestamp").notNull(),
+    checkpointId: text("checkpointId"),
+    toolCalls: text("toolCalls"), // JSON serialized
+  },
+  (table) => [
+    index("idx_messages_taskId").on(table.taskId),
+    index("idx_messages_timestamp").on(table.timestamp),
+    index("idx_messages_checkpointId").on(table.checkpointId),
+  ],
+);
+
+/**
+ * Repo locks table - Shared/Exclusive locking for task coordination
+ *
+ * Implements shared/exclusive lock pattern:
+ * - Shared locks: Multiple interactive (chat) tasks can hold simultaneously
+ * - Exclusive locks: Single workflow task, blocks all other direct mode tasks
+ * Worktree mode tasks don't use locks (always allowed)
+ */
+export const repoLocks = sqliteTable(
+  "repo_locks",
+  {
+    id: text("id").primaryKey(),
+    repoId: text("repoId")
+      .notNull()
+      .references(() => repos.id, { onDelete: "cascade" }),
+    taskId: text("taskId")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    type: text("type", { enum: ["shared", "exclusive"] as const }).notNull(),
+    acquiredAt: text("acquiredAt").notNull(),
+  },
+  (table) => [
+    index("idx_repo_locks_repoId").on(table.repoId),
+    index("idx_repo_locks_taskId").on(table.taskId),
+    index("idx_repo_locks_type").on(table.type),
+  ],
+);
+
+/**
+ * Workflows table - Workflow definitions
+ *
+ * Stores workflow templates and definitions for workflow-type tasks.
+ */
+export const workflows = sqliteTable("workflows", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  definition: text("definition").notNull(), // JSON serialized
+  isBuiltin: integer("isBuiltin", { mode: "boolean" }).default(false),
+  createdAt: text("createdAt").notNull(),
+  updatedAt: text("updatedAt").notNull(),
+});
+
+/**
+ * Workflow runs table - Execution history of workflows
+ *
+ * Tracks individual executions of workflows linked to tasks.
+ */
+export const workflowRuns = sqliteTable(
+  "workflow_runs",
+  {
+    id: text("id").primaryKey(),
+    workflowId: text("workflowId")
+      .notNull()
+      .references(() => workflows.id),
+    taskId: text("taskId")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    stepResults: text("stepResults"), // JSON serialized
+    completedSteps: integer("completedSteps").default(0),
+  },
+  (table) => [
+    index("idx_workflow_runs_taskId").on(table.taskId),
+    index("idx_workflow_runs_workflowId").on(table.workflowId),
   ],
 );
 
@@ -182,7 +300,13 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     fields: [tasks.repoId],
     references: [repos.id],
   }),
+  workflow: one(workflows, {
+    fields: [tasks.workflowId],
+    references: [workflows.id],
+  }),
   sessions: many(sessions),
+  messages: many(messages),
+  workflowRuns: many(workflowRuns),
 }));
 
 export const reposRelations = relations(repos, ({ many }) => ({
@@ -192,6 +316,40 @@ export const reposRelations = relations(repos, ({ many }) => ({
 export const sessionsRelations = relations(sessions, ({ one }) => ({
   task: one(tasks, {
     fields: [sessions.taskId],
+    references: [tasks.id],
+  }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  task: one(tasks, {
+    fields: [messages.taskId],
+    references: [tasks.id],
+  }),
+}));
+
+export const repoLocksRelations = relations(repoLocks, ({ one }) => ({
+  repo: one(repos, {
+    fields: [repoLocks.repoId],
+    references: [repos.id],
+  }),
+  task: one(tasks, {
+    fields: [repoLocks.taskId],
+    references: [tasks.id],
+  }),
+}));
+
+export const workflowsRelations = relations(workflows, ({ many }) => ({
+  tasks: many(tasks),
+  workflowRuns: many(workflowRuns),
+}));
+
+export const workflowRunsRelations = relations(workflowRuns, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [workflowRuns.workflowId],
+    references: [workflows.id],
+  }),
+  task: one(tasks, {
+    fields: [workflowRuns.taskId],
     references: [tasks.id],
   }),
 }));
@@ -214,3 +372,15 @@ export type NewConfig = typeof config.$inferInsert;
 
 export type SyncQueueItem = typeof syncQueue.$inferSelect;
 export type NewSyncQueueItem = typeof syncQueue.$inferInsert;
+
+export type Message = typeof messages.$inferSelect;
+export type NewMessage = typeof messages.$inferInsert;
+
+export type RepoLock = typeof repoLocks.$inferSelect;
+export type NewRepoLock = typeof repoLocks.$inferInsert;
+
+export type Workflow = typeof workflows.$inferSelect;
+export type NewWorkflow = typeof workflows.$inferInsert;
+
+export type WorkflowRun = typeof workflowRuns.$inferSelect;
+export type NewWorkflowRun = typeof workflowRuns.$inferInsert;

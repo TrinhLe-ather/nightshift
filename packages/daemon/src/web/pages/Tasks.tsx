@@ -6,8 +6,19 @@
 
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, useDeleteTask } from "@/hooks/useTasks";
+import { useRepos } from "@/hooks/useRepos";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 import {
   Table,
   TableBody,
@@ -16,7 +27,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { ListTodo, Search, X, Trash2 } from "@/components/ui/icons";
+import { Container } from "@/components/layout/Container";
+import { NewTaskButton } from "@/components/NewTaskButton";
+import { DeleteTaskDialog } from "@/components/DeleteTaskDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type TaskStatus =
   | "pending"
@@ -41,14 +62,14 @@ const statusFilters: { value: TaskStatus | "all"; label: string }[] = [
 
 const statusToVariant: Record<
   string,
-  "pending" | "running" | "completed" | "failed" | "canceled" | "paused" | "warning"
+  "pending" | "running" | "completed" | "failed" | "canceled" | "paused"
 > = {
   pending: "pending",
   claimed: "pending",
   running: "running",
   completed: "completed",
   failed: "failed",
-  needs_human: "warning",
+  needs_human: "paused",
   paused: "paused",
   canceled: "canceled",
 };
@@ -81,46 +102,83 @@ function truncatePrompt(prompt: string, maxLen = 60): string {
   return prompt.substring(0, maxLen) + "...";
 }
 
+function startOfLocalDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function bucketByDay(createdAt: string) {
+  const created = new Date(createdAt);
+  const todayStart = startOfLocalDay(new Date());
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(todayStart.getDate() - 1);
+
+  if (created >= todayStart) return "today" as const;
+  if (created >= yesterdayStart) return "yesterday" as const;
+  return "remaining" as const;
+}
+
 export function Tasks() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<TaskStatus[]>([]);
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
-  const limit = 20;
+  const [selectedRepoId, setSelectedRepoId] = useState<string>("");
+  const [limit, setLimit] = useState(80);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    id: string;
+    prompt: string;
+    executionMode?: string | null;
+  } | null>(null);
+
+  const deleteTask = useDeleteTask();
+  const { data: repos = [] } = useRepos();
 
   const { data, isLoading } = useTasks({
-    status: statusFilter === "all" ? undefined : statusFilter,
+    status: selectedStatuses.length ? selectedStatuses.join(",") : undefined,
+    repoId: selectedRepoId || undefined,
     limit,
-    offset: page * limit,
+    offset: 0,
   });
 
-  const tasks = data?.tasks ?? [];
   const pagination = data?.pagination ?? { total: 0, limit, offset: 0 };
+
+  const repoById = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; path: string }>();
+    for (const r of repos) map.set(r.id, r);
+    return map;
+  }, [repos]);
+
+  const selectedRepo = selectedRepoId ? repoById.get(selectedRepoId) : undefined;
 
   // Client-side search filter
   const filteredTasks = useMemo(() => {
-    if (!search.trim()) return tasks;
+    const allTasks = data?.tasks ?? [];
+    if (!search.trim()) return allTasks;
     const searchLower = search.toLowerCase();
-    return tasks.filter((task) => task.prompt.toLowerCase().includes(searchLower));
-  }, [search, tasks]);
-
-  const totalPages = Math.ceil(pagination.total / limit);
-  const hasNextPage = page < totalPages - 1;
-  const hasPrevPage = page > 0;
+    return allTasks.filter((task) => task.prompt.toLowerCase().includes(searchLower));
+  }, [search, data]);
 
   // Active filter chips
   const activeFilters: { key: string; label: string; onRemove: () => void }[] = [];
-  if (statusFilter !== "all") {
+  if (selectedStatuses.length) {
+    for (const s of selectedStatuses) {
+      activeFilters.push({
+        key: `status:${s}`,
+        label: `Status: ${statusFilters.find((f) => f.value === s)?.label ?? s}`,
+        onRemove: () => setSelectedStatuses((prev) => prev.filter((x) => x !== s)),
+      });
+    }
+  }
+  if (selectedRepoId) {
     activeFilters.push({
-      key: "status",
-      label: statusFilters.find((f) => f.value === statusFilter)?.label ?? statusFilter,
-      onRemove: () => setStatusFilter("all"),
+      key: "repo",
+      label: `Repo: ${selectedRepo?.name ?? "Unknown repo"}`,
+      onRemove: () => setSelectedRepoId(""),
     });
   }
   if (search.trim()) {
     activeFilters.push({
       key: "search",
-      label: `"${search}"`,
+      label: `Search: "${search}"`,
       onRemove: () => setSearch(""),
     });
   }
@@ -136,170 +194,324 @@ export function Tasks() {
     }
   };
 
+  const handleDeleteClick = (
+    e: React.MouseEvent,
+    task: { id: string; prompt: string; executionMode?: string | null },
+  ) => {
+    e.stopPropagation(); // Prevent row click
+    setDeleteConfirm(task);
+  };
+
+  const confirmDelete = async (deleteBranch: boolean) => {
+    if (!deleteConfirm) return;
+
+    try {
+      await deleteTask.mutateAsync({ id: deleteConfirm.id, deleteBranch });
+      toast.success("Task deleted");
+      setDeleteConfirm(null);
+    } catch (error) {
+      toast.error("Failed to delete task", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--color-accent)] border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <Container className="py-4 lg:py-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">Tasks</h1>
-        <div className="text-sm text-[var(--color-text-muted)]">
-          {pagination.total} task{pagination.total !== 1 ? "s" : ""}
+        <div className="flex min-w-0 items-center gap-3">
+          <h1 className="text-2xl font-semibold text-foreground">Tasks</h1>
+          <div className="hidden text-sm text-muted-foreground sm:block">
+            {pagination.total} task{pagination.total !== 1 ? "s" : ""}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <NewTaskButton />
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-4 flex items-center gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks..."
-            className="w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)] py-2 pl-9 pr-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-accent)] focus:outline-none"
-          />
+      <div className="mb-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            {/* Search */}
+            <div className="relative w-full sm:w-[320px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search tasks..."
+                className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+            </div>
+
+            {/* Repo filter */}
+            <div className="w-full sm:w-[260px]">
+              <Select
+                value={selectedRepoId || "__all__"}
+                onValueChange={(value) =>
+                  setSelectedRepoId(value === "__all__" ? "" : (value ?? ""))
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {selectedRepoId ? repoById.get(selectedRepoId)?.name : "All repos"}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All repos</SelectItem>
+                  {repos.map((repo) => (
+                    <SelectItem key={repo.id} value={repo.id}>
+                      {repo.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Clear */}
+          <div className="flex items-center justify-between gap-2 lg:justify-end">
+            <div className="text-xs text-muted-foreground">
+              Showing {filteredTasks.length} of {pagination.total}
+            </div>
+            {(search.trim() || selectedStatuses.length > 0 || selectedRepoId) && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => {
+                  setSearch("");
+                  setSelectedStatuses([]);
+                  setSelectedRepoId("");
+                }}
+              >
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Status filter */}
-        <div className="flex gap-1">
+        <div className="mt-3 flex flex-wrap gap-1">
           {statusFilters.map((filter) => (
             <button
               key={filter.value}
               onClick={() => {
-                setStatusFilter(filter.value);
-                setPage(0);
+                if (filter.value === "all") {
+                  setSelectedStatuses([]);
+                  return;
+                }
+                setSelectedStatuses((prev) => {
+                  const v = filter.value as TaskStatus;
+                  const next = prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v];
+                  return next;
+                });
               }}
-              className={`rounded-[var(--radius-md)] px-3 py-1.5 text-sm transition-colors ${
-                statusFilter === filter.value
-                  ? "bg-[var(--color-accent)] text-white"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]"
+              className={`rounded-(--radius-md) px-3 py-1.5 text-sm transition-colors ${
+                filter.value === "all"
+                  ? selectedStatuses.length === 0
+                  : selectedStatuses.includes(filter.value as TaskStatus)
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               {filter.label}
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Active filter chips */}
-      {activeFilters.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {activeFilters.map((filter) => (
-            <span
-              key={filter.key}
-              className="inline-flex items-center gap-1 rounded-[var(--radius-sm)] bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text-secondary)]"
-            >
-              {filter.label}
-              <button
-                onClick={filter.onRemove}
-                className="rounded hover:bg-[var(--color-surface-hover)]"
+        {/* Active filter chips */}
+        {activeFilters.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {activeFilters.map((filter) => (
+              <span
+                key={filter.key}
+                className="inline-flex items-center gap-1 rounded-sm bg-muted px-2 py-1 text-xs text-muted-foreground"
               >
-                <X className="h-3 w-3" />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+                {filter.label}
+                <button onClick={filter.onRemove} className="rounded hover:bg-background/50">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Empty State */}
       {filteredTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] py-16">
-          <p className="text-lg text-[var(--color-text-secondary)]">
-            {search || statusFilter !== "all" ? "No matching tasks" : "No tasks yet"}
-          </p>
-          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-            Press{" "}
-            <kbd className="rounded bg-[var(--color-surface-hover)] px-1.5 py-0.5 text-[var(--color-accent)]">
-              Cmd+K
-            </kbd>{" "}
-            to create a task
-          </p>
+        <div className="rounded-lg border border-dashed border-border bg-card">
+          <Empty className="py-16">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <ListTodo className="h-4 w-4" />
+              </EmptyMedia>
+              <EmptyTitle>
+                {search || selectedStatuses.length ? "No matching tasks" : "No tasks yet"}
+              </EmptyTitle>
+              <EmptyDescription>
+                {search || selectedStatuses.length
+                  ? "Try adjusting your filters, or create a new task."
+                  : "Create a task for Claude to pick up next."}
+              </EmptyDescription>
+            </EmptyHeader>
+
+            <EmptyContent className="gap-3">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <NewTaskButton />
+
+                {(search.trim() || selectedStatuses.length) && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearch("");
+                      setSelectedStatuses([]);
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+
+              {!search && selectedStatuses.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  Tip: you can paste a GitHub issue/PR URL into the prompt.
+                </p>
+              )}
+            </EmptyContent>
+          </Empty>
         </div>
       ) : (
         <>
-          {/* Table */}
-          <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)]">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[50%]">Prompt</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Priority</TableHead>
-                  <TableHead>Repo</TableHead>
-                  <TableHead className="text-right">Created</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTasks.map((task) => (
-                  <TableRow
-                    key={task.id}
-                    onClick={() => handleRowClick(task.id)}
-                    onKeyDown={(e) => handleKeyDown(e, task.id)}
-                    tabIndex={0}
-                    className="cursor-pointer"
-                  >
-                    <TableCell className="font-medium">{truncatePrompt(task.prompt)}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={statusToVariant[task.status] ?? "secondary"}
-                        className={task.status === "running" ? "animate-pulse" : ""}
-                      >
-                        {task.status.toLowerCase().replace("_", " ")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={priorityToVariant[task.priority ?? "medium"] ?? "medium"}>
-                        {(task.priority ?? "medium").toLowerCase()}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-[var(--color-text-muted)]">
-                      {task.repoPath ? task.repoPath.split("/").pop() : "-"}
-                    </TableCell>
-                    <TableCell className="text-right text-[var(--color-text-muted)]">
-                      {formatDate(task.createdAt)}
+          {(() => {
+            const buckets = {
+              today: [] as typeof filteredTasks,
+              yesterday: [] as typeof filteredTasks,
+              remaining: [] as typeof filteredTasks,
+            };
+            for (const t of filteredTasks) {
+              buckets[bucketByDay(t.createdAt)].push(t);
+            }
+
+            const renderSectionTbody = (title: string, rows: typeof filteredTasks) => {
+              if (rows.length === 0) return null;
+
+              return (
+                <TableBody className="border-b border-border">
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableCell colSpan={6} className="py-2 pt-4">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm font-medium text-foreground">{title}</div>
+                        <Badge variant="outline">{rows.length}</Badge>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="mt-4 flex items-center justify-between">
-              <p className="text-sm text-[var(--color-text-muted)]">
-                Showing {page * limit + 1}-{Math.min((page + 1) * limit, pagination.total)} of{" "}
-                {pagination.total}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPage(page - 1)}
-                  disabled={!hasPrevPage}
-                  className="flex items-center gap-1 rounded-[var(--radius-md)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50 disabled:hover:bg-transparent"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Previous
-                </button>
-                <button
-                  onClick={() => setPage(page + 1)}
-                  disabled={!hasNextPage}
-                  className="flex items-center gap-1 rounded-[var(--radius-md)] px-3 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] disabled:opacity-50 disabled:hover:bg-transparent"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+                  {rows.map((task) => (
+                    <TableRow
+                      key={task.id}
+                      onClick={() => handleRowClick(task.id)}
+                      onKeyDown={(e) => handleKeyDown(e, task.id)}
+                      tabIndex={0}
+                      className="cursor-pointer"
+                    >
+                      <TableCell className="font-medium">{truncatePrompt(task.prompt)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={statusToVariant[task.status] ?? "secondary"}
+                          className={task.status === "running" ? "animate-pulse" : ""}
+                        >
+                          {task.status.toLowerCase().replace("_", " ")}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={priorityToVariant[task.priority ?? "medium"] ?? "medium"}>
+                          {(task.priority ?? "medium").toLowerCase()}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {task.repoId
+                          ? (repoById.get(task.repoId)?.name ?? "Unknown repo")
+                          : task.repoPath
+                            ? task.repoPath.split("/").pop()
+                            : "-"}
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {formatDate(task.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDeleteClick(e, task)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              );
+            };
+
+            return (
+              <div className="rounded-lg border border-border bg-card">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[45%]">Prompt</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Priority</TableHead>
+                      <TableHead>Repo</TableHead>
+                      <TableHead className="text-right">Created</TableHead>
+                      <TableHead className="text-right w-[60px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+
+                  {renderSectionTbody("Today", buckets.today)}
+                  {renderSectionTbody("Yesterday", buckets.yesterday)}
+                  {renderSectionTbody("Earlier", buckets.remaining)}
+                </Table>
               </div>
+            );
+          })()}
+
+          {/* Load more (keeps time-buckets meaningful) */}
+          {pagination.total > limit && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <div className="text-sm text-muted-foreground">
+                Showing {Math.min(limit, pagination.total)} of {pagination.total}
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setLimit((v) => Math.min(pagination.total, v + 80))}
+              >
+                Load more
+              </Button>
             </div>
           )}
         </>
       )}
-    </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteTaskDialog
+        task={deleteConfirm}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+        isDeleting={deleteTask.isPending}
+      />
+    </Container>
   );
 }

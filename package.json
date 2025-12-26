@@ -1,6 +1,7 @@
 {
   "name": "nightshift",
   "private": true,
+  "repository": "https://github.com/sipherxyz/nightshift",
   "scripts": {
     "dev": "turbo dev",
     "format": "turbo format",

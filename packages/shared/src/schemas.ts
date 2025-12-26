@@ -52,6 +52,8 @@ export const taskSchema = z.object({
   id: z.string(),
   /** Task description/prompt text */
   prompt: z.string().min(1, "Prompt is required"),
+  /** Generated task name (max 50 chars) */
+  name: z.string().max(50).optional(),
   /** Reference to repo by ID */
   repoId: z.string().optional(),
   /** Absolute path to repo (denormalized for quick access) */
@@ -106,6 +108,28 @@ export const taskSchema = z.object({
   humanQuestion: z.string().optional(),
   /** User's response to continue execution */
   humanResponse: z.string().optional(),
+
+  // === Auto-Yes Mode ===
+  /** Enable auto-yes mode to auto-accept Claude prompts */
+  autoYes: z.boolean().default(false),
+
+  // === SDK Session ID ===
+  /** Claude Agent SDK v2 session ID for resume capability */
+  sdkSessionId: z.string().optional(),
+
+  // === Dual-Mode Architecture Fields ===
+  /** Task type: interactive or workflow */
+  type: z.enum(["interactive", "workflow"]).default("interactive"),
+  /** Message count for interactive tasks */
+  messageCount: z.number().int().nonnegative().default(0),
+  /** Reference to workflow definition */
+  workflowId: z.string().optional(),
+  /** Current step in workflow (0-indexed) */
+  currentStep: z.number().int().nonnegative().optional(),
+  /** Total number of steps in workflow */
+  totalSteps: z.number().int().nonnegative().optional(),
+  /** Last user message timestamp for interactive tasks */
+  lastUserMessageAt: z.string().datetime().optional(),
 });
 
 export const createTaskSchema = taskSchema.pick({
@@ -115,11 +139,13 @@ export const createTaskSchema = taskSchema.pick({
   priority: true,
   githubIssueUrl: true,
   branch: true,
+  autoYes: true,
 });
 
 export const updateTaskSchema = taskSchema
   .pick({
     status: true,
+    name: true,
     priority: true,
     clarificationResponse: true,
     failureCode: true,
@@ -140,6 +166,17 @@ export const updateTaskSchema = taskSchema
     pauseReason: true,
     humanQuestion: true,
     humanResponse: true,
+    // Auto-yes mode
+    autoYes: true,
+    // SDK session ID
+    sdkSessionId: true,
+    // Dual-mode fields
+    type: true,
+    messageCount: true,
+    workflowId: true,
+    currentStep: true,
+    totalSteps: true,
+    lastUserMessageAt: true,
   })
   .partial();
 
@@ -215,7 +252,7 @@ export const sessionEventEnvelopeSchema = z.object({
   /** Unique execution run ID */
   runId: z.string(),
   /** Event-specific payload */
-  data: z.record(z.unknown()).default({}),
+  data: z.record(z.string(), z.unknown()).default({}),
 });
 
 // =============================================================================

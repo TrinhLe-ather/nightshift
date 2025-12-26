@@ -24,7 +24,7 @@ export async function stopCommand(): Promise<void> {
     // Check if process exists
     try {
       process.kill(pid, 0);
-    } catch (error) {
+    } catch {
       console.log("Night Shift is not running (stale PID file)");
       // Clean up stale PID file
       const fs = await import("fs/promises");
@@ -45,7 +45,7 @@ export async function stopCommand(): Promise<void> {
         process.kill(pid, 0);
         await Bun.sleep(checkInterval);
         waited += checkInterval;
-      } catch (error) {
+      } catch {
         // Process has exited
         break;
       }
@@ -57,7 +57,7 @@ export async function stopCommand(): Promise<void> {
       console.error("Failed to stop Night Shift (timeout)");
       console.error("Try: kill -9 " + pid);
       process.exit(1);
-    } catch (error) {
+    } catch {
       // Process has exited successfully
       console.log("Night Shift stopped");
     }

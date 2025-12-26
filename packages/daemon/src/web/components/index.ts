@@ -1,3 +1,9 @@
 export { Layout, Sidebar } from "./layout";
 export { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
 export { CommandPalette } from "./CommandPalette";
+export { ChatMessage } from "./ChatMessage";
+export { ChatMessageList } from "./ChatMessageList";
+export { TaskListSidebar } from "./TaskListSidebar";
+export { NewTaskButton } from "./NewTaskButton";
+export { NewTaskDialog } from "./NewTaskDialog";
+export { DeleteTaskDialog } from "./DeleteTaskDialog";

@@ -1,115 +1,137 @@
-/**
- * Dialog Component
- *
- * A modal dialog for confirmations and forms.
- * Uses native dialog element with React portal.
- */
+"use client"
 
-import * as React from "react";
-import { createPortal } from "react-dom";
-import { X } from "lucide-react";
-import { cn } from "@/lib/utils";
+import * as React from "react"
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 
-interface DialogProps {
-  open: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Cancel01Icon } from "@hugeicons/core-free-icons"
+
+function Dialog({ ...props }: DialogPrimitive.Root.Props) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function Dialog({ open, onClose, children }: DialogProps) {
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
+function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+}
 
-    if (open) {
-      document.addEventListener("keydown", handleEscape);
-      document.body.style.overflow = "hidden";
-    }
+function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {
+  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+}
 
-    return () => {
-      document.removeEventListener("keydown", handleEscape);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+}
 
-  if (!open) return null;
+function DialogOverlay({
+  className,
+  ...props
+}: DialogPrimitive.Backdrop.Props) {
+  return (
+    <DialogPrimitive.Backdrop
+      data-slot="dialog-overlay"
+      className={cn("data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs fixed inset-0 isolate z-50", className)}
+      {...props}
+    />
+  )
+}
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/80" onClick={onClose} aria-hidden="true" />
-      {/* Content */}
-      <div className="relative z-50 max-h-[85vh] w-full max-w-lg overflow-auto rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+function DialogContent({
+  className,
+  children,
+  showCloseButton = true,
+  ...props
+}: DialogPrimitive.Popup.Props & {
+  showCloseButton?: boolean
+}) {
+  return (
+    <DialogPortal>
+      <DialogOverlay />
+      <DialogPrimitive.Popup
+        data-slot="dialog-content"
+        className={cn(
+          "bg-background data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 ring-foreground/10 grid max-w-[calc(100%-2rem)] gap-4 rounded-none p-4 text-xs/relaxed ring-1 duration-100 sm:max-w-sm fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none",
+          className
+        )}
+        {...props}
+      >
         {children}
-      </div>
-    </div>,
-    document.body,
-  );
+        {showCloseButton && (
+          <DialogPrimitive.Close data-slot="dialog-close" render={<Button variant="ghost" className="absolute top-2 right-2" size="icon-sm"><HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} /><span className="sr-only">Close</span></Button>} />
+        )}
+      </DialogPrimitive.Popup>
+    </DialogPortal>
+  )
 }
 
-interface DialogHeaderProps {
-  children: React.ReactNode;
-  onClose?: () => void;
-  className?: string;
-}
-
-function DialogHeader({ children, onClose, className }: DialogHeaderProps) {
+function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn(
-        "flex items-center justify-between border-b border-[var(--color-border)] p-6",
-        className,
-      )}
-    >
-      <div>{children}</div>
-      {onClose && (
-        <button
-          onClick={onClose}
-          className="rounded-[var(--radius-sm)] p-1 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
-  );
+      data-slot="dialog-header"
+      className={cn("gap-1 text-left flex flex-col", className)}
+      {...props}
+    />
+  )
 }
 
-function DialogTitle({ children, className }: { children: React.ReactNode; className?: string }) {
+function DialogFooter({
+  className,
+  showCloseButton = false,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & {
+  showCloseButton?: boolean
+}) {
   return (
-    <h2 className={cn("text-lg font-semibold text-[var(--color-text-primary)]", className)}>
+    <div
+      data-slot="dialog-footer"
+      className={cn(
+        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        className
+      )}
+      {...props}
+    >
       {children}
-    </h2>
-  );
+      {showCloseButton && (
+        <DialogPrimitive.Close render={<Button variant="outline">Close</Button>} />
+      )}
+    </div>
+  )
+}
+
+function DialogTitle({ className, ...props }: DialogPrimitive.Title.Props) {
+  return (
+    <DialogPrimitive.Title
+      data-slot="dialog-title"
+      className={cn("text-sm font-medium", className)}
+      {...props}
+    />
+  )
 }
 
 function DialogDescription({
-  children,
   className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <p className={cn("text-sm text-[var(--color-text-secondary)]", className)}>{children}</p>;
-}
-
-function DialogContent({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn("p-6", className)}>{children}</div>;
-}
-
-function DialogFooter({ children, className }: { children: React.ReactNode; className?: string }) {
+  ...props
+}: DialogPrimitive.Description.Props) {
   return (
-    <div
-      className={cn(
-        "flex items-center justify-end gap-2 border-t border-[var(--color-border)] p-6",
-        className,
-      )}
-    >
-      {children}
-    </div>
-  );
+    <DialogPrimitive.Description
+      data-slot="dialog-description"
+      className={cn("text-muted-foreground *:[a]:hover:text-foreground text-xs/relaxed *:[a]:underline *:[a]:underline-offset-3", className)}
+      {...props}
+    />
+  )
 }
 
-export { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent, DialogFooter };
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+}

@@ -53,6 +53,8 @@ export interface DaemonStatus {
   uptime: number;
   database: {
     schemaVersion: number;
+    latestMigrationHash: string | null;
+    latestMigrationCreatedAt: number | string | null;
     tables: string[];
   };
   activeTask: {

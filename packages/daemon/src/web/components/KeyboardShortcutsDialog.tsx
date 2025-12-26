@@ -4,7 +4,7 @@
  * Shows all available keyboard shortcuts.
  */
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { KEYBOARD_SHORTCUTS } from "@/hooks/useKeyboardShortcuts";
 
 interface KeyboardShortcutsDialogProps {
@@ -14,28 +14,31 @@ interface KeyboardShortcutsDialogProps {
 
 export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDialogProps) {
   return (
-    <Dialog open={open} onClose={onClose}>
-      <DialogHeader onClose={onClose}>
-        <DialogTitle>Keyboard Shortcuts</DialogTitle>
-      </DialogHeader>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen) onClose();
+      }}
+    >
       <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+        </DialogHeader>
         <div className="space-y-6">
           {KEYBOARD_SHORTCUTS.map((category) => (
             <div key={category.category}>
-              <h3 className="mb-3 text-sm font-medium text-[var(--color-text-muted)]">
+              <h3 className="mb-3 text-sm font-medium text-muted-foreground">
                 {category.category}
               </h3>
               <div className="space-y-2">
                 {category.shortcuts.map((shortcut) => (
                   <div key={shortcut.description} className="flex items-center justify-between">
-                    <span className="text-sm text-[var(--color-text-secondary)]">
-                      {shortcut.description}
-                    </span>
+                    <span className="text-sm text-muted-foreground">{shortcut.description}</span>
                     <div className="flex items-center gap-1">
                       {shortcut.keys.map((key, i) => (
                         <span key={i}>
-                          {i > 0 && <span className="mx-1 text-[var(--color-text-muted)]">/</span>}
-                          <kbd className="inline-flex min-w-[1.5rem] items-center justify-center rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-background)] px-1.5 py-0.5 text-xs font-medium text-[var(--color-text-primary)]">
+                          {i > 0 && <span className="mx-1 text-muted-foreground">/</span>}
+                          <kbd className="inline-flex min-w-6 items-center justify-center rounded-sm border border-border bg-background px-1.5 py-0.5 text-xs font-medium text-foreground">
                             {key}
                           </kbd>
                         </span>

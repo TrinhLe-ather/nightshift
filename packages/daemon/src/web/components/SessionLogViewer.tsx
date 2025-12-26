@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Loader2, Terminal } from "lucide-react";
+import { ChevronDown, Loader2, Terminal } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 export interface SessionEvent {
@@ -29,44 +29,44 @@ interface SessionLogViewerProps {
 
 const eventTypeColors: Record<string, string> = {
   // Task events
-  TASK_CLAIMED: "text-[var(--color-info)]",
-  TASK_STARTED: "text-[var(--color-info)]",
-  TASK_COMPLETED: "text-[var(--color-success)]",
-  TASK_FAILED: "text-[var(--color-destructive)]",
-  TASK_CANCELED: "text-[var(--color-text-muted)]",
+  TASK_CLAIMED: "text-blue-500",
+  TASK_STARTED: "text-blue-500",
+  TASK_COMPLETED: "text-emerald-500",
+  TASK_FAILED: "text-destructive",
+  TASK_CANCELED: "text-muted-foreground",
 
   // Agent events - tool calls in orange
-  AGENT_STARTED: "text-[var(--color-accent)]",
-  AGENT_TOOL_CALL: "text-[var(--color-accent)]",
-  AGENT_TOOL_RESULT: "text-[var(--color-text-secondary)]",
-  AGENT_MESSAGE: "text-[var(--color-text-primary)]",
-  AGENT_NEEDS_HUMAN: "text-[var(--color-warning)]",
+  AGENT_STARTED: "text-primary",
+  AGENT_TOOL_CALL: "text-primary",
+  AGENT_TOOL_RESULT: "text-muted-foreground",
+  AGENT_MESSAGE: "text-foreground",
+  AGENT_NEEDS_HUMAN: "text-amber-500",
 
   // Preflight events
-  PREFLIGHT_STARTED: "text-[var(--color-text-muted)]",
-  PREFLIGHT_PASSED: "text-[var(--color-success)]",
-  PREFLIGHT_FAILED: "text-[var(--color-destructive)]",
+  PREFLIGHT_STARTED: "text-muted-foreground",
+  PREFLIGHT_PASSED: "text-emerald-500",
+  PREFLIGHT_FAILED: "text-destructive",
 
   // Repo events
-  REPO_LOCK_ACQUIRED: "text-[var(--color-info)]",
-  REPO_LOCK_RELEASED: "text-[var(--color-text-muted)]",
-  REPO_BRANCH_CREATED: "text-[var(--color-info)]",
+  REPO_LOCK_ACQUIRED: "text-blue-500",
+  REPO_LOCK_RELEASED: "text-muted-foreground",
+  REPO_BRANCH_CREATED: "text-blue-500",
 
   // Artifact events
-  ARTIFACT_COMMIT_CREATED: "text-[var(--color-success)]",
-  ARTIFACT_PR_CREATED: "text-[var(--color-success)]",
-  ARTIFACT_FILE_MODIFIED: "text-[var(--color-text-secondary)]",
+  ARTIFACT_COMMIT_CREATED: "text-emerald-500",
+  ARTIFACT_PR_CREATED: "text-emerald-500",
+  ARTIFACT_FILE_MODIFIED: "text-muted-foreground",
 
   // Session events
-  SESSION_STARTED: "text-[var(--color-text-muted)]",
-  SESSION_ENDED: "text-[var(--color-text-muted)]",
+  SESSION_STARTED: "text-muted-foreground",
+  SESSION_ENDED: "text-muted-foreground",
 };
 
 const levelColors: Record<string, string> = {
-  info: "text-[var(--color-text-secondary)]",
-  warn: "text-[var(--color-warning)]",
-  error: "text-[var(--color-destructive)]",
-  debug: "text-[var(--color-text-muted)]",
+  info: "text-muted-foreground",
+  warn: "text-amber-500",
+  error: "text-destructive",
+  debug: "text-muted-foreground/70",
 };
 
 function formatRelativeTime(eventTime: string, startTime: string): string {
@@ -137,11 +137,11 @@ export function SessionLogViewer({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[#0A0A0A] p-8",
+          "flex items-center justify-center rounded-lg border border-border bg-[#0A0A0A] p-8",
           className,
         )}
       >
-        <p className="text-sm text-[var(--color-text-muted)]">No session events</p>
+        <p className="text-sm text-muted-foreground">No session events</p>
       </div>
     );
   }
@@ -149,14 +149,14 @@ export function SessionLogViewer({
   return (
     <div className={cn("relative", className)}>
       {/* Header */}
-      <div className="flex items-center gap-2 rounded-t-[var(--radius-lg)] border border-b-0 border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
-        <Terminal className="h-4 w-4 text-[var(--color-text-muted)]" />
-        <span className="text-sm font-medium text-[var(--color-text-primary)]">Session Log</span>
-        <span className="text-xs text-[var(--color-text-muted)]">
+      <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-border bg-card px-4 py-2 text-card-foreground">
+        <Terminal className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Session Log</span>
+        <span className="text-xs text-muted-foreground">
           {events.length} event{events.length !== 1 ? "s" : ""}
         </span>
         {isLoading && (
-          <Loader2 className="ml-auto h-4 w-4 animate-spin text-[var(--color-accent)]" />
+          <Loader2 className="ml-auto h-4 w-4 animate-spin text-primary" />
         )}
       </div>
 
@@ -164,12 +164,12 @@ export function SessionLogViewer({
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="max-h-[400px] overflow-y-auto rounded-b-[var(--radius-lg)] border border-[var(--color-border)] bg-[#0A0A0A] p-4 font-mono text-xs"
+        className="max-h-[400px] overflow-y-auto rounded-b-lg border border-border bg-[#0A0A0A] p-4 font-mono text-xs"
       >
         {events.map((event) => (
           <div key={`${event.runId}-${event.seq}`} className="flex gap-2 py-0.5 hover:bg-white/5">
             {/* Timestamp */}
-            <span className="shrink-0 text-[var(--color-text-muted)]">
+            <span className="shrink-0 text-muted-foreground">
               [{formatRelativeTime(event.ts, effectiveStartTime)}]
             </span>
 
@@ -182,7 +182,7 @@ export function SessionLogViewer({
 
             {/* Event data */}
             {event.data && (
-              <span className="text-[var(--color-text-secondary)] truncate">
+              <span className="text-muted-foreground truncate">
                 {formatEventData(event.data)}
               </span>
             )}
@@ -194,7 +194,7 @@ export function SessionLogViewer({
       {!autoScroll && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-4 right-4 flex items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-surface)] px-2 py-1 text-xs text-[var(--color-text-secondary)] shadow-lg hover:bg-[var(--color-surface-hover)]"
+          className="absolute bottom-4 right-4 flex items-center gap-1 rounded-md bg-card px-2 py-1 text-xs text-muted-foreground shadow-lg hover:bg-muted"
         >
           <ChevronDown className="h-3 w-3" />
           Jump to end

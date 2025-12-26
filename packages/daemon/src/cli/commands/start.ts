@@ -5,15 +5,22 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
+import { VERSION } from "@nightshift/shared";
+import { stopCommand } from "./stop";
 import { NIGHTSHIFT_DIR, PID_FILE } from "../../config/paths";
 import { ensureNightShiftDirectories } from "../../config/paths";
-import { VERSION } from "@nightshift/shared";
 import { closeDb, getDbStats, initDb, runMigrations } from "../../db";
 import { loadConfig } from "../../config";
 import { serverOptions } from "../../server/options";
 import { findAvailablePort } from "../../server";
 import { type TaskExecutor, createExecutor } from "../../executor";
 import { checkForUpdates } from "../../update";
+import {
+  setTerminalOutputProvider,
+  setTerminalMessagesProvider,
+  setTranscriptReader,
+} from "../../orpc/router";
+import { initWorkflows } from "../../workflows/loader";
 
 /**
  * Check if daemon is already running
@@ -57,14 +64,99 @@ async function openBrowser(url: string): Promise<void> {
 }
 
 /**
+ * Parse command line arguments for start command
+ */
+interface StartCommandArgs {
+  interactive: boolean;
+}
+
+function parseArgs(args: string[]): StartCommandArgs {
+  const options: StartCommandArgs = { interactive: false };
+
+  for (const arg of args) {
+    if (arg === "-i" || arg === "--interactive") {
+      options.interactive = true;
+    } else {
+      console.error(`Unknown option: ${arg}`);
+      console.error("Usage: nightshift start [-i|--interactive]");
+      process.exit(1);
+    }
+  }
+
+  return options;
+}
+
+/**
+ * Start the daemon in background (detached mode)
+ */
+async function startInBackground(): Promise<void> {
+  // Get the script path
+  const scriptPath = process.argv[1];
+  if (!scriptPath) {
+    console.error("Could not determine script path");
+    process.exit(1);
+  }
+
+  // Spawn detached process
+  const proc = Bun.spawn(
+    [
+      process.execPath,
+      // bun or compiled binary
+      process.execPath.endsWith("/bun") ? scriptPath : "",
+      "start",
+      "--interactive",
+    ].filter(Boolean),
+    {
+      detached: true,
+      stdio: ["ignore", "ignore", "ignore"],
+      env: process.env,
+    },
+  );
+
+  // Unref so parent can exit
+  proc.unref();
+
+  // Give it a moment to start
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // Verify it started
+  if (isDaemonRunning()) {
+    console.log("Night Shift started successfully");
+    console.log("Run 'nightshift status' to check daemon status");
+    console.log("Run 'nightshift config' to open the web UI");
+  } else {
+    console.error("Failed to start daemon");
+    process.exit(1);
+  }
+}
+
+/**
  * Start the daemon
  */
 export async function startCommand(): Promise<void> {
+  // Parse arguments
+  const args = process.argv.slice(3); // Skip 'bun', 'index.ts', 'start'
+  const options = parseArgs(args);
+
   // Check if already running
   if (isDaemonRunning()) {
-    console.error("Night Shift is already running");
-    process.exit(1);
+    if (import.meta.hot) {
+      // hot reload, stop the daemon
+      await stopCommand();
+    } else {
+      console.error("Night Shift is already running");
+      process.exit(1);
+    }
   }
+
+  // If not interactive, spawn in background and exit
+  if (!options.interactive) {
+    await startInBackground();
+    return;
+  }
+
+  // Interactive mode: run in foreground
+  console.log("Starting Night Shift in interactive mode...");
 
   // Ensure directories exist
   ensureNightShiftDirectories();
@@ -88,6 +180,10 @@ export async function startCommand(): Promise<void> {
   const dbStats = getDbStats();
   console.log(`Database ready with ${dbStats.tables.length} tables`);
 
+  // Load built-in workflows
+  console.log("Loading workflows...");
+  await initWorkflows();
+
   // Find available port (try config.port through config.port + 10)
   let actualPort: number;
   try {
@@ -95,7 +191,7 @@ export async function startCommand(): Promise<void> {
     if (actualPort !== config.port) {
       console.log(`Port ${config.port} in use, using port ${actualPort} instead`);
     }
-  } catch (error) {
+  } catch {
     console.error(`Could not find available port between ${config.port} and ${config.port + 10}`);
     process.exit(1);
   }
@@ -123,6 +219,12 @@ export async function startCommand(): Promise<void> {
       dataDir: NIGHTSHIFT_DIR,
       timeoutMs: config.taskTimeoutMs,
     });
+
+    // Wire up terminal providers for live preview and transcript reading
+    setTerminalOutputProvider((taskId) => executor?.getTerminalOutput(taskId) ?? null);
+    setTerminalMessagesProvider((taskId) => executor?.getTerminalMessages(taskId) ?? null);
+    setTranscriptReader((taskId) => executor?.readTranscript(taskId) ?? []);
+
     executor.start();
     console.log("Task executor started");
   } else {

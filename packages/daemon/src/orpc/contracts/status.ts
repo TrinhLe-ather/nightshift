@@ -35,6 +35,9 @@ const DaemonStatusSchema = z.object({
   port: z.number(),
   uptime: z.number(),
   database: z.object({
+    schemaVersion: z.number(),
+    latestMigrationHash: z.string().nullable(),
+    latestMigrationCreatedAt: z.union([z.number(), z.string()]).nullable(),
     tables: z.array(z.string()),
   }),
   activeTask: ActiveTaskSchema,
@@ -104,6 +107,9 @@ const getStatus = orpc.output(DaemonStatusSchema).handler(async () => {
     port: config.port,
     uptime: Date.now() - startTime,
     database: {
+      schemaVersion: dbStats.schemaVersion,
+      latestMigrationHash: dbStats.latestMigrationHash,
+      latestMigrationCreatedAt: dbStats.latestMigrationCreatedAt,
       tables: dbStats.tables,
     },
     activeTask,

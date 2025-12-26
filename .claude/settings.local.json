@@ -12,7 +12,16 @@
       "Bash(grep:*)",
       "Bash(bun run build)",
       "Bash(npx tsc:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(bun remove:*)",
+      "Bash(bun run daemon:*)",
+      "Bash(bun run lint:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(curl:*)",
+      "Bash(bun build:*)",
+      "Bash(bun -e:*)",
+      "Bash(bun run:*)",
+      "Bash(sqlite3:*)"
     ]
   }
 }

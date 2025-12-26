@@ -1,0 +1,56 @@
+name: Documentation
+description: Generate documentation from code
+version: 1.0.0
+
+inputs:
+  target:
+    type: string
+    description: What to document (file, module, API)
+    required: true
+
+steps:
+  - name: Analyze Code
+    prompt: |
+      Analyze the code: {{target}}
+
+      Extract:
+      1. Public APIs and interfaces
+      2. Function signatures and parameters
+      3. Return types and behaviors
+      4. Dependencies and usage patterns
+    tools:
+      enable: [Read, Grep]
+
+  - name: Generate Documentation
+    prompt: |
+      Generate comprehensive documentation for {{target}}.
+
+      Include:
+      - Overview and purpose
+      - API reference with examples
+      - Usage patterns
+      - Common pitfalls
+
+      Use markdown format.
+    tools:
+      enable: [Read, Write, Edit]
+
+  - name: Add Examples
+    prompt: |
+      Add code examples demonstrating:
+      - Basic usage
+      - Common scenarios
+      - Edge cases
+
+      Examples should be runnable and clear.
+    tools:
+      enable: [Read, Edit, Write]
+
+  - name: Create PR
+    prompt: |
+      Create a pull request with the documentation.
+
+      Explain what was documented and where.
+    tools:
+      enable: [Bash]
+    autoCommit: true

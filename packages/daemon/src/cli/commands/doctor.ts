@@ -160,11 +160,14 @@ function checkDatabase(): CheckResult {
     }
 
     const stats = getDbStats();
+    const latest = stats.latestMigrationHash
+      ? `, latest ${stats.latestMigrationHash.substring(0, 8)}`
+      : "";
     return {
       success: true,
-      message: `SQLite database accessible (${stats.tables.length} tables, schema v${stats.schemaVersion})`,
+      message: `SQLite database accessible (${stats.tables.length} tables, schema v${stats.schemaVersion}${latest})`,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       message: "SQLite database not accessible",

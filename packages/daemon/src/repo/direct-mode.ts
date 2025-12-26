@@ -20,6 +20,39 @@ import {
 } from "./git";
 
 /**
+ * SECURITY: Validate taskId to prevent path traversal and command injection
+ * Git ref names must not contain: /../, shell metacharacters, control characters
+ */
+function validateTaskId(taskId: string): void {
+  // Check for path traversal
+  if (taskId.includes("../") || taskId.includes("/..") || taskId.includes("..")) {
+    throw new Error(`Invalid taskId: contains path traversal (..)`);
+  }
+
+  // Check for shell metacharacters that could break commands
+  const dangerousChars = /[;&|`$(){}[\]<>'"\\!\s]/;
+  if (dangerousChars.test(taskId)) {
+    throw new Error(`Invalid taskId: contains shell metacharacters`);
+  }
+
+  // Check for invalid git ref characters (per git-check-ref-format)
+  // Cannot start with ., cannot contain .., cannot end with .lock, etc.
+  if (taskId.startsWith(".") || taskId.includes("..") || taskId.endsWith(".lock")) {
+    throw new Error(`Invalid taskId: violates git ref format rules`);
+  }
+
+  // Cannot contain control characters
+  if (/[\x00-\x1f\x7f]/.test(taskId)) {
+    throw new Error(`Invalid taskId: contains control characters`);
+  }
+
+  // Must not be empty
+  if (!taskId || taskId.trim().length === 0) {
+    throw new Error(`Invalid taskId: cannot be empty`);
+  }
+}
+
+/**
  * Information about a direct mode setup
  */
 export interface DirectModeSetup {
@@ -62,38 +95,28 @@ export class DirectModeManager {
    * Generate the branch name for a task
    */
   getBranchName(taskId: string): string {
+    // SECURITY FIX: Validate taskId before using in branch name
+    validateTaskId(taskId);
     return `nightshift/${taskId}`;
   }
 
   /**
    * Set up direct mode execution for a task
    *
-   * 1. Checks that repo is clean (no uncommitted changes)
-   * 2. Records current branch
-   * 3. Gets HEAD SHA for diffing
-   * 4. Creates and checks out task branch
+   * 1. Records current branch
+   * 2. Gets HEAD SHA for diffing
+   * 3. Creates and checks out task branch
+   *
+   * Note: Dirty check is handled by PreflightChecker after setup completes
    */
   async setup(taskId: string, repoPath: string): Promise<DirectModeResult<DirectModeSetup>> {
-    // Step 1: Check repo is clean
-    const dirty = await isRepoDirty(repoPath);
-    if (dirty) {
-      return {
-        success: false,
-        error: {
-          code: DirectModeError.REPO_DIRTY,
-          message:
-            "Repository has uncommitted changes. Please commit or stash your changes before running a task.",
-        },
-      };
-    }
-
-    // Step 2: Get current branch
+    // Step 1: Get current branch
     const originalBranch = await getCurrentBranch(repoPath);
 
-    // Step 3: Get HEAD SHA for diffing
+    // Step 2: Get HEAD SHA for diffing
     const baseCommitSha = await getHeadSha(repoPath);
 
-    // Step 4: Create task branch
+    // Step 3: Create task branch
     const taskBranch = this.getBranchName(taskId);
 
     // Check if branch already exists (resume scenario)
@@ -201,26 +224,15 @@ export class DirectModeManager {
   /**
    * Prepare for resume in direct mode
    *
-   * Checks that repo is clean and task branch exists.
+   * Checks that task branch exists and switches to it.
+   *
+   * Note: Dirty check is handled by PreflightChecker after resume setup completes
    */
   async prepareForResume(
     taskId: string,
     repoPath: string,
   ): Promise<DirectModeResult<DirectModeSetup>> {
     const taskBranch = this.getBranchName(taskId);
-
-    // Check repo is clean
-    const dirty = await isRepoDirty(repoPath);
-    if (dirty) {
-      return {
-        success: false,
-        error: {
-          code: DirectModeError.REPO_DIRTY,
-          message:
-            "Repository has uncommitted changes. Please commit or stash your changes before resuming the task.",
-        },
-      };
-    }
 
     // Check task branch exists
     const exists = await branchExists(taskBranch, repoPath);

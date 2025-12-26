@@ -12,5 +12,7 @@ export function useStatus() {
     queryKey: ["status"],
     queryFn: () => client.status.getStatus(),
     refetchInterval: 2000, // Poll every 2 seconds
+    retry: 1, // Only retry once before marking as error
+    retryDelay: 500, // Quick retry for faster feedback
   });
 }

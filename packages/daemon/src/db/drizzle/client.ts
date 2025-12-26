@@ -131,6 +131,20 @@ export interface DbStats {
   pageSize: number;
   pageCount: number;
   tables: string[];
+  /**
+   * Schema version derived from the Drizzle migrations table (`__drizzle_migrations`).
+   * This is the number of applied migrations, or 0 if the table does not exist yet.
+   */
+  schemaVersion: number;
+  /**
+   * Latest applied migration hash, if available.
+   */
+  latestMigrationHash: string | null;
+  /**
+   * Raw `created_at` from the latest migration row, if available.
+   * Drizzle stores this as an integer in SQLite.
+   */
+  latestMigrationCreatedAt: number | string | null;
 }
 
 /**
@@ -151,8 +165,38 @@ export function getDbStats(): DbStats {
 
   // Get all table names
   const tables = database
-    .query("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE '_%' ORDER BY name")
+    .query(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND substr(name, 1, 1) != '_' ORDER BY name",
+    )
     .all() as Array<{ name: string }>;
+
+  // Read Drizzle migration metadata (table may not exist on first run)
+  let schemaVersion = 0;
+  let latestMigrationHash: string | null = null;
+  let latestMigrationCreatedAt: number | string | null = null;
+  try {
+    const migrationsTableExists = database
+      .query(
+        "SELECT 1 AS ok FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations' LIMIT 1",
+      )
+      .get() as { ok: 1 } | null;
+
+    if (migrationsTableExists) {
+      const countRow = database
+        .query("SELECT COUNT(*) AS count FROM __drizzle_migrations")
+        .get() as { count: number } | null;
+      schemaVersion = countRow?.count ?? 0;
+
+      const latestRow = database
+        .query("SELECT hash, created_at FROM __drizzle_migrations ORDER BY created_at DESC LIMIT 1")
+        .get() as { hash: string; created_at: number | string } | null;
+
+      latestMigrationHash = latestRow?.hash ?? null;
+      latestMigrationCreatedAt = latestRow?.created_at ?? null;
+    }
+  } catch {
+    // If anything goes wrong, leave migration metadata as null/0.
+  }
 
   return {
     path: DB_PATH,
@@ -160,6 +204,9 @@ export function getDbStats(): DbStats {
     pageSize: pageSize.page_size,
     pageCount: pageCount.page_count,
     tables: tables.map((t) => t.name),
+    schemaVersion,
+    latestMigrationHash,
+    latestMigrationCreatedAt,
   };
 }
 

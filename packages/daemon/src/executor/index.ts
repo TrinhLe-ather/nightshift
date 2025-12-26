@@ -5,11 +5,24 @@
  */
 
 export { TaskExecutor, createExecutor, type ExecutorConfig } from "./task-executor";
-export { SessionManager, type Session, type SessionEvent } from "./session-manager";
+export {
+  SessionManager,
+  getSessionManager,
+  setSessionManager,
+  type Session,
+  type SessionEvent,
+} from "./session-manager";
 export { PreflightChecker, type PreflightResult } from "./preflight-checker";
 export { GitOperations, type CommitResult, type PrResult } from "./git-operations";
 export { ClaudeRunner, type ClaudeRunnerOptions, type ClaudeRunResult } from "./claude-runner";
 export { RepoLock, type LockInfo } from "./repo-lock";
+export { TranscriptWriter, type TranscriptEntry } from "./transcript-writer";
+
+// SDK-based execution (Claude Agent SDK v2)
+export { SdkRunner, type SdkRunnerOptions, type SdkRunResult, type SdkMessage } from "./sdk";
+
+// Interactive chat executor (dual-mode architecture)
+export { InteractiveExecutor } from "./interactive-executor";
 
 // New modules for worktree and pause/resume support
 export {

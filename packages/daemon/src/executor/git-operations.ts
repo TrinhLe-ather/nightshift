@@ -7,12 +7,9 @@
  * - Creating PRs via gh CLI
  */
 
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
+import { execa } from "execa";
 import { SessionManager } from "./session-manager";
 import { EventLevel, EventType } from "@nightshift/shared";
-
-const execAsync = promisify(exec);
 
 export interface CommitResult {
   success: boolean;
@@ -37,12 +34,12 @@ export class GitOperations {
 
     try {
       // Get current branch to return to if needed
-      const { stdout: currentBranch } = await execAsync("git rev-parse --abbrev-ref HEAD", {
+      const { stdout: currentBranch } = await execa("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
         cwd: repoPath,
       });
 
       // Create and checkout new branch
-      await execAsync(`git checkout -b "${branchName}"`, { cwd: repoPath });
+      await execa("git", ["checkout", "-b", branchName], { cwd: repoPath });
 
       this.sessionManager.emit(EventType.REPO_BRANCH_CREATED, EventLevel.INFO, {
         branch: branchName,
@@ -61,7 +58,7 @@ export class GitOperations {
    */
   async hasChanges(repoPath: string): Promise<boolean> {
     try {
-      const { stdout } = await execAsync("git status --porcelain", {
+      const { stdout } = await execa("git", ["status", "--porcelain"], {
         cwd: repoPath,
       });
       return stdout.trim().length > 0;
@@ -71,11 +68,19 @@ export class GitOperations {
   }
 
   /**
+   * Check if working tree is clean (no uncommitted changes or untracked files)
+   * Required for direct mode workflow execution
+   */
+  async isWorkingTreeClean(repoPath: string): Promise<boolean> {
+    return !(await this.hasChanges(repoPath));
+  }
+
+  /**
    * Get list of modified files
    */
   async getModifiedFiles(repoPath: string): Promise<string[]> {
     try {
-      const { stdout } = await execAsync("git status --porcelain", {
+      const { stdout } = await execa("git", ["status", "--porcelain"], {
         cwd: repoPath,
       });
       const files = stdout
@@ -96,22 +101,24 @@ export class GitOperations {
   async commit(repoPath: string, message: string): Promise<CommitResult> {
     try {
       // Stage all changes
-      await execAsync("git add -A", { cwd: repoPath });
+      await execa("git", ["add", "-A"], { cwd: repoPath });
 
-      // Create commit
-      await execAsync(`git commit -m "${message.replace(/"/g, '\\"')}"`, {
+      // SECURITY FIX: Use array-based syntax to prevent shell injection
+      // Message is passed as a separate argument, not interpolated into shell command
+      await execa("git", ["commit", "-m", message], {
         cwd: repoPath,
       });
 
       // Get commit SHA
-      const { stdout: sha } = await execAsync("git rev-parse HEAD", {
+      const { stdout: sha } = await execa("git", ["rev-parse", "HEAD"], {
         cwd: repoPath,
       });
       const commitSha = sha.trim();
 
       // Get list of files in commit
-      const { stdout: files } = await execAsync(
-        "git diff-tree --no-commit-id --name-only -r HEAD",
+      const { stdout: files } = await execa(
+        "git",
+        ["diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
         {
           cwd: repoPath,
         },
@@ -135,7 +142,7 @@ export class GitOperations {
    */
   async push(repoPath: string, branchName: string): Promise<boolean> {
     try {
-      await execAsync(`git push -u origin "${branchName}"`, { cwd: repoPath });
+      await execa("git", ["push", "-u", "origin", branchName], { cwd: repoPath });
       return true;
     } catch {
       return false;
@@ -147,7 +154,7 @@ export class GitOperations {
    */
   async isGhAvailable(): Promise<boolean> {
     try {
-      await execAsync("gh auth status");
+      await execa("gh", ["auth", "status"]);
       return true;
     } catch {
       return false;
@@ -175,19 +182,24 @@ export class GitOperations {
 
       // Get default branch if not specified
       if (!baseBranch) {
-        const { stdout } = await execAsync(
-          'git symbolic-ref refs/remotes/origin/HEAD --short 2>/dev/null || echo "origin/main"',
-          { cwd: repoPath },
-        );
-        baseBranch = stdout.trim().replace("origin/", "");
+        try {
+          const { stdout } = await execa(
+            "git",
+            ["symbolic-ref", "refs/remotes/origin/HEAD", "--short"],
+            { cwd: repoPath },
+          );
+          baseBranch = stdout.trim().replace("origin/", "");
+        } catch {
+          // Fallback to main if symbolic-ref fails
+          baseBranch = "main";
+        }
       }
 
-      // Create PR
-      const escapedTitle = title.replace(/"/g, '\\"');
-      const escapedBody = body.replace(/"/g, '\\"');
-
-      const { stdout } = await execAsync(
-        `gh pr create --title "${escapedTitle}" --body "${escapedBody}" --base "${baseBranch}"`,
+      // SECURITY FIX: Use array-based syntax to prevent shell injection
+      // Title, body, and baseBranch are passed as separate arguments
+      const { stdout } = await execa(
+        "gh",
+        ["pr", "create", "--title", title, "--body", body, "--base", baseBranch],
         { cwd: repoPath },
       );
 
@@ -210,7 +222,7 @@ export class GitOperations {
    * Checkout a specific branch
    */
   async checkout(repoPath: string, branch: string): Promise<void> {
-    await execAsync(`git checkout "${branch}"`, { cwd: repoPath });
+    await execa("git", ["checkout", branch], { cwd: repoPath });
 
     this.sessionManager.emit(EventType.REPO_CHECKOUT, EventLevel.INFO, {
       branch,
@@ -222,7 +234,7 @@ export class GitOperations {
    */
   async pull(repoPath: string): Promise<boolean> {
     try {
-      await execAsync("git pull", { cwd: repoPath });
+      await execa("git", ["pull"], { cwd: repoPath });
       return true;
     } catch {
       return false;

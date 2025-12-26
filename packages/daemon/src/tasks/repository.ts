@@ -5,7 +5,7 @@
  */
 
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
-import { getDb, tasks } from "../db/drizzle";
+import { getDb, repos, tasks } from "../db/drizzle";
 import type { CreateTask, Priority, Task, TaskState, UpdateTask } from "@nightshift/shared";
 import { TaskState as TaskStateEnum } from "@nightshift/shared";
 
@@ -25,17 +25,41 @@ export function createTask(input: CreateTask): Task {
   const now = new Date().toISOString();
   const id = generateTaskId();
 
+  // Get repo path if repoId is provided
+  let derivedRepoPath: string | null = null;
+  if (input.repoId) {
+    const repo = db
+      .select({ path: repos.path })
+      .from(repos)
+      .where(eq(repos.id, input.repoId))
+      .get();
+
+    if (!repo) {
+      throw new Error(`Repo not found: ${input.repoId}`);
+    }
+    derivedRepoPath = repo.path;
+  }
+
+  // Validate repoId vs repoPath consistency if both are provided
+  // Note: repoPath is derived from repoId when only repoId is provided
+  if (input.repoId && input.repoPath && derivedRepoPath !== input.repoPath) {
+    throw new Error(
+      `Repo path mismatch: the provided repoPath "${input.repoPath}" does not match the path "${derivedRepoPath}" of the repository identified by repoId "${input.repoId}"`,
+    );
+  }
+
   const newTask = {
     id,
     prompt: input.prompt,
     repoId: input.repoId ?? null,
-    repoPath: input.repoPath ?? null,
+    repoPath: derivedRepoPath ?? input.repoPath ?? null,
     priority: input.priority ?? "medium",
-    status: TaskStateEnum.PENDING as const,
+    status: TaskStateEnum.PENDING,
     githubIssueUrl: input.githubIssueUrl ?? null,
     branch: input.branch ?? null,
     createdAt: now,
     source: "local" as const,
+    autoYes: input.autoYes ?? false,
   };
 
   db.insert(tasks).values(newTask).run();
@@ -123,6 +147,7 @@ export function updateTask(taskId: string, updates: UpdateTask): Task | null {
   const setValues: Partial<typeof tasks.$inferInsert> = {};
 
   if (updates.status !== undefined) setValues.status = updates.status;
+  if (updates.name !== undefined) setValues.name = updates.name;
   if (updates.priority !== undefined) setValues.priority = updates.priority;
   if (updates.clarificationResponse !== undefined)
     setValues.clarificationResponse = updates.clarificationResponse;
@@ -147,6 +172,16 @@ export function updateTask(taskId: string, updates: UpdateTask): Task | null {
   if (updates.pauseReason !== undefined) setValues.pauseReason = updates.pauseReason;
   if (updates.humanQuestion !== undefined) setValues.humanQuestion = updates.humanQuestion;
   if (updates.humanResponse !== undefined) setValues.humanResponse = updates.humanResponse;
+
+  // SDK session fields
+  if (updates.sdkSessionId !== undefined) setValues.sdkSessionId = updates.sdkSessionId;
+
+  // Workflow fields
+  if (updates.currentStep !== undefined) setValues.currentStep = updates.currentStep;
+  if (updates.totalSteps !== undefined) setValues.totalSteps = updates.totalSteps;
+  if (updates.messageCount !== undefined) setValues.messageCount = updates.messageCount;
+  if (updates.lastUserMessageAt !== undefined)
+    setValues.lastUserMessageAt = updates.lastUserMessageAt;
 
   if (Object.keys(setValues).length === 0) {
     // No updates provided
@@ -235,6 +270,58 @@ export function getNextPendingTask(): Task | null {
 }
 
 /**
+ * Atomically claim the next pending task
+ *
+ * RACE CONDITION FIX:
+ * This function atomically selects and updates a pending task in a single SQL operation.
+ * Previously, getNextPendingTask() followed by updateTask() created a race window where
+ * multiple executors could claim the same task.
+ *
+ * Uses SQLite's UPDATE...RETURNING to atomically:
+ * 1. Find the highest priority pending task
+ * 2. Set its status to 'claimed' and record claimedAt timestamp
+ * 3. Return the claimed task (or null if no pending tasks)
+ *
+ * @returns The claimed task, or null if no pending tasks available
+ */
+export function claimNextPendingTask(): Task | null {
+  const db = getDb();
+  const now = new Date().toISOString();
+
+  // Priority order for subquery: urgent > high > medium > low
+  const priorityOrder = sql`CASE
+    WHEN ${tasks.priority} = 'urgent' THEN 1
+    WHEN ${tasks.priority} = 'high' THEN 2
+    WHEN ${tasks.priority} = 'medium' THEN 3
+    WHEN ${tasks.priority} = 'low' THEN 4
+    ELSE 5
+  END`;
+
+  // Atomic claim using UPDATE...WHERE id=(SELECT...) RETURNING *
+  // This is a single SQL statement that atomically:
+  // 1. Finds the highest priority pending task
+  // 2. Updates it to claimed status
+  // 3. Returns the updated row
+  const result = db
+    .update(tasks)
+    .set({
+      status: "claimed",
+      claimedAt: now,
+    })
+    .where(
+      eq(
+        tasks.id,
+        // Subquery to select the highest priority pending task
+        sql`(SELECT ${tasks.id} FROM ${tasks} WHERE ${tasks.status} = 'pending' ORDER BY ${priorityOrder}, ${tasks.createdAt} LIMIT 1)`,
+      ),
+    )
+    .returning()
+    .get();
+
+  return result ? mapDbTaskToTask(result) : null;
+}
+
+/**
  * Map database task to shared Task type
  *
  * Converts null values to undefined for optional fields
@@ -243,6 +330,7 @@ function mapDbTaskToTask(row: typeof tasks.$inferSelect): Task {
   return {
     id: row.id,
     prompt: row.prompt,
+    name: row.name ?? undefined,
     repoId: row.repoId ?? undefined,
     repoPath: row.repoPath ?? undefined,
     priority: row.priority as Priority,
@@ -270,5 +358,15 @@ function mapDbTaskToTask(row: typeof tasks.$inferSelect): Task {
     pauseReason: (row.pauseReason as "manual" | "needs_human" | "rate_limit") ?? undefined,
     humanQuestion: row.humanQuestion ?? undefined,
     humanResponse: row.humanResponse ?? undefined,
+    // Auto-yes and SDK session
+    autoYes: row.autoYes ?? false,
+    sdkSessionId: row.sdkSessionId ?? undefined,
+    // Workflow and interactive mode fields
+    type: (row.type as "interactive" | "workflow") ?? "interactive",
+    workflowId: row.workflowId ?? undefined,
+    currentStep: row.currentStep ?? undefined,
+    totalSteps: row.totalSteps ?? undefined,
+    messageCount: row.messageCount ?? 0,
+    lastUserMessageAt: row.lastUserMessageAt ?? undefined,
   };
 }

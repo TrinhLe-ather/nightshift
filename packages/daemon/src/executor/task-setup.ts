@@ -77,13 +77,24 @@ export async function setupTaskExecution(
 
   // If no repo, use current working directory
   const repoPath = task.repoPath || repo?.path || process.cwd();
-  const repoExecutionModeConfig = repo?.executionMode || "auto";
 
-  // Detect execution mode
-  const modeResult = await detectExecutionMode(repoPath, repoExecutionModeConfig);
-  const executionMode = modeResult.mode;
+  // Determine execution mode: task-level override takes precedence over repo config
+  let executionMode: "worktree" | "direct";
+  let modeReason: string;
 
-  console.log(`[TaskSetup] Task ${task.id}: Using ${executionMode} mode (${modeResult.reason})`);
+  if (task.executionMode) {
+    // Task has explicit execution mode override
+    executionMode = task.executionMode;
+    modeReason = "task-level override";
+    console.log(`[TaskSetup] Task ${task.id}: Using ${executionMode} mode (${modeReason})`);
+  } else {
+    // Fall back to repo config + auto-detection
+    const repoExecutionModeConfig = repo?.executionMode || "auto";
+    const modeResult = await detectExecutionMode(repoPath, repoExecutionModeConfig);
+    executionMode = modeResult.mode;
+    modeReason = modeResult.reason;
+    console.log(`[TaskSetup] Task ${task.id}: Using ${executionMode} mode (${modeReason})`);
+  }
 
   let result: TaskSetupResult;
 
@@ -181,26 +192,42 @@ async function setupDirectMode(
 /**
  * Tear down the execution environment after task completion
  *
+ * DEFENSIVE: This function catches and logs teardown errors but does not throw them.
+ * Teardown failures should not cause task state transitions - if task completed successfully,
+ * it should stay COMPLETED even if cleanup fails. Errors are logged and saved to metadata.
+ *
  * @param task - The completed task
  * @param outcome - How the task ended
  * @param commitMessage - Optional commit message for WIP commit on pause
+ * @param deleteBranch - Optional: delete the branch after cleanup (worktree mode only)
+ * @returns Object with success status and optional error message
  */
 export async function teardownTaskExecution(
   task: Task,
   outcome: "completed" | "failed" | "paused",
   commitMessage?: string,
-): Promise<void> {
+  deleteBranch = false,
+): Promise<{ success: boolean; error?: string }> {
   if (!task.executionMode || !task.workDir) {
     console.log("[TaskSetup] No execution environment to tear down");
-    return;
+    return { success: true };
   }
 
   const repoPath = task.repoPath || process.cwd();
 
-  if (task.executionMode === "worktree") {
-    await teardownWorktreeMode(task, outcome, repoPath, commitMessage);
-  } else {
-    await teardownDirectMode(task, outcome, repoPath, commitMessage);
+  try {
+    if (task.executionMode === "worktree") {
+      await teardownWorktreeMode(task, outcome, repoPath, commitMessage, deleteBranch);
+    } else {
+      await teardownDirectMode(task, outcome, repoPath, commitMessage);
+    }
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown teardown error";
+    console.error(`[TaskSetup] Teardown failed for task ${task.id}:`, error);
+    // TODO: Save teardown error to task metadata for debugging
+    // For now, just log and return error but don't throw
+    return { success: false, error: message };
   }
 }
 
@@ -212,30 +239,34 @@ async function teardownWorktreeMode(
   outcome: "completed" | "failed" | "paused",
   repoPath: string,
   commitMessage?: string,
+  deleteBranch = false,
 ): Promise<void> {
   const worktreeManager = new WorktreeManager();
   const worktreePath = task.workDir!;
 
   switch (outcome) {
     case "completed":
-      // Completed: PR already created, remove worktree
-      await worktreeManager.remove(worktreePath, repoPath);
-      console.log(`[TaskSetup] Removed worktree after completion: ${worktreePath}`);
+      // Completed: PR already created, remove worktree (optionally delete branch)
+      await worktreeManager.remove(worktreePath, repoPath, undefined, deleteBranch);
+      console.log(
+        `[TaskSetup] Removed worktree after completion: ${worktreePath}${deleteBranch ? " (branch deleted)" : ""}`,
+      );
       break;
 
     case "paused": {
       // Paused: commit WIP changes, remove worktree (keep branch for resume)
       const wipMessage = commitMessage || `WIP: Task ${task.id} paused`;
-      await worktreeManager.remove(worktreePath, repoPath, wipMessage);
+      await worktreeManager.remove(worktreePath, repoPath, wipMessage, false); // Never delete branch on pause
       console.log(`[TaskSetup] Paused worktree (committed WIP): ${worktreePath}`);
       break;
     }
 
     case "failed":
-      // Failed: optionally preserve for debugging
-      // For now, remove the worktree
-      await worktreeManager.remove(worktreePath, repoPath);
-      console.log(`[TaskSetup] Removed worktree after failure: ${worktreePath}`);
+      // Failed: optionally preserve for debugging, remove the worktree (optionally delete branch)
+      await worktreeManager.remove(worktreePath, repoPath, undefined, deleteBranch);
+      console.log(
+        `[TaskSetup] Removed worktree after failure: ${worktreePath}${deleteBranch ? " (branch deleted)" : ""}`,
+      );
       break;
   }
 }

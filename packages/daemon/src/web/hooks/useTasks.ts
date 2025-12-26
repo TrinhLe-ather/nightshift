@@ -7,7 +7,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { client } from "@/web/integrations/orpc";
 
-export function useTasks(params?: { status?: string; limit?: number; offset?: number }) {
+export function useTasks(params?: {
+  status?: string;
+  repoId?: string;
+  limit?: number;
+  offset?: number;
+}) {
   return useQuery({
     queryKey: ["tasks", params],
     queryFn: () => client.tasks.list(params ?? {}),
@@ -34,6 +39,7 @@ export function useCreateTask() {
       priority?: "low" | "medium" | "high" | "urgent";
       githubIssueUrl?: string;
       branch?: string;
+      autoYes?: boolean;
     }) => client.tasks.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
@@ -78,6 +84,22 @@ export function useCancelTask() {
   return useMutation({
     mutationFn: (id: string) => client.tasks.cancel({ id }),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["status"] });
+    },
+  });
+}
+
+export function useDeleteTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, deleteBranch }: { id: string; deleteBranch?: boolean }) =>
+      client.tasks.remove({ id, deleteBranch }),
+    onSuccess: (_, { id }) => {
+      // Remove from cache immediately
+      queryClient.removeQueries({ queryKey: ["task", id] });
+      // Refetch task lists
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["status"] });
     },

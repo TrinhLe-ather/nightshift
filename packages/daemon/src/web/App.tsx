@@ -1,13 +1,17 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { CommandPalette, KeyboardShortcutsDialog } from "@/web/components";
-import { Dashboard, Repos, Settings, TaskDetail, Tasks } from "@/web/pages";
+import { Dashboard, Repos, Settings, TaskChat, Tasks } from "@/web/pages";
 import { useKeyboardShortcuts } from "@/web/hooks";
+import { CommandPaletteProvider } from "@/web/contexts/commandPalette";
 
 function App() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+  const openCommandPalette = useCallback(() => setShowCommandPalette(true), []);
+  const closeCommandPalette = useCallback(() => setShowCommandPalette(false), []);
 
   // Define keyboard shortcuts
   const shortcuts = useMemo(
@@ -15,7 +19,7 @@ function App() {
       {
         key: "k",
         meta: true,
-        handler: () => setShowCommandPalette(true),
+        handler: openCommandPalette,
       },
       {
         key: "?",
@@ -25,32 +29,41 @@ function App() {
         key: "Escape",
         handler: () => {
           setShowShortcuts(false);
-          setShowCommandPalette(false);
+          closeCommandPalette();
         },
         preventDefault: false,
       },
     ],
-    [],
+    [closeCommandPalette, openCommandPalette],
   );
 
   useKeyboardShortcuts(shortcuts);
 
   return (
-    <>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/tasks/:id" element={<TaskDetail />} />
-          <Route path="/repos" element={<Repos />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Routes>
+    <CommandPaletteProvider
+      value={{
+        isOpen: showCommandPalette,
+        setOpen: setShowCommandPalette,
+        open: openCommandPalette,
+        close: closeCommandPalette,
+      }}
+    >
+      <>
+        <Routes>
+          <Route element={<Layout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/tasks/:id" element={<TaskChat />} />
+            <Route path="/repos" element={<Repos />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
+        </Routes>
 
-      {/* Global Dialogs */}
-      <KeyboardShortcutsDialog open={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      <CommandPalette open={showCommandPalette} onClose={() => setShowCommandPalette(false)} />
-    </>
+        {/* Global Dialogs */}
+        <KeyboardShortcutsDialog open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        <CommandPalette open={showCommandPalette} onClose={closeCommandPalette} />
+      </>
+    </CommandPaletteProvider>
   );
 }
 

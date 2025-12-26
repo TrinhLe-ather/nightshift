@@ -21,10 +21,10 @@ export {
 } from "./client";
 
 // Schema tables
-export { tasks, repos, sessions, config, syncQueue } from "./schema/schema";
+export { tasks, repos, sessions, config, syncQueue, workflows, workflowRuns, messages, repoLocks } from "./schema/schema";
 
 // Relations
-export { tasksRelations, reposRelations, sessionsRelations } from "./schema/schema";
+export { tasksRelations, reposRelations, sessionsRelations, workflowsRelations, workflowRunsRelations, messagesRelations, repoLocksRelations } from "./schema/schema";
 
 // Types (inferred from schema)
 export type {
@@ -38,6 +38,14 @@ export type {
   NewConfig,
   SyncQueueItem,
   NewSyncQueueItem,
+  Workflow,
+  NewWorkflow,
+  WorkflowRun,
+  NewWorkflowRun,
+  Message,
+  NewMessage,
+  RepoLock,
+  NewRepoLock,
 } from "./schema/schema";
 
 // Enums

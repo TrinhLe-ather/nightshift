@@ -1,41 +1,78 @@
 /**
  * Dashboard Page
  *
- * Shows daemon status, active task, and task summary cards.
+ * Shows daemon status and task summary cards.
  */
 
 import { useStatus } from "@/web/hooks";
-import { formatDuration, truncate } from "@/lib/utils";
+import { useTasks } from "@/hooks/useTasks";
+import { truncate } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
 import {
   Activity,
   AlertCircle,
   CheckCircle2,
   Clock,
   FolderGit2,
+  ListTodo,
   Pause,
   XCircle,
-} from "lucide-react";
+} from "@/components/ui/icons";
+import { Container } from "@/components/layout/Container";
+import { Badge } from "@/components/ui/badge";
+import { NewTaskButton } from "@/components";
 
 interface StatCardProps {
   label: string;
   value: number;
   icon: React.ElementType;
-  color: string;
+  iconClassName: string;
+  iconBgClassName: string;
 }
 
-function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
+const statusToVariant: Record<
+  string,
+  "pending" | "running" | "completed" | "failed" | "canceled" | "paused"
+> = {
+  pending: "pending",
+  claimed: "pending",
+  running: "running",
+  completed: "completed",
+  failed: "failed",
+  needs_human: "paused",
+  paused: "paused",
+  canceled: "canceled",
+};
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+
+  return date.toLocaleDateString();
+}
+
+function StatCard({ label, value, icon: Icon, iconClassName, iconBgClassName }: StatCardProps) {
   return (
-    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+    <div className="rounded-lg border border-border bg-card p-4 text-card-foreground">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-[var(--color-text-secondary)]">{label}</p>
-          <p className="mt-1 text-2xl font-semibold text-[var(--color-text-primary)]">{value}</p>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">{value}</p>
         </div>
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)]"
-          style={{ backgroundColor: `${color}20` }}
+          className={cn("flex h-10 w-10 items-center justify-center rounded-md", iconBgClassName)}
         >
-          <Icon className="h-5 w-5" style={{ color }} />
+          <Icon className={cn("h-5 w-5", iconClassName)} />
         </div>
       </div>
     </div>
@@ -44,152 +81,204 @@ function StatCard({ label, value, icon: Icon, color }: StatCardProps) {
 
 export function Dashboard() {
   const { data: status, isLoading, error } = useStatus();
+  const { data: recentTasksData, isLoading: recentTasksLoading } = useTasks({
+    limit: 6,
+    offset: 0,
+  });
+  const recentTasks = recentTasksData?.tasks ?? [];
+
+  // Determine if daemon is actually running based on API connectivity
+  const isDaemonRunning = !error && status?.running === true;
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <div className="text-[var(--color-text-secondary)]">Loading...</div>
+        <div className="text-muted-foreground">Loading...</div>
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-[var(--color-destructive)]">Failed to load status</div>
-      </div>
-    );
-  }
-
-  if (!status) return null;
-
-  const hasActiveTask = status.activeTask !== null;
-  const hasTasks =
-    status.stats.pending +
-      status.stats.running +
-      status.stats.paused +
-      status.stats.completed +
-      status.stats.failed >
-    0;
+  const hasTasks = status
+    ? status.stats.pending +
+        status.stats.running +
+        status.stats.paused +
+        status.stats.completed +
+        status.stats.failed >
+      0
+    : false;
 
   return (
-    <div className="p-6">
-      <h1 className="mb-6 text-2xl font-semibold text-[var(--color-text-primary)]">Dashboard</h1>
+    <Container className="py-4 lg:py-6">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
+        {isDaemonRunning && <NewTaskButton />}
+      </div>
 
       {/* Status Section */}
-      <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+      <div className="mb-6 text-card-foreground">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div
               className={`h-3 w-3 rounded-full ${
-                status.running ? "bg-[var(--color-success)]" : "bg-[var(--color-destructive)]"
+                isDaemonRunning ? "bg-emerald-500" : "bg-destructive"
               }`}
             />
             <span className="text-lg font-medium">
-              {status.running ? "Daemon Running" : "Daemon Stopped"}
+              {isDaemonRunning ? "Daemon Running" : "Daemon Stopped"}
             </span>
           </div>
-          <div className="flex items-center gap-4 text-sm text-[var(--color-text-secondary)]">
-            <span>v{status.version}</span>
-            <span className="rounded bg-[var(--color-surface-hover)] px-2 py-0.5 capitalize">
-              {status.mode}
-            </span>
-          </div>
+          {isDaemonRunning && status && (
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <span>v{status.version}</span>
+              <span className="rounded bg-muted px-2 py-0.5 capitalize">{status.mode}</span>
+            </div>
+          )}
         </div>
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          {status.running
+        <p className="mt-2 text-sm text-muted-foreground">
+          {isDaemonRunning && status
             ? `Night Shift is ready to execute tasks on port ${status.port}`
-            : "Start the daemon to begin executing tasks"}
+            : "Daemon is not responding. Start with 'nightshift start' to begin executing tasks."}
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <StatCard
-          label="Pending"
-          value={status.stats.pending}
-          icon={Clock}
-          color="var(--color-info)"
-        />
-        <StatCard
-          label="In Progress"
-          value={status.stats.running}
-          icon={Activity}
-          color="var(--color-accent)"
-        />
-        <StatCard
-          label="Paused"
-          value={status.stats.paused}
-          icon={Pause}
-          color="var(--color-warning)"
-        />
-        <StatCard
-          label="Completed"
-          value={status.stats.completed}
-          icon={CheckCircle2}
-          color="var(--color-success)"
-        />
-        <StatCard
-          label="Failed"
-          value={status.stats.failed}
-          icon={XCircle}
-          color="var(--color-destructive)"
-        />
-      </div>
-
-      {/* Repos Count */}
-      <div className="mb-6">
-        <StatCard
-          label="Configured Repositories"
-          value={status.stats.repoCount}
-          icon={FolderGit2}
-          color="var(--color-text-secondary)"
-        />
-      </div>
-
-      {/* Active Task Section */}
-      {hasActiveTask && status.activeTask && (
-        <div className="mb-6 rounded-[var(--radius-lg)] border border-[var(--color-accent)] bg-[var(--color-surface)] p-6">
-          <div className="flex items-center gap-3">
-            <div className="h-3 w-3 animate-pulse-orange rounded-full bg-[var(--color-accent)]" />
-            <span className="text-lg font-medium text-[var(--color-accent)]">
-              Currently Working On
-            </span>
+      {isDaemonRunning && status ? (
+        <>
+          <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-5">
+            <StatCard
+              label="Pending"
+              value={status.stats.pending}
+              icon={Clock}
+              iconClassName="text-blue-500"
+              iconBgClassName="bg-blue-500/10"
+            />
+            <StatCard
+              label="In Progress"
+              value={status.stats.running}
+              icon={Activity}
+              iconClassName="text-primary"
+              iconBgClassName="bg-primary/10"
+            />
+            <StatCard
+              label="Paused"
+              value={status.stats.paused}
+              icon={Pause}
+              iconClassName="text-amber-500"
+              iconBgClassName="bg-amber-500/10"
+            />
+            <StatCard
+              label="Completed"
+              value={status.stats.completed}
+              icon={CheckCircle2}
+              iconClassName="text-emerald-500"
+              iconBgClassName="bg-emerald-500/10"
+            />
+            <StatCard
+              label="Failed"
+              value={status.stats.failed}
+              icon={XCircle}
+              iconClassName="text-destructive"
+              iconBgClassName="bg-destructive/10"
+            />
           </div>
-          <div className="mt-4">
-            <p className="text-[var(--color-text-primary)]">
-              {truncate(status.activeTask.prompt, 200)}
-            </p>
-            <div className="mt-3 flex items-center gap-4 text-sm text-[var(--color-text-secondary)]">
-              {status.activeTask.repoPath && (
-                <span className="flex items-center gap-1">
-                  <FolderGit2 className="h-4 w-4" />
-                  {status.activeTask.repoPath.split("/").pop()}
-                </span>
-              )}
-              <span className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {formatDuration(status.activeTask.elapsedMs)}
-              </span>
-            </div>
+
+          {/* Repos Count */}
+          <div className="mb-6">
+            <StatCard
+              label="Configured Repositories"
+              value={status.stats.repoCount}
+              icon={FolderGit2}
+              iconClassName="text-muted-foreground"
+              iconBgClassName="bg-muted"
+            />
           </div>
+        </>
+      ) : (
+        <div className="mb-6 flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-16">
+          <AlertCircle className="mb-4 h-12 w-12 text-destructive" />
+          <p className="text-lg font-medium text-foreground">Daemon Not Running</p>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            The Night Shift daemon is not responding.
+            <br />
+            Start it from your terminal with{" "}
+            <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+              nightshift start
+            </code>
+          </p>
         </div>
       )}
 
       {/* Empty State */}
-      {!hasTasks && (
-        <div className="flex flex-col items-center justify-center rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] bg-[var(--color-surface)] py-16">
-          <AlertCircle className="mb-4 h-12 w-12 text-[var(--color-text-muted)]" />
-          <p className="text-lg text-[var(--color-text-secondary)]">No tasks yet</p>
-          <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-            Press{" "}
-            <kbd className="rounded bg-[var(--color-surface-hover)] px-1.5 py-0.5 text-[var(--color-accent)]">
-              Cmd+K
-            </kbd>{" "}
-            to create your first task
+      {isDaemonRunning && !hasTasks && (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-16">
+          <AlertCircle className="mb-4 h-12 w-12 text-muted-foreground" />
+          <p className="text-lg text-foreground">No tasks yet</p>
+          <p className="mt-2 mb-4 text-sm text-muted-foreground">
+            Create your first task to get started
           </p>
+          <NewTaskButton />
         </div>
       )}
-    </div>
+
+      {/* Recent Tasks */}
+      {isDaemonRunning && hasTasks && (
+        <div className="rounded-lg border border-border bg-card text-card-foreground">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div className="flex items-center gap-2">
+              <ListTodo className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-medium text-foreground">Recent tasks</h2>
+            </div>
+            <Link to="/tasks" className="text-sm text-muted-foreground hover:text-foreground">
+              View all
+            </Link>
+          </div>
+
+          {recentTasksLoading ? (
+            <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
+              Loading…
+            </div>
+          ) : recentTasks.length === 0 ? (
+            <div className="px-4 py-8 text-sm text-muted-foreground">No recent tasks.</div>
+          ) : (
+            <div className="divide-y divide-border">
+              {recentTasks.map((task) => (
+                <Link
+                  key={task.id}
+                  to={`/tasks/${task.id}`}
+                  className="block px-4 py-3 transition-colors hover:bg-muted/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-foreground">
+                        {truncate(task.prompt, 100)}
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <FolderGit2 className="h-3.5 w-3.5" />
+                          {task.repoPath ? task.repoPath.split("/").pop() : "—"}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          {formatDate(task.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Badge
+                        variant={statusToVariant[task.status] ?? "secondary"}
+                        className={task.status === "running" ? "animate-pulse" : ""}
+                      >
+                        {task.status.toLowerCase().replace("_", " ")}
+                      </Badge>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </Container>
   );
 }

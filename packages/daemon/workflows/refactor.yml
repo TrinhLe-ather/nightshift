@@ -1,0 +1,66 @@
+name: Refactor
+description: Safe refactoring with test coverage
+version: 1.0.0
+
+inputs:
+  target:
+    type: string
+    description: What to refactor (file, function, module)
+    required: true
+  goal:
+    type: string
+    description: Refactoring goal (improve readability, reduce complexity, etc.)
+    required: true
+
+steps:
+  - name: Analyze Code
+    prompt: |
+      Analyze the code to be refactored: {{target}}
+
+      Goal: {{goal}}
+
+      Identify:
+      1. Current structure and dependencies
+      2. Potential improvements
+      3. Risks and edge cases
+    tools:
+      enable: [Read, Grep, Bash]
+
+  - name: Write Tests
+    prompt: |
+      Before refactoring, write comprehensive tests that cover the current behavior.
+
+      These tests will ensure the refactoring doesn't break functionality.
+
+      Run the tests to confirm they pass.
+    tools:
+      enable: [Read, Write, Edit, Bash]
+
+  - name: Refactor Code
+    prompt: |
+      Refactor the code to achieve: {{goal}}
+
+      Maintain the same public API and behavior.
+      Make incremental changes.
+
+      After each change, run tests to ensure nothing breaks.
+    tools:
+      enable: [Read, Edit, Bash]
+    maxRetries: 3
+
+  - name: Verify Tests
+    prompt: |
+      Run all tests to verify the refactoring is complete and correct.
+
+      All tests should still pass.
+    tools:
+      enable: [Bash]
+
+  - name: Create PR
+    prompt: |
+      Create a pull request with the refactoring.
+
+      Explain what was refactored and why.
+    tools:
+      enable: [Bash]
+    autoCommit: true

@@ -8,8 +8,9 @@
 import { z } from "zod";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { type Task, getDb, repos, sessions, tasks } from "../../db/drizzle";
-import { TaskState } from "@nightshift/shared";
+import { TaskState, executionModeSchema } from "@nightshift/shared";
 import { pauseTask, resumeTask } from "../../executor/task-lifecycle";
+import { teardownTaskExecution } from "../../executor/task-setup";
 import { type DiffStats, getDiffFromBase } from "../../repo/git";
 import { orpc } from "../base";
 
@@ -62,6 +63,8 @@ const taskSchema = z.object({
   pauseReason: pauseReasonSchema.nullable(),
   humanQuestion: z.string().nullable(),
   humanResponse: z.string().nullable(),
+  autoYes: z.boolean().nullable(),
+  type: z.enum(["interactive", "workflow"]).nullable(),
 });
 
 const sessionInfoSchema = z.object({
@@ -192,6 +195,12 @@ const create = orpc
       priority: prioritySchema.optional(),
       githubIssueUrl: z.string().optional(),
       branch: z.string().optional(),
+      autoYes: z.boolean().optional().default(false),
+      // Dual-mode fields
+      type: z.enum(["interactive", "workflow"]).optional().default("interactive"),
+      workflowId: z.string().optional(),
+      // Execution mode override (optional, allows overriding repo's default)
+      executionMode: executionModeSchema.optional(),
     }),
   )
   .output(taskSchema)
@@ -214,7 +223,17 @@ const create = orpc
       });
     }
 
+    // Validate workflow mode
+    if (input.type === "workflow" && !input.workflowId) {
+      throw errors.BAD_REQUEST({
+        message: "workflowId is required for workflow-type tasks",
+        data: { field: "workflowId" },
+      });
+    }
+
     // Get repo path if repoId is provided
+    // Note: repoPath is always derived from repoId in the API layer
+    // The repository layer handles consistency validation for internal callers
     let repoPath: string | null = null;
     if (input.repoId) {
       const repo = db
@@ -246,6 +265,13 @@ const create = orpc
         githubIssueUrl: input.githubIssueUrl || null,
         branch: input.branch || null,
         createdAt: now,
+        autoYes: input.autoYes ?? false,
+        // Dual-mode fields
+        type: input.type || "interactive",
+        workflowId: input.workflowId || null,
+        messageCount: 0,
+        // Execution mode override (if provided by user)
+        executionMode: input.executionMode || null,
       })
       .run();
 
@@ -353,6 +379,50 @@ const cancel = orpc
       .run();
 
     return { id, status: "canceled" };
+  });
+
+// Delete a task (hard delete from database)
+const deleteTask = orpc
+  .input(
+    z.object({
+      id: z.string(),
+      deleteBranch: z.boolean().optional().default(false),
+    }),
+  )
+  .output(z.object({ id: z.string(), deleted: z.boolean() }))
+  .handler(async ({ input, errors }) => {
+    const db = getDb();
+    const { id, deleteBranch } = input;
+
+    // Verify task exists
+    const task = db.select().from(tasks).where(eq(tasks.id, id)).get();
+
+    if (!task) {
+      throw errors.NOT_FOUND({
+        message: "Task not found",
+        data: { resource: "task", id },
+      });
+    }
+
+    // If task has execution environment, tear it down before deleting
+    if (task.executionMode && task.workDir) {
+      try {
+        await teardownTaskExecution(task as any, "failed", undefined, deleteBranch);
+      } catch (error) {
+        console.error(`[tasks.delete] Failed to tear down task ${id}:`, error);
+        // Continue with delete even if cleanup fails
+      }
+    }
+
+    // Manually delete related records that don't have cascade delete
+    // Sessions table doesn't have onDelete cascade, so delete manually
+    db.delete(sessions).where(eq(sessions.taskId, id)).run();
+
+    // Now delete the task
+    // (messages and workflow_runs have cascade delete and will be handled automatically)
+    db.delete(tasks).where(eq(tasks.id, id)).run();
+
+    return { id, deleted: true };
   });
 
 // Pause a running task
@@ -479,6 +549,8 @@ export const tasksRouter = {
   create,
   update,
   cancel,
+  delete: deleteTask,
+  remove: deleteTask,
   pause,
   resume,
   getDiff,

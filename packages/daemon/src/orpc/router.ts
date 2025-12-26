@@ -10,15 +10,29 @@ import { tasksRouter } from "./contracts/tasks";
 import { sessionsRouter } from "./contracts/sessions";
 import { reposRouter } from "./contracts/repos";
 import { updateRouter } from "./contracts/update";
+import {
+  terminalRouter,
+  setTerminalOutputProvider,
+  setTerminalMessagesProvider,
+  setTranscriptReader,
+} from "./contracts/terminal";
+import { conversationsRouter } from "./contracts/conversations";
+import { workflowsRouter } from "./contracts/workflows";
 
-export const router = {
+const router = {
   status: statusRouter,
   config: configRouter,
   tasks: tasksRouter,
   sessions: sessionsRouter,
   repos: reposRouter,
   update: updateRouter,
+  terminal: terminalRouter,
+  conversations: conversationsRouter,
+  workflows: workflowsRouter,
 };
+
+// Re-export for server setup
+export { setTerminalOutputProvider, setTerminalMessagesProvider, setTranscriptReader };
 
 function logOrpcError(error: unknown) {
   // Keep logs concise and avoid dumping potentially sensitive `.data` wholesale.

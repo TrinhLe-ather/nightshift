@@ -143,6 +143,24 @@ export type SessionEventType =
   (typeof SessionEventType)[keyof typeof SessionEventType];
 
 // =============================================================================
+// Workflow Events
+// =============================================================================
+
+export const WorkflowEventType = {
+  /** Workflow step started executing */
+  WORKFLOW_STEP_STARTED: 'WORKFLOW_STEP_STARTED',
+  /** Workflow step completed successfully */
+  WORKFLOW_STEP_COMPLETED: 'WORKFLOW_STEP_COMPLETED',
+  /** Workflow step failed */
+  WORKFLOW_STEP_FAILED: 'WORKFLOW_STEP_FAILED',
+  /** Checkpoint restored from previous execution */
+  CHECKPOINT_RESTORED: 'CHECKPOINT_RESTORED',
+} as const;
+
+export type WorkflowEventType =
+  (typeof WorkflowEventType)[keyof typeof WorkflowEventType];
+
+// =============================================================================
 // Combined Event Type
 // =============================================================================
 
@@ -154,6 +172,7 @@ export const EventType = {
   ...AgentEventType,
   ...ArtifactEventType,
   ...SessionEventType,
+  ...WorkflowEventType,
 } as const;
 
 export type EventType =
@@ -163,7 +182,8 @@ export type EventType =
   | RepoEventType
   | AgentEventType
   | ArtifactEventType
-  | SessionEventType;
+  | SessionEventType
+  | WorkflowEventType;
 
 // =============================================================================
 // Event Levels

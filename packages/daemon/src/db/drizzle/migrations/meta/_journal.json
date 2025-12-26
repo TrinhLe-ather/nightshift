@@ -8,6 +8,34 @@
       "when": 1766557368705,
       "tag": "0000_spotty_vertigo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1766597618765,
+      "tag": "0001_icy_punisher",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1735113600000,
+      "tag": "0002_add_sdk_session_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1766657616867,
+      "tag": "0003_smiling_mongoose",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1735178400000,
+      "tag": "0004_add_repo_locks",
+      "breakpoints": true
     }
   ]
 }

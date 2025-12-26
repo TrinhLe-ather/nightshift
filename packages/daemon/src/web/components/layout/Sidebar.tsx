@@ -1,6 +1,20 @@
-import { NavLink } from "react-router-dom";
-import { FolderGit2, LayoutDashboard, ListTodo, Moon, Settings } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { NavLink, useLocation } from "react-router-dom";
+import { FolderGit2, LayoutDashboard, ListTodo, Moon, Settings } from "@/components/ui/icons";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Kbd } from "@/components/ui/kbd";
 
 interface NavItem {
   to: string;
@@ -15,44 +29,68 @@ const navItems: NavItem[] = [
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 
-export function Sidebar() {
+function NavMenuItem({ item }: { item: NavItem }) {
+  const location = useLocation();
+
+  const isActive =
+    item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to);
+
   return (
-    <aside className="flex h-screen w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
-      {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-[var(--color-border)] px-6">
-        <Moon className="h-6 w-6 text-[var(--color-accent)]" />
-        <span className="text-lg font-semibold text-[var(--color-text-primary)]">Night Shift</span>
-      </div>
+    <SidebarMenuButton
+      isActive={isActive}
+      tooltip={item.label}
+      render={<NavLink to={item.to} className="[&_svg]:size-5" />}
+    >
+      <item.icon size={24} />
+      <span>{item.label}</span>
+    </SidebarMenuButton>
+  );
+}
+
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
+
+  return (
+    <Sidebar collapsible="icon">
+      {/* Logo Header */}
+      <SidebarHeader className="border-b border-sidebar-border hidden md:block">
+        <div className="flex h-12 items-center gap-3 px-2">
+          <Moon className="h-6 w-6 shrink-0 text-primary" />
+          {!isCollapsed && (
+            <span className="text-lg font-semibold text-foreground">Night Shift</span>
+          )}
+        </div>
+      </SidebarHeader>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === "/"}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-3 rounded-[var(--radius-md)] px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-[var(--color-accent-muted)] text-[var(--color-accent)]"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)] hover:text-[var(--color-text-primary)]",
-              )
-            }
-          >
-            <item.icon className="h-5 w-5" />
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.to} className="h-10">
+                  <NavMenuItem item={item} />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
       {/* Footer */}
-      <div className="border-t border-[var(--color-border)] p-4">
-        <div className="text-xs text-[var(--color-text-muted)]">
-          Press <kbd className="rounded bg-[var(--color-surface-hover)] px-1.5 py-0.5">?</kbd> for
-          keyboard shortcuts
+      <SidebarFooter className="border-t border-sidebar-border">
+        <div className="flex items-center justify-between gap-2 px-2 py-2">
+          {!isCollapsed && (
+            <div className="text-xs text-muted-foreground">
+              Press <Kbd>?</Kbd> for shortcuts
+            </div>
+          )}
+          <SidebarTrigger className="ml-auto" />
         </div>
-      </div>
-    </aside>
+      </SidebarFooter>
+
+      <SidebarRail />
+    </Sidebar>
   );
 }

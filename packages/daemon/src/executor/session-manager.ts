@@ -10,6 +10,8 @@ import * as path from "node:path";
 import { desc, eq } from "drizzle-orm";
 import { getDb, sessions } from "../db/drizzle";
 import { EventLevel, EventType } from "@nightshift/shared";
+import { TranscriptWriter, type TranscriptEntry } from "./transcript-writer";
+import type { SdkMessage } from "./sdk";
 
 const SESSION_SCHEMA_VERSION = 1;
 
@@ -29,9 +31,11 @@ export interface Session {
   taskId: string;
   runId: string;
   eventsPath: string;
+  transcriptPath?: string;
   startedAt: string;
   completedAt?: string;
   eventCount: number;
+  messageCount: number;
 }
 
 export class SessionManager {
@@ -39,9 +43,11 @@ export class SessionManager {
   private currentSession: Session | null = null;
   private eventSequence = 0;
   private writeStream: fs.WriteStream | null = null;
+  private transcriptWriter: TranscriptWriter;
 
   constructor(dataDir: string) {
     this.sessionsDir = path.join(dataDir, "sessions");
+    this.transcriptWriter = new TranscriptWriter(this.sessionsDir);
     this.ensureSessionsDir();
   }
 
@@ -61,6 +67,9 @@ export class SessionManager {
     const eventsPath = path.join(this.sessionsDir, `${taskId}.ndjson`);
     const startedAt = new Date().toISOString();
 
+    // Start transcript writer and get path
+    const transcriptPath = this.transcriptWriter.start(taskId);
+
     // Create session record in database
     db.insert(sessions)
       .values({
@@ -68,8 +77,10 @@ export class SessionManager {
         taskId,
         runId,
         eventsPath,
+        transcriptPath,
         startedAt,
         eventCount: 0,
+        messageCount: 0,
       })
       .run();
 
@@ -78,8 +89,10 @@ export class SessionManager {
       taskId,
       runId,
       eventsPath,
+      transcriptPath,
       startedAt,
       eventCount: 0,
+      messageCount: 0,
     };
 
     this.eventSequence = 0;
@@ -131,34 +144,54 @@ export class SessionManager {
 
   /**
    * End the current session
+   *
+   * DEFENSIVE: Guards against double-close by checking if session exists.
+   * Multiple calls to endSession are safe and will be ignored after the first.
    */
   endSession(): void {
+    // Guard: Return early if session already ended (prevents double-close)
     if (!this.currentSession) return;
 
     const completedAt = new Date().toISOString();
+    const messageCount = this.transcriptWriter.getSequence();
 
     // Emit session ended event
     this.emit(EventType.SESSION_ENDED, EventLevel.INFO, {
       duration: Date.now() - new Date(this.currentSession.startedAt).getTime(),
       eventCount: this.eventSequence,
+      messageCount,
     });
 
-    // Update session in database
+    // Flush write stream before closing to ensure all events are persisted
+    if (this.writeStream) {
+      // Synchronous flush - ensure events are written before we continue
+      try {
+        this.writeStream.end();
+        this.writeStream = null;
+      } catch (error) {
+        console.error("[SessionManager] Error closing write stream:", error);
+      }
+    }
+
+    // Update session in database (after flush to ensure final event is written)
     const db = getDb();
     db.update(sessions)
       .set({
         completedAt,
         eventCount: this.eventSequence,
+        messageCount,
       })
       .where(eq(sessions.id, this.currentSession.id))
       .run();
 
-    // Close write stream
-    if (this.writeStream) {
-      this.writeStream.end();
-      this.writeStream = null;
+    // Close transcript writer
+    try {
+      this.transcriptWriter.close();
+    } catch (error) {
+      console.error("[SessionManager] Error closing transcript writer:", error);
     }
 
+    // Clear session state (prevents double-close on subsequent calls)
     this.currentSession = null;
     this.eventSequence = 0;
   }
@@ -190,9 +223,11 @@ export class SessionManager {
       taskId: row.taskId,
       runId: row.runId,
       eventsPath: row.eventsPath ?? "",
+      transcriptPath: row.transcriptPath ?? undefined,
       startedAt: row.startedAt,
       completedAt: row.completedAt ?? undefined,
       eventCount: row.eventCount ?? 0,
+      messageCount: row.messageCount ?? 0,
     };
   }
 
@@ -213,10 +248,51 @@ export class SessionManager {
       taskId: row.taskId,
       runId: row.runId,
       eventsPath: row.eventsPath ?? "",
+      transcriptPath: row.transcriptPath ?? undefined,
       startedAt: row.startedAt,
       completedAt: row.completedAt ?? undefined,
       eventCount: row.eventCount ?? 0,
+      messageCount: row.messageCount ?? 0,
     }));
+  }
+
+  /**
+   * Write a message to the current session's transcript
+   */
+  writeTranscriptMessage(message: SdkMessage): void {
+    this.transcriptWriter.write(message);
+  }
+
+  /**
+   * Read transcript messages for a task
+   */
+  readTranscript(taskId: string, afterSeq = 0): SdkMessage[] {
+    const session = this.getSessionByTaskId(taskId);
+    if (!session) {
+      return [];
+    }
+
+    // Use transcriptPath from database if available, otherwise compute it
+    // This handles tasks created before the migration that don't have transcriptPath set
+    const transcriptPath = session.transcriptPath || path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
+
+    return TranscriptWriter.read(transcriptPath, afterSeq);
+  }
+
+  /**
+   * Read transcript entries with metadata for a task
+   */
+  readTranscriptEntries(taskId: string, afterSeq = 0): TranscriptEntry[] {
+    const session = this.getSessionByTaskId(taskId);
+    if (!session) {
+      return [];
+    }
+
+    // Use transcriptPath from database if available, otherwise compute it
+    // This handles tasks created before the migration that don't have transcriptPath set
+    const transcriptPath = session.transcriptPath || path.join(this.sessionsDir, `${taskId}.transcript.ndjson`);
+
+    return TranscriptWriter.readEntries(transcriptPath, afterSeq);
   }
 
   /**
@@ -245,4 +321,27 @@ export class SessionManager {
 
     return events;
   }
+}
+
+// Singleton instance for oRPC contracts
+let globalSessionManager: SessionManager | null = null;
+
+/**
+ * Get the global SessionManager instance
+ * Used by oRPC contracts that need session access
+ */
+export function getSessionManager(): SessionManager {
+  if (!globalSessionManager) {
+    // Initialize with default data directory
+    const dataDir = process.env.NIGHTSHIFT_DATA_DIR || "~/.nightshift";
+    globalSessionManager = new SessionManager(dataDir);
+  }
+  return globalSessionManager;
+}
+
+/**
+ * Set the global SessionManager instance (called by TaskExecutor)
+ */
+export function setSessionManager(manager: SessionManager): void {
+  globalSessionManager = manager;
 }
