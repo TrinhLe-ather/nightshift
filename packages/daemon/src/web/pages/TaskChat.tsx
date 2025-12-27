@@ -55,8 +55,6 @@ export function TaskChat() {
 
   const { data: task, isLoading: taskLoading, error: taskError } = useTask(taskId);
   const isLive = task?.status === "claimed" || task?.status === "running";
-  const isPaused = task?.status === "paused";
-  const isNeedsHuman = task?.status === "needs_human";
   const isTerminal = ["completed", "failed", "canceled"].includes(task?.status ?? "");
 
   // Fetch session events
@@ -141,7 +139,6 @@ export function TaskChat() {
     });
   }, [task]);
 
-
   return (
     <div className="h-svh overflow-hidden">
       <ResizablePanelGroup
@@ -164,124 +161,133 @@ export function TaskChat() {
         <ResizablePanel defaultSize={75} minSize={50}>
           <div className="flex h-full min-h-0 flex-col overflow-hidden">
             {/* Task Header - Table Row Style */}
-            {task && (() => {
-              const statusStyle = getStatusStyle(task.status);
-              return (
-                <div className="shrink-0 overflow-hidden border-b border-border/50 bg-card">
-                  {/* Grid pattern background */}
-                  <div className="pointer-events-none absolute inset-0 opacity-[0.015]">
-                    <div
-                      className="h-full w-full"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                        backgroundSize: "16px 16px",
-                      }}
-                    />
-                  </div>
+            {task &&
+              (() => {
+                const statusStyle = getStatusStyle(task.status);
+                return (
+                  <div className="shrink-0 overflow-hidden border-b border-border/50 bg-card">
+                    {/* Grid pattern background */}
+                    <div className="pointer-events-none absolute inset-0 opacity-[0.015]">
+                      <div
+                        className="h-full w-full"
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+                          backgroundSize: "16px 16px",
+                        }}
+                      />
+                    </div>
 
-                  <div className="relative">
-                    {/* Left status indicator */}
-                    <div className={cn("absolute left-0 top-0 h-full w-1", statusStyle.bgColor)} />
+                    <div className="relative">
+                      {/* Left status indicator */}
+                      <div
+                        className={cn("absolute left-0 top-0 h-full w-1", statusStyle.bgColor)}
+                      />
 
-                    <div className="flex items-start justify-between gap-3 px-4 py-3 pl-5">
-                      <div className="min-w-0 flex-1">
-                        {/* Task ID as title */}
-                        <div className="text-sm font-medium text-foreground">
-                          Task #{task.id.slice(0, 8)}
-                        </div>
+                      <div className="flex items-start justify-between gap-3 px-4 py-3 pl-5">
+                        <div className="min-w-0 flex-1">
+                          {/* Task ID as title */}
+                          <div className="text-sm font-medium text-foreground">
+                            Task #{task.id.slice(0, 8)}
+                          </div>
 
-                        {/* Metadata row */}
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                          {task.repoPath && (
-                            <span className="flex items-center gap-1">
-                              <FolderGit2 className="h-3 w-3" />
-                              <span className="font-mono truncate max-w-[150px]" title={task.repoPath}>
-                                {task.repoPath.split("/").pop()}
+                          {/* Metadata row */}
+                          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                            {task.repoPath && (
+                              <span className="flex items-center gap-1">
+                                <FolderGit2 className="h-3 w-3" />
+                                <span
+                                  className="font-mono truncate max-w-[150px]"
+                                  title={task.repoPath}
+                                >
+                                  {task.repoPath.split("/").pop()}
+                                </span>
                               </span>
-                            </span>
-                          )}
-                          {task.branch && (
-                            <span className="flex items-center gap-1">
-                              <GitBranch className="h-3 w-3" />
-                              <span className="font-mono">{task.branch}</span>
-                            </span>
-                          )}
-                          {formattedCreatedAt && (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {formattedCreatedAt}
-                            </span>
-                          )}
-                          {taskDuration && (
-                            <span className="flex items-center gap-1">
-                              <Activity className="h-3 w-3" />
-                              {taskDuration}
-                            </span>
-                          )}
-                          {task.executionMode && (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider">
-                              {task.executionMode}
-                            </Badge>
-                          )}
-                          {task.priority && task.priority !== "medium" && (
-                            <Badge
-                              variant={
-                                task.priority === "urgent" || task.priority === "high"
-                                  ? "destructive"
-                                  : "secondary"
-                              }
-                              className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider"
-                            >
-                              {task.priority}
-                            </Badge>
-                          )}
+                            )}
+                            {task.branch && (
+                              <span className="flex items-center gap-1">
+                                <GitBranch className="h-3 w-3" />
+                                <span className="font-mono">{task.branch}</span>
+                              </span>
+                            )}
+                            {formattedCreatedAt && (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formattedCreatedAt}
+                              </span>
+                            )}
+                            {taskDuration && (
+                              <span className="flex items-center gap-1">
+                                <Activity className="h-3 w-3" />
+                                {taskDuration}
+                              </span>
+                            )}
+                            {task.executionMode && (
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider"
+                              >
+                                {task.executionMode}
+                              </Badge>
+                            )}
+                            {task.priority && task.priority !== "medium" && (
+                              <Badge
+                                variant={
+                                  task.priority === "urgent" || task.priority === "high"
+                                    ? "destructive"
+                                    : "secondary"
+                                }
+                                className="text-[10px] px-1.5 py-0 h-4 uppercase tracking-wider"
+                              >
+                                {task.priority}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Right side: Status badge and actions */}
-                      <div className="flex items-center gap-2 shrink-0">
-                        {task.prUrl && (
-                          <a
-                            href={task.prUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-emerald-600 text-white hover:bg-emerald-600/90 dark:bg-emerald-500 dark:hover:bg-emerald-500/90 transition-colors"
-                          >
-                            <GitPullRequest className="h-3.5 w-3.5" />
-                            PR
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        )}
-                        {fileChanges.length > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
-                            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                            title={sidebarCollapsed ? "Show changed files" : "Hide changed files"}
-                          >
-                            <SidebarRight className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Badge
-                          variant={statusToVariant[task.status] ?? "secondary"}
-                          className={cn(
-                            "shrink-0 border text-[10px] uppercase tracking-wider",
-                            statusStyle.bgColor,
-                            statusStyle.borderColor,
-                            statusStyle.color,
-                            isLive && "animate-pulse",
+                        {/* Right side: Status badge and actions */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          {task.prUrl && (
+                            <a
+                              href={task.prUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-emerald-600 text-white hover:bg-emerald-600/90 dark:bg-emerald-500 dark:hover:bg-emerald-500/90 transition-colors"
+                            >
+                              <GitPullRequest className="h-3.5 w-3.5" />
+                              PR
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
                           )}
-                        >
-                          {task.status.toLowerCase().replace("_", " ")}
-                        </Badge>
+                          {fileChanges.length > 0 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                              title={sidebarCollapsed ? "Show changed files" : "Hide changed files"}
+                            >
+                              <SidebarRight className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <Badge
+                            variant={statusToVariant[task.status] ?? "secondary"}
+                            className={cn(
+                              "shrink-0 border text-[10px] uppercase tracking-wider",
+                              statusStyle.bgColor,
+                              statusStyle.borderColor,
+                              statusStyle.color,
+                              isLive && "animate-pulse",
+                            )}
+                          >
+                            {task.status.toLowerCase().replace("_", " ")}
+                          </Badge>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })()}
+                );
+              })()}
 
             {/* Loading state */}
             {taskLoading && (
@@ -325,7 +331,6 @@ export function TaskChat() {
                 )}
               </div>
             )}
-
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

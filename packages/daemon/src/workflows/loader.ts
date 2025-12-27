@@ -52,7 +52,7 @@ export interface WorkflowStep {
  *
  * Uses haiku model for cost-efficiency since commit operations are straightforward.
  */
-export function createSmartCommitStep(taskPrompt: string): WorkflowStep {
+export function createSmartCommitStep(_taskPrompt: string): WorkflowStep {
   return {
     name: "Smart Commit",
     model: "haiku",

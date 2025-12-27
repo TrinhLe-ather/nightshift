@@ -7,13 +7,14 @@
  * Design: Technical blueprint with precision engineering vibes and system monitoring feel.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api } from "@/web/api/client";
+import { client } from "@/web/integrations/orpc";
 import { cn, formatDate, formatUptime } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   AlertCircle,
   CheckCircle2,
@@ -24,6 +25,9 @@ import {
   Folder,
   FolderGit2,
   Clock,
+  Pencil,
+  X,
+  Check,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 
@@ -36,6 +40,7 @@ interface SettingsCardProps {
   iconBorder?: string;
   children: React.ReactNode;
   index: number;
+  headerAction?: React.ReactNode;
 }
 
 function SettingsCard({
@@ -47,6 +52,7 @@ function SettingsCard({
   iconBorder = "border-primary/30",
   children,
   index,
+  headerAction,
 }: SettingsCardProps) {
   return (
     <div
@@ -71,22 +77,25 @@ function SettingsCard({
 
       {/* Header */}
       <div className="relative border-b border-border/50 p-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={cn(
-              "flex h-7 w-7 shrink-0 items-center justify-center border",
-              iconBg,
-              iconBorder,
-            )}
-          >
-            <Icon className={cn("h-3.5 w-3.5", iconColor)} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center border",
+                iconBg,
+                iconBorder,
+              )}
+            >
+              <Icon className={cn("h-3.5 w-3.5", iconColor)} />
+            </div>
+            <div>
+              <h2 className="text-sm font-medium text-foreground">{title}</h2>
+              {description && (
+                <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+              )}
+            </div>
           </div>
-          <div>
-            <h2 className="text-sm font-medium text-foreground">{title}</h2>
-            {description && (
-              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-            )}
-          </div>
+          {headerAction && <div>{headerAction}</div>}
         </div>
       </div>
 
@@ -114,29 +123,74 @@ function ConfigItem({ label, value, valueColor = "text-foreground" }: ConfigItem
 export function Settings() {
   const queryClient = useQueryClient();
   const [isInstalling, setIsInstalling] = useState(false);
+  const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [formValues, setFormValues] = useState({
+    taskTimeoutMs: 14400000, // 4 hours default
+    maxConcurrentTasks: 1,
+  });
 
   // Fetch update status
   const { data: updateStatus, isLoading: isLoadingUpdate } = useQuery({
     queryKey: ["update-status"],
-    queryFn: api.getUpdateStatus,
+    queryFn: () => client.update.getStatus(),
     refetchInterval: 30000,
   });
 
   // Fetch config
   const { data: config } = useQuery({
     queryKey: ["config"],
-    queryFn: api.getConfig,
+    queryFn: () => client.config.get(),
   });
 
   // Fetch daemon status
   const { data: status } = useQuery({
     queryKey: ["status"],
-    queryFn: api.getStatus,
+    queryFn: () => client.status.getStatus(),
   });
+
+  // Sync form values when config loads
+  useEffect(() => {
+    if (config) {
+      setFormValues({
+        taskTimeoutMs: config.taskTimeoutMs || 14400000,
+        maxConcurrentTasks: config.maxConcurrentTasks || 1,
+      });
+    }
+  }, [config]);
+
+  // Update config mutation
+  const updateConfigMutation = useMutation({
+    mutationFn: (data: { taskTimeoutMs: number; maxConcurrentTasks: number }) =>
+      client.config.update(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      setIsEditingConfig(false);
+      toast.success("Configuration updated");
+    },
+    onError: (error) => {
+      toast.error("Failed to update configuration", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
+  const handleSaveConfig = () => {
+    updateConfigMutation.mutate(formValues);
+  };
+
+  const handleCancelEdit = () => {
+    if (config) {
+      setFormValues({
+        taskTimeoutMs: config.taskTimeoutMs || 14400000,
+        maxConcurrentTasks: config.maxConcurrentTasks || 1,
+      });
+    }
+    setIsEditingConfig(false);
+  };
 
   // Check for updates mutation
   const checkMutation = useMutation({
-    mutationFn: api.checkForUpdates,
+    mutationFn: () => client.update.check(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["update-status"] });
       if (data.updateAvailable) {
@@ -158,7 +212,7 @@ export function Settings() {
 
   // Install update mutation
   const installMutation = useMutation({
-    mutationFn: api.installUpdate,
+    mutationFn: () => client.update.install(),
     onSuccess: () => {
       setIsInstalling(true);
       toast.success("Update installed", {
@@ -264,7 +318,7 @@ export function Settings() {
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground">Uptime:</span>
                 <span className="font-medium text-foreground">
-                  {status.uptime ? formatUptime(status.uptime) : "—"}
+                  {status.uptime ? formatUptime(Math.floor(status.uptime / 1000)) : "—"}
                 </span>
               </div>
             </>
@@ -443,19 +497,93 @@ export function Settings() {
           iconBg="bg-violet-500/10"
           iconBorder="border-violet-500/30"
           index={2}
+          headerAction={
+            isEditingConfig ? (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  disabled={updateConfigMutation.isPending}
+                  className="h-7 px-2"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSaveConfig}
+                  disabled={updateConfigMutation.isPending}
+                  className="h-7 px-2"
+                >
+                  {updateConfigMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Check className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsEditingConfig(true)}
+                className="h-7 px-2"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )
+          }
         >
-          <div className="divide-y divide-border/50">
-            <ConfigItem label="Port" value={config?.port || 3847} valueColor="font-mono" />
-            <ConfigItem
-              label="Task Timeout"
-              value={
-                config?.taskTimeoutMs
-                  ? `${Math.round(config.taskTimeoutMs / 3600000)} hours`
-                  : "4 hours"
-              }
-            />
-            <ConfigItem label="Max Concurrent Tasks" value={config?.maxConcurrentTasks || 1} />
-          </div>
+          {isEditingConfig ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-4">
+                <label className="text-xs text-muted-foreground">Task Timeout (hours)</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={Math.round(formValues.taskTimeoutMs / 3600000)}
+                  onChange={(e) =>
+                    setFormValues({
+                      ...formValues,
+                      taskTimeoutMs: Number(e.target.value) * 3600000,
+                    })
+                  }
+                  className="h-8 w-24 text-right font-mono text-sm"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-4">
+                <label className="text-xs text-muted-foreground">Max Concurrent Tasks</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={formValues.maxConcurrentTasks}
+                  onChange={(e) =>
+                    setFormValues({
+                      ...formValues,
+                      maxConcurrentTasks: Number(e.target.value),
+                    })
+                  }
+                  className="h-8 w-24 text-right font-mono text-sm"
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="divide-y divide-border/50">
+              <ConfigItem label="Port" value={config?.port || 3847} valueColor="font-mono" />
+              <ConfigItem
+                label="Task Timeout"
+                value={
+                  config?.taskTimeoutMs
+                    ? `${Math.round(config.taskTimeoutMs / 3600000)} hours`
+                    : "4 hours"
+                }
+              />
+              <ConfigItem label="Max Concurrent Tasks" value={config?.maxConcurrentTasks || 1} />
+            </div>
+          )}
         </SettingsCard>
 
         {/* System Information */}
@@ -471,7 +599,7 @@ export function Settings() {
           <div className="divide-y divide-border/50">
             <ConfigItem
               label="Uptime"
-              value={status?.uptime ? formatUptime(status.uptime) : "—"}
+              value={status?.uptime ? formatUptime(Math.floor(status.uptime / 1000)) : "—"}
             />
             <ConfigItem
               label="Database Schema"

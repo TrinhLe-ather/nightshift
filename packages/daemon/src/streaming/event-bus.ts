@@ -126,10 +126,15 @@ export class StreamEventBus {
       data: {},
     });
 
-    // Clean up after small delay (allow final messages to be delivered)
+    // Clean up after small delay (allow final messages to be delivered),
+    // but only if there are no active listeners.
     setTimeout(() => {
-      this.emitters.delete(taskId);
-      this.sequences.delete(taskId);
+      const emitter = this.emitters.get(taskId);
+      if (!emitter) return;
+      if (emitter.listenerCount("event") === 0) {
+        this.emitters.delete(taskId);
+        this.sequences.delete(taskId);
+      }
     }, 5000);
   }
 

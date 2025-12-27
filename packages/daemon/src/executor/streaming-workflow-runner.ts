@@ -115,6 +115,7 @@ export class StreamingWorkflowRunner {
     this.currentStepMessages = [];
 
     const { task, steps, workflow, workDir, timeout } = options;
+    const taskId = task.id;
 
     let sdkSessionId: string | undefined;
 
@@ -142,9 +143,7 @@ export class StreamingWorkflowRunner {
       };
 
       // Emit typing indicator
-      if (this.sessionManager.taskId) {
-        streamEventBus.emitTyping(this.sessionManager.taskId, true);
-      }
+      streamEventBus.emitTyping(taskId, true);
 
       // Create single query with streaming input generator
       // Cast to SDKUserMessage since the SDK accepts the simplified format at runtime
@@ -177,9 +176,7 @@ export class StreamingWorkflowRunner {
           this.sessionManager.writeTranscriptMessage(sdkMessage);
 
           // Emit to stream bus for real-time updates
-          if (this.sessionManager.taskId) {
-            streamEventBus.emitMessage(this.sessionManager.taskId, sdkMessage);
-          }
+          streamEventBus.emitMessage(taskId, sdkMessage);
         }
 
         // Check for step completion marker
@@ -202,18 +199,11 @@ export class StreamingWorkflowRunner {
       }
 
       // Stop typing indicator
-      if (this.sessionManager.taskId) {
-        streamEventBus.emitTyping(this.sessionManager.taskId, false);
-      }
+      streamEventBus.emitTyping(taskId, false);
 
       // Check if aborted
       if (this.abortController.signal.aborted) {
-        if (this.sessionManager.taskId) {
-          streamEventBus.emitError(
-            this.sessionManager.taskId,
-            "Workflow execution timed out or was aborted",
-          );
-        }
+        streamEventBus.emitError(taskId, "Workflow execution timed out or was aborted");
         return {
           success: false,
           sdkSessionId,
@@ -225,9 +215,7 @@ export class StreamingWorkflowRunner {
       // Check if all steps completed
       const allCompleted = this.allStepsCompleted(steps);
 
-      if (allCompleted && this.sessionManager.taskId) {
-        streamEventBus.emitComplete(this.sessionManager.taskId);
-      }
+      if (allCompleted) streamEventBus.emitComplete(taskId);
 
       return {
         success: allCompleted,
@@ -238,10 +226,8 @@ export class StreamingWorkflowRunner {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown error";
 
-      if (this.sessionManager.taskId) {
-        streamEventBus.emitTyping(this.sessionManager.taskId, false);
-        streamEventBus.emitError(this.sessionManager.taskId, message);
-      }
+      streamEventBus.emitTyping(taskId, false);
+      streamEventBus.emitError(taskId, message);
 
       return {
         success: false,

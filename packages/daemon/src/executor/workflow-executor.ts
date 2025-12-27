@@ -19,6 +19,16 @@ import { getDb, workflowRuns as workflowRunsTable } from "../db/drizzle";
 import { eq } from "drizzle-orm";
 import { TaskState, EventType, EventLevel } from "@nightshift/shared";
 
+export class WorkflowFailedError extends Error {
+  constructor(
+    message: string,
+    public readonly reason: string,
+  ) {
+    super(message);
+    this.name = "WorkflowFailedError";
+  }
+}
+
 export class WorkflowExecutor {
   private currentWorkflow: WorkflowDefinition | null = null;
   private streamingRunner: StreamingWorkflowRunner | null = null;
@@ -41,9 +51,6 @@ export class WorkflowExecutor {
     this.currentWorkflow = workflow;
 
     console.log(`[Workflow] Executing ${workflow.name} for task ${task.id}`);
-
-    // Start session
-    this.sessionManager.startSession(task.id);
 
     // Create workflow run record
     const runId = this.createWorkflowRun(task.id, task.workflowId);
@@ -117,8 +124,12 @@ export class WorkflowExecutor {
 
     // Handle result
     if (!result.success) {
-      await this.failWorkflow(task.id, result.error || "Workflow failed");
-      return;
+      // Important: throw so TaskExecutor does NOT treat this as success and mark COMPLETED.
+      // TaskExecutor owns final task teardown + FAILED state transition.
+      throw new WorkflowFailedError(
+        result.error || "Workflow failed",
+        result.error || "Workflow failed",
+      );
     }
 
     // All steps complete
@@ -165,16 +176,11 @@ export class WorkflowExecutor {
   }
 
   /**
-   * Check if workflow handled git operations (commit/push/PR)
-   * Always returns true since Smart Commit step is auto-appended
-   */
-  public hasHandledGitOps(): boolean {
-    return true;
-  }
-
-  /**
-   * Mark workflow as failed
-   * Note: Session cleanup is handled by TaskExecutor
+   * Mark workflow as failed (legacy)
+   *
+   * NOTE: With WorkflowFailedError propagation, TaskExecutor should own the FAILED
+   * transition and cleanup. This method is retained for backwards compatibility
+   * but is no longer used.
    */
   private async failWorkflow(taskId: string, reason: string): Promise<void> {
     updateTask(taskId, {

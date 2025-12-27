@@ -8,7 +8,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { FileEdit, FilePlus, FileDiff, XCircle } from "@/components/ui/icons";
+import { FileEdit, FilePlus, FileDiff } from "@/components/ui/icons";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { FileDiffView } from "./FileDiffView";
 import type { FileChange } from "./TranscriptViewer";
 
@@ -109,43 +110,38 @@ export function ChangedFilesList({ changes, className, variant = "card" }: Chang
           })}
         </div>
 
-        {/* Modal with all diffs */}
-        {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-background border border-border max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-                <h3 className="font-medium text-foreground">Changed Files ({changes.length})</h3>
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <XCircle className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="flex-1 overflow-auto p-4">
-                <div className="space-y-6">
-                  {changes.map((change) => (
-                    <div
-                      key={change.filePath}
-                      ref={(el) => {
-                        if (el) fileRefs.current.set(change.filePath, el);
-                      }}
-                      className="scroll-mt-4"
-                    >
-                      <FileDiffView
-                        filePath={change.filePath}
-                        oldContent={change.oldContent}
-                        newContent={change.newContent}
-                        isNewFile={change.isNewFile}
-                        defaultCollapsed={false}
-                      />
-                    </div>
-                  ))}
-                </div>
+        {/* Dialog with all diffs */}
+        <Dialog open={showModal} onOpenChange={setShowModal}>
+          <DialogContent
+            className="max-w-6xl max-h-[85vh] overflow-hidden flex flex-col p-0 gap-0"
+            showCloseButton={true}
+          >
+            <DialogHeader className="px-4 py-3 border-b border-border shrink-0">
+              <DialogTitle>Changed Files ({changes.length})</DialogTitle>
+            </DialogHeader>
+            <div className="flex-1 overflow-auto p-4">
+              <div className="space-y-6">
+                {changes.map((change) => (
+                  <div
+                    key={change.filePath}
+                    ref={(el) => {
+                      if (el) fileRefs.current.set(change.filePath, el);
+                    }}
+                    className="scroll-mt-4"
+                  >
+                    <FileDiffView
+                      filePath={change.filePath}
+                      oldContent={change.oldContent}
+                      newContent={change.newContent}
+                      isNewFile={change.isNewFile}
+                      defaultCollapsed={false}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
@@ -177,43 +173,38 @@ export function ChangedFilesList({ changes, className, variant = "card" }: Chang
         </div>
       </div>
 
-      {/* Modal with all diffs */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border border-border max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
-              <h3 className="font-medium text-foreground">Changed Files ({changes.length})</h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <XCircle className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-4">
-              <div className="space-y-6">
-                {changes.map((change) => (
-                  <div
-                    key={change.filePath}
-                    ref={(el) => {
-                      if (el) fileRefs.current.set(change.filePath, el);
-                    }}
-                    className="scroll-mt-4"
-                  >
-                    <FileDiffView
-                      filePath={change.filePath}
-                      oldContent={change.oldContent}
-                      newContent={change.newContent}
-                      isNewFile={change.isNewFile}
-                      defaultCollapsed={false}
-                    />
-                  </div>
-                ))}
-              </div>
+      {/* Dialog with all diffs */}
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent
+          className="sm:max-w-full h-svh overflow-hidden flex flex-col p-0 gap-0"
+          showCloseButton={true}
+        >
+          <DialogHeader className="px-4 py-3 border-b border-border shrink-0">
+            <DialogTitle>Changed Files ({changes.length})</DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-auto p-4">
+            <div className="space-y-6">
+              {changes.map((change) => (
+                <div
+                  key={change.filePath}
+                  ref={(el) => {
+                    if (el) fileRefs.current.set(change.filePath, el);
+                  }}
+                  className="scroll-mt-4"
+                >
+                  <FileDiffView
+                    filePath={change.filePath}
+                    oldContent={change.oldContent}
+                    newContent={change.newContent}
+                    isNewFile={change.isNewFile}
+                    defaultCollapsed={false}
+                  />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

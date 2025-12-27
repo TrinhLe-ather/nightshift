@@ -135,6 +135,7 @@ export const createTaskSchema = taskSchema.pick({
   branch: true,
   autoYes: true,
   model: true,
+  workflowId: true,
 });
 
 export const updateTaskSchema = taskSchema

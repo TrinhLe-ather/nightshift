@@ -12,15 +12,14 @@ import * as os from "node:os";
 import { SessionManager, setSessionManager } from "./session-manager";
 import { PreflightChecker } from "./preflight-checker";
 import { GitOperations } from "./git-operations";
-import { SdkRunner, type SdkRunResult, type SdkMessage } from "./sdk";
+import type { SdkMessage } from "./sdk";
 import { RepoLockManager } from "./repo-lock-manager";
 import { type TaskSetupResult, setupTaskExecution, teardownTaskExecution } from "./task-setup";
-import { buildResumePrompt, pauseTask } from "./task-lifecycle";
-import { generateAndStoreTaskName } from "./task-name-generator";
+import { pauseTask } from "./task-lifecycle";
 import { claimNextPendingTask, getTaskById, getTasks, updateTask } from "../tasks/repository";
 import { EventLevel, EventType, TaskState } from "@nightshift/shared";
 import type { Task } from "@nightshift/shared";
-import { WorkflowExecutor } from "./workflow-executor";
+import { WorkflowExecutor, WorkflowFailedError } from "./workflow-executor";
 
 const DEFAULT_POLL_INTERVAL_MS = 5000; // 5 seconds
 const DEFAULT_TIMEOUT_MS = 4 * 60 * 60 * 1000; // 4 hours
@@ -48,9 +47,6 @@ export class TaskExecutor {
   private preflightChecker: PreflightChecker;
   private gitOperations: GitOperations;
   private repoLockManager: RepoLockManager;
-
-  // Track current SDK runners for terminal preview access
-  private currentSdkRunners: Map<string, SdkRunner> = new Map();
 
   constructor(config: ExecutorConfig) {
     this.dataDir = config.dataDir;
@@ -190,124 +186,112 @@ export class TaskExecutor {
   async executeTask(task: Task): Promise<void> {
     console.log(`[Executor] Executing task ${task.id}: ${task.prompt.substring(0, 50)}...`);
 
-    try {
-      // Task is already claimed by claimNextPendingTask() in poll()
-      // This fixes race condition #1 (atomic claim)
+    return await this.sessionManager.runWithSession(task.id, async () => {
+      try {
+        // Task is already claimed by claimNextPendingTask() in poll()
+        // This fixes race condition #1 (atomic claim)
 
-      // Step 1: Start session
-      this.sessionManager.startSession(task.id);
+        // Step 1: Start session
+        this.sessionManager.startSession(task.id);
 
-      this.sessionManager.emit(EventType.TASK_CLAIMED, EventLevel.INFO, {
-        taskId: task.id,
-        prompt: task.prompt.substring(0, 200),
-      });
-
-      // Step 2: Set up execution environment (worktree or direct mode)
-      const setupResult = await setupTaskExecution({ task });
-
-      if (!setupResult.success) {
-        await this.handleSetupFailure(task, setupResult.error);
-        return;
-      }
-
-      const setup = setupResult.data;
-
-      // Emit worktree event if applicable
-      if (setup.executionMode === "worktree") {
-        this.sessionManager.emit(EventType.WORKTREE_CREATED, EventLevel.INFO, {
-          path: setup.workDir,
-          branch: setup.taskBranch,
-          baseCommitSha: setup.baseCommitSha,
+        this.sessionManager.emit(EventType.TASK_CLAIMED, EventLevel.INFO, {
+          taskId: task.id,
+          prompt: task.prompt.substring(0, 200),
         });
-      }
 
-      // Track this task
-      this.runningTasks.set(task.id, { task, setup });
+        // Step 2: Set up execution environment (worktree or direct mode)
+        const setupResult = await setupTaskExecution({ task });
 
-      // Step 3: Preflight checks in the work directory
-      const preflight = await this.preflightChecker.check(setup.workDir);
-
-      if (!preflight.passed) {
-        await this.handlePreflightFailure(task, setup, preflight.error!);
-        return;
-      }
-
-      // Step 4: Update task with execution details
-      updateTask(task.id, {
-        workDir: setup.workDir,
-        executionMode: setup.executionMode,
-        baseCommitSha: setup.baseCommitSha,
-        originalBranch: setup.originalBranch,
-        branch: setup.taskBranch,
-      });
-
-      // Step 5: For direct mode, check clean tree and acquire exclusive lock
-      if (setup.executionMode === "direct") {
-        if (!task.repoId) {
-          await this.failTask(task, setup, "MISSING_REPO_ID", "Task has no repo ID");
+        if (!setupResult.success) {
+          await this.handleSetupFailure(task, setupResult.error);
           return;
         }
 
-        // Check git tree is clean
-        const isClean = await this.gitOperations.isWorkingTreeClean(setup.repoPath);
+        const setup = setupResult.data;
 
-        if (!isClean) {
-          await this.failTask(
-            task,
-            setup,
-            "GIT_TREE_DIRTY",
-            "Cannot start task in direct mode: working tree has uncommitted changes. " +
-              "Please commit/discard changes, or use worktree mode.",
-          );
+        // Emit worktree event if applicable
+        if (setup.executionMode === "worktree") {
+          this.sessionManager.emit(EventType.WORKTREE_CREATED, EventLevel.INFO, {
+            path: setup.workDir,
+            branch: setup.taskBranch,
+            baseCommitSha: setup.baseCommitSha,
+          });
+        }
+
+        // Track this task
+        this.runningTasks.set(task.id, { task, setup });
+
+        // Step 3: Preflight checks in the work directory
+        const preflight = await this.preflightChecker.check(setup.workDir);
+
+        if (!preflight.passed) {
+          await this.handlePreflightFailure(task, setup, preflight.error!);
           return;
         }
 
-        // Acquire exclusive lock
-        const lockResult = await this.repoLockManager.acquireExclusive(task.repoId, task.id);
+        // Step 4: Update task with execution details
+        // Note: setupTaskExecution() already persists these fields; avoid duplicate writes here.
 
-        if (!lockResult.success) {
-          const lockHolders = lockResult.lockHolders?.join(", ") || "unknown tasks";
-          await this.failTask(
-            task,
-            setup,
-            "REPO_LOCKED",
-            `Cannot start task in direct mode: repository locked by ${lockHolders}. ` +
-              `Please wait for them to finish, or use worktree mode.`,
-          );
-          return;
+        // Step 5: For direct mode, check clean tree and acquire exclusive lock
+        if (setup.executionMode === "direct") {
+          if (!task.repoId) {
+            await this.failTask(task, setup, "MISSING_REPO_ID", "Task has no repo ID");
+            return;
+          }
+
+          // Check git tree is clean
+          const isClean = await this.gitOperations.isWorkingTreeClean(setup.repoPath);
+
+          if (!isClean) {
+            await this.failTask(
+              task,
+              setup,
+              "GIT_TREE_DIRTY",
+              "Cannot start task in direct mode: working tree has uncommitted changes. " +
+                "Please commit/discard changes, or use worktree mode.",
+            );
+            return;
+          }
+
+          // Acquire exclusive lock
+          const lockResult = await this.repoLockManager.acquireExclusive(task.repoId, task.id);
+
+          if (!lockResult.success) {
+            const lockHolders = lockResult.lockHolders?.join(", ") || "unknown tasks";
+            await this.failTask(
+              task,
+              setup,
+              "REPO_LOCKED",
+              `Cannot start task in direct mode: repository locked by ${lockHolders}. ` +
+                `Please wait for them to finish, or use worktree mode.`,
+            );
+            return;
+          }
+
+          console.log(`[TaskExecutor] Acquired exclusive lock for task ${task.id}`);
         }
 
-        console.log(`[TaskExecutor] Acquired exclusive lock for task ${task.id}`);
-      }
+        this.sessionManager.emit(EventType.REPO_LOCK_ACQUIRED, EventLevel.INFO, {
+          path: setup.executionMode === "direct" ? setup.repoPath : setup.workDir,
+          executionMode: setup.executionMode,
+        });
 
-      this.sessionManager.emit(EventType.REPO_LOCK_ACQUIRED, EventLevel.INFO, {
-        path: setup.executionMode === "direct" ? setup.repoPath : setup.workDir,
-        executionMode: setup.executionMode,
-      });
+        // Step 6: Execute workflow
+        const workflowExecutor = new WorkflowExecutor(this.sessionManager);
+        const workflowTask: Task = {
+          ...task,
+          workDir: setup.workDir,
+          executionMode: setup.executionMode,
+          baseCommitSha: setup.baseCommitSha,
+          originalBranch: setup.originalBranch,
+          branch: setup.taskBranch,
+        };
 
-      // Step 6: Execute workflow
-      // Update task object with execution details (updateTask only updates DB, not the object)
-      task.workDir = setup.workDir;
-      task.executionMode = setup.executionMode;
-      task.baseCommitSha = setup.baseCommitSha;
-      task.originalBranch = setup.originalBranch;
-      task.branch = setup.taskBranch;
+        await workflowExecutor.executeWorkflow(workflowTask);
 
-      const workflowExecutor = new WorkflowExecutor(this.sessionManager);
-      await workflowExecutor.executeWorkflow(task);
-
-      // Step 7: Handle success - git operations (commit, push, PR)
-      const runningInfo = this.runningTasks.get(task.id);
-      if (runningInfo) {
-        // Check if workflow handled git operations (smart commit step)
-        // If not, fall back to auto-commit
-        let prUrl: string | undefined;
-        if (!workflowExecutor.hasHandledGitOps()) {
-          console.log("[Executor] Workflow didn't handle git ops, using fallback auto-commit");
-          prUrl = await this.handleGitOperations(task, runningInfo.setup);
-        } else {
-          console.log("[Executor] Workflow handled git ops via smart commit step");
-        }
+        // Step 7: Success finalization (teardown + mark COMPLETED)
+        const runningInfo = this.runningTasks.get(task.id);
+        if (!runningInfo) return;
 
         // Tear down execution environment
         const updatedTask = getTaskById(task.id);
@@ -329,59 +313,84 @@ export class TaskExecutor {
           }
         }
 
-        // Complete the task
         updateTask(task.id, {
           status: TaskState.COMPLETED,
           completedAt: new Date().toISOString(),
-          prUrl,
         });
 
         this.sessionManager.emit(EventType.TASK_COMPLETED, EventLevel.INFO, {
           taskId: task.id,
-          prUrl,
         });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown error";
-      const setup = this.runningTasks.get(task.id)?.setup;
-      await this.failTask(task, setup, "FAILED_EXECUTION", message);
-    } finally {
-      // Cleanup
-      const runningInfo = this.runningTasks.get(task.id);
-      if (runningInfo) {
-        const { setup } = runningInfo;
+      } catch (error) {
+        const setup = this.runningTasks.get(task.id)?.setup;
 
-        // Release lock (for direct mode)
-        if (setup.executionMode === "direct" && task.repoId) {
-          await this.repoLockManager.release(task.repoId, task.id);
-          this.sessionManager.emit(EventType.REPO_LOCK_RELEASED, EventLevel.INFO, {
-            path: setup.repoPath,
-          });
+        if (error instanceof WorkflowFailedError) {
+          await this.failTask(task, setup, "WORKFLOW_STEP_FAILED", error.reason);
+          return;
         }
+
+        const message = error instanceof Error ? error.message : "Unknown error";
+        await this.failTask(task, setup, "FAILED_EXECUTION", message);
+      } finally {
+        // Cleanup
+        const runningInfo = this.runningTasks.get(task.id);
+        if (runningInfo) {
+          const { setup } = runningInfo;
+
+          // Release lock (for direct mode)
+          if (setup.executionMode === "direct" && task.repoId) {
+            await this.repoLockManager.release(task.repoId, task.id);
+            this.sessionManager.emit(EventType.REPO_LOCK_RELEASED, EventLevel.INFO, {
+              path: setup.repoPath,
+            });
+          }
+        }
+
+        // Always end session
+        this.sessionManager.endSession();
+
+        // Remove from running tasks
+        this.runningTasks.delete(task.id);
       }
-
-      // Always end session
-      this.sessionManager.endSession();
-
-      // Remove from running tasks
-      this.runningTasks.delete(task.id);
-    }
+    });
   }
 
   /**
    * Get terminal output for a running task (for preview)
    */
   getTerminalOutput(taskId: string): string | null {
-    const runner = this.currentSdkRunners.get(taskId);
-    return runner?.getCurrentOutput() ?? null;
+    const messages = this.sessionManager.readTranscript(taskId);
+    if (!messages || messages.length === 0) return null;
+
+    // Minimal formatter (mirrors legacy output style without requiring in-memory runner)
+    return messages
+      .map((m) => {
+        switch (m.type) {
+          case "assistant":
+            if (m.toolName) return `[Tool: ${m.toolName}]\n${m.content || ""}`;
+            return m.content;
+          case "tool":
+            return `[Result] ${m.toolResult?.substring(0, 200) || ""}`;
+          case "error":
+            return `[Error] ${m.content}`;
+          case "result":
+            return `[Complete] ${m.content}`;
+          case "system":
+            return `[System] ${m.content}`;
+          default:
+            return "";
+        }
+      })
+      .filter(Boolean)
+      .join("\n\n");
   }
 
   /**
    * Get structured terminal messages for a running task (SDK v2)
    */
   getTerminalMessages(taskId: string): SdkMessage[] | null {
-    const runner = this.currentSdkRunners.get(taskId);
-    return runner?.getMessages() ?? null;
+    const messages = this.sessionManager.readTranscript(taskId);
+    return messages.length > 0 ? messages : null;
   }
 
   /**
@@ -461,89 +470,6 @@ export class TaskExecutor {
     }
   }
 
-  /**
-   * Handle git operations after task completion (commit, push, PR)
-   * Returns prUrl if PR was created successfully
-   */
-  private async handleGitOperations(
-    task: Task,
-    setup: TaskSetupResult,
-  ): Promise<string | undefined> {
-    // Check for changes
-    const hasChanges = await this.gitOperations.hasChanges(setup.workDir);
-
-    if (!hasChanges) {
-      console.log("[Executor] No changes to commit");
-      return undefined;
-    }
-
-    // Generate commit message
-    const commitMessage = this.generateCommitMessage(task);
-    const commitResult = await this.gitOperations.commit(setup.workDir, commitMessage);
-
-    if (!commitResult.success) {
-      console.error("[Executor] Commit failed:", commitResult.error);
-      return undefined;
-    }
-
-    // Push branch
-    const pushed = await this.gitOperations.push(setup.workDir, setup.taskBranch);
-
-    if (!pushed) {
-      console.error("[Executor] Push failed");
-      return undefined;
-    }
-
-    // Create PR
-    const prTitle = this.generatePrTitle(task);
-    const prBody = this.generatePrBody(task);
-    const prResult = await this.gitOperations.createPr(setup.workDir, prTitle, prBody);
-
-    if (prResult.success) {
-      return prResult.prUrl;
-    } else {
-      console.log("[Executor] PR creation skipped:", prResult.error);
-      return undefined;
-    }
-  }
-
-  private async handleSuccess(task: Task, setup: TaskSetupResult): Promise<void> {
-    // Handle git operations (commit, push, PR)
-    const prUrl = await this.handleGitOperations(task, setup);
-
-    // Tear down execution environment
-    const updatedTask = getTaskById(task.id);
-    if (updatedTask) {
-      await teardownTaskExecution(
-        {
-          ...updatedTask,
-          executionMode: setup.executionMode,
-          workDir: setup.workDir,
-        } as Task,
-        "completed",
-      );
-
-      // Emit worktree removed event if applicable
-      if (setup.executionMode === "worktree") {
-        this.sessionManager.emit(EventType.WORKTREE_REMOVED, EventLevel.INFO, {
-          path: setup.workDir,
-        });
-      }
-    }
-
-    // Complete the task
-    updateTask(task.id, {
-      status: TaskState.COMPLETED,
-      completedAt: new Date().toISOString(),
-      prUrl,
-    });
-
-    this.sessionManager.emit(EventType.TASK_COMPLETED, EventLevel.INFO, {
-      taskId: task.id,
-      prUrl,
-    });
-  }
-
   private async failTask(
     task: Task,
     setup: TaskSetupResult | undefined,
@@ -577,30 +503,6 @@ export class TaskExecutor {
       code,
       message,
     });
-  }
-
-  private generateCommitMessage(task: Task): string {
-    const prompt = task.prompt.length > 69 ? task.prompt.substring(0, 69) + "..." : task.prompt;
-    return `feat: ${prompt}\n\nTask: ${task.id}\nGenerated by Night Shift`;
-  }
-
-  private generatePrTitle(task: Task): string {
-    const prompt = task.prompt.length > 60 ? task.prompt.substring(0, 60) + "..." : task.prompt;
-    return `[Night Shift] ${prompt}`;
-  }
-
-  private generatePrBody(task: Task): string {
-    return `## Summary
-
-This PR was generated by Night Shift.
-
-**Task ID:** ${task.id}
-
-**Original Request:**
-${task.prompt}
-
----
-_Generated by [Night Shift](https://github.com/sipherxyz/nightshift)_`;
   }
 
   /**

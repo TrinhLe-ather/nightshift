@@ -16,8 +16,8 @@ export { PreflightChecker, type PreflightResult } from "./preflight-checker";
 export { GitOperations, type CommitResult, type PrResult } from "./git-operations";
 export { TranscriptWriter, type TranscriptEntry } from "./transcript-writer";
 
-// SDK-based execution (Claude Agent SDK v2)
-export { SdkRunner, type SdkRunnerOptions, type SdkRunResult, type SdkMessage } from "./sdk";
+// SDK message types (used for transcript + terminal streaming)
+export type { SdkMessage } from "./sdk";
 
 // Streaming workflow execution (single session with context preservation)
 export {

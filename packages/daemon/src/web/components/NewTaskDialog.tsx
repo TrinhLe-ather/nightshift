@@ -2,7 +2,7 @@
  * New Task Dialog
  *
  * Task creation dialog for workflow execution.
- * Workflows can be predefined or ad-hoc (leave workflow selection empty).
+ * Workflow-only: every task runs a workflow (defaults to "quick-task").
  */
 
 import { useState, useEffect } from "react";
@@ -32,6 +32,7 @@ import { useRepos } from "@/hooks/useRepos";
 import { useWorkflow } from "@/hooks/useWorkflows";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ExternalLink } from "@/components/ui/icons";
+import { MODEL_OPTIONS, getModelColor } from "@/web/lib/models";
 
 interface NewTaskDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>("");
   const [selectedRepoId, setSelectedRepoId] = useState<string>("");
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [executionModeOverride, setExecutionModeOverride] =
     useState<ExecutionModeOverride>("default");
 
@@ -81,13 +83,25 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
   const { data: workflowDetails, isLoading: isLoadingWorkflowDetails } =
     useWorkflow(selectedWorkflow);
 
+  // Workflow-only: default to built-in quick-task workflow when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    if (!selectedWorkflow) {
+      setSelectedWorkflow("quick-task");
+    }
+  }, [open, selectedWorkflow]);
+
   const createTask = useMutation({
     mutationFn: async () => {
+      // Convert "_default" back to undefined for API
+      const modelOverride =
+        selectedModel && selectedModel !== "_default" ? selectedModel : undefined;
       return client.tasks.create({
         prompt,
         repoId: selectedRepoId, // Required
         autoYes: true, // Always auto-approve
-        workflowId: selectedWorkflow || undefined,
+        workflowId: selectedWorkflow || "quick-task",
+        model: modelOverride,
         // Pass execution mode override if user selected one
         executionMode: executionModeOverride !== "default" ? executionModeOverride : undefined,
       });
@@ -111,6 +125,7 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
     setPrompt("");
     setSelectedWorkflow("");
     setSelectedRepoId("");
+    setSelectedModel("");
     setExecutionModeOverride("default");
   };
 
@@ -163,13 +178,10 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
         <div className="space-y-4">
           {/* Workflow Selection */}
           <div>
-            <Label htmlFor="workflow-select">Workflow (optional)</Label>
-            <p className="text-xs text-muted-foreground mt-1 mb-2">
-              Leave empty for ad-hoc task execution
-            </p>
+            <Label htmlFor="workflow-select">Workflow</Label>
             <Select
               value={selectedWorkflow}
-              onValueChange={(value) => setSelectedWorkflow(value || "")}
+              onValueChange={(value) => setSelectedWorkflow(value || "quick-task")}
             >
               <SelectTrigger id="workflow-select" className="mt-1 w-full">
                 <SelectValue>
@@ -255,6 +267,40 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
                 )}
               </div>
             )}
+          </div>
+
+          {/* Model Selection */}
+          <div>
+            <Label htmlFor="model-select">Model Override</Label>
+            <p className="text-xs text-muted-foreground mt-1 mb-2">
+              Override the{" "}
+              {selectedWorkflow && workflowDetails?.definition.model
+                ? `workflow default (${workflowDetails.definition.model})`
+                : "default model (sonnet)"}
+            </p>
+            <Select
+              value={selectedModel || "_default"}
+              onValueChange={(value) => setSelectedModel(value === "_default" || !value ? "" : value)}
+            >
+              <SelectTrigger id="model-select" className="mt-1 w-full">
+                <SelectValue>
+                  {selectedModel ? (
+                    <span className={getModelColor(selectedModel)}>
+                      {MODEL_OPTIONS.find((m) => m.value === selectedModel)?.label}
+                    </span>
+                  ) : (
+                    "Use default"
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {MODEL_OPTIONS.map((option) => (
+                  <SelectItem key={option.value || "_default"} value={option.value || "_default"}>
+                    <span className={option.color}>{option.label}</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Repository Selection (required) */}

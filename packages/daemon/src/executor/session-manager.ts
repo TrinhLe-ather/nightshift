@@ -7,6 +7,7 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { AsyncLocalStorage } from "node:async_hooks";
 import { desc, eq } from "drizzle-orm";
 import { getDb, sessions } from "../db/drizzle";
 import { EventLevel, EventType } from "@nightshift/shared";
@@ -39,20 +40,23 @@ export interface Session {
   messageCount: number;
 }
 
+type SessionContext = { taskId: string };
+
+type ActiveSession = {
+  session: Session;
+  eventSequence: number;
+  writeStream: fs.WriteStream;
+  transcriptWriter: TranscriptWriter;
+};
+
 export class SessionManager {
   private sessionsDir: string;
-  private currentSession: Session | null = null;
-  private eventSequence = 0;
-  private writeStream: fs.WriteStream | null = null;
-  private transcriptWriter: TranscriptWriter;
-
-  /** Public taskId property for SdkRunner to access */
-  public taskId: string | null = null;
+  private readonly context = new AsyncLocalStorage<SessionContext>();
+  private readonly activeSessions = new Map<string, ActiveSession>();
 
   constructor(dataDir: string) {
     const resolvedDataDir = resolveNightShiftDir(dataDir);
     this.sessionsDir = path.join(resolvedDataDir, "sessions");
-    this.transcriptWriter = new TranscriptWriter(this.sessionsDir);
     this.ensureSessionsDir();
   }
 
@@ -66,17 +70,21 @@ export class SessionManager {
    * Start a new session for a task
    */
   startSession(taskId: string): Session {
+    const existing = this.activeSessions.get(taskId);
+    if (existing) {
+      return existing.session;
+    }
+
     const db = getDb();
     const runId = `run_${crypto.randomUUID().replace(/-/g, "").substring(0, 12)}`;
     const sessionId = `session_${crypto.randomUUID().replace(/-/g, "").substring(0, 16)}`;
-    const eventsPath = path.join(this.sessionsDir, `${taskId}.ndjson`);
+    // Write events per-run to avoid seq collisions across multiple sessions for the same task.
+    const eventsPath = path.join(this.sessionsDir, `${taskId}.${runId}.ndjson`);
     const startedAt = new Date().toISOString();
 
-    // Set taskId for streaming events
-    this.taskId = taskId;
-
     // Start transcript writer and get path
-    const transcriptPath = this.transcriptWriter.start(taskId);
+    const transcriptWriter = new TranscriptWriter(this.sessionsDir);
+    const transcriptPath = transcriptWriter.start(taskId);
 
     // Create session record in database
     db.insert(sessions)
@@ -92,7 +100,7 @@ export class SessionManager {
       })
       .run();
 
-    this.currentSession = {
+    const session: Session = {
       id: sessionId,
       taskId,
       runId,
@@ -103,51 +111,85 @@ export class SessionManager {
       messageCount: 0,
     };
 
-    this.eventSequence = 0;
-
     // Open write stream for events
-    this.writeStream = fs.createWriteStream(eventsPath, { flags: "a" });
+    const writeStream = fs.createWriteStream(eventsPath, { flags: "a" });
+
+    this.activeSessions.set(taskId, {
+      session,
+      eventSequence: 0,
+      writeStream,
+      transcriptWriter,
+    });
 
     // Emit session started event
-    this.emit(EventType.SESSION_STARTED, EventLevel.INFO, {
+    this.emitForTask(taskId, EventType.SESSION_STARTED, EventLevel.INFO, {
       sessionId,
       taskId,
       runId,
     });
 
-    return this.currentSession;
+    return session;
+  }
+
+  /**
+   * Run a function with the given taskId bound as the "current" session context.
+   * This is required for concurrent task execution: each task gets its own
+   * isolated session context even when running in parallel.
+   */
+  runWithSession<T>(taskId: string, fn: () => Promise<T> | T): Promise<T> | T {
+    return this.context.run({ taskId }, fn);
+  }
+
+  private getActiveSessionFromContext(): ActiveSession | null {
+    const ctx = this.context.getStore();
+    if (!ctx) return null;
+    return this.activeSessions.get(ctx.taskId) ?? null;
+  }
+
+  private emitForTask(
+    taskId: string,
+    type: EventType,
+    level: EventLevel = EventLevel.INFO,
+    data?: Record<string, unknown>,
+  ): void {
+    const active = this.activeSessions.get(taskId);
+    if (!active) {
+      console.warn("No active session, cannot emit event:", type);
+      return;
+    }
+
+    const seq = (active.eventSequence += 1);
+
+    const event: SessionEvent = {
+      schemaVersion: SESSION_SCHEMA_VERSION,
+      ts: new Date().toISOString(),
+      seq,
+      level,
+      type,
+      taskId: active.session.taskId,
+      runId: active.session.runId,
+      data,
+    };
+
+    // Write as NDJSON (newline-delimited JSON)
+    active.writeStream.write(JSON.stringify(event) + "\n");
+
+    // Update event count in database
+    active.session.eventCount = seq;
+    const db = getDb();
+    db.update(sessions).set({ eventCount: seq }).where(eq(sessions.id, active.session.id)).run();
   }
 
   /**
    * Emit an event to the session log
    */
   emit(type: EventType, level: EventLevel = EventLevel.INFO, data?: Record<string, unknown>): void {
-    if (!this.currentSession || !this.writeStream) {
+    const active = this.getActiveSessionFromContext();
+    if (!active) {
       console.warn("No active session, cannot emit event:", type);
       return;
     }
-
-    const event: SessionEvent = {
-      schemaVersion: SESSION_SCHEMA_VERSION,
-      ts: new Date().toISOString(),
-      seq: ++this.eventSequence,
-      level,
-      type,
-      taskId: this.currentSession.taskId,
-      runId: this.currentSession.runId,
-      data,
-    };
-
-    // Write as NDJSON (newline-delimited JSON)
-    this.writeStream.write(JSON.stringify(event) + "\n");
-
-    // Update event count in database
-    this.currentSession.eventCount = this.eventSequence;
-    const db = getDb();
-    db.update(sessions)
-      .set({ eventCount: this.eventSequence })
-      .where(eq(sessions.id, this.currentSession.id))
-      .run();
+    this.emitForTask(active.session.taskId, type, level, data);
   }
 
   /**
@@ -157,28 +199,24 @@ export class SessionManager {
    * Multiple calls to endSession are safe and will be ignored after the first.
    */
   endSession(): void {
-    // Guard: Return early if session already ended (prevents double-close)
-    if (!this.currentSession) return;
+    const active = this.getActiveSessionFromContext();
+    if (!active) return;
 
     const completedAt = new Date().toISOString();
-    const messageCount = this.transcriptWriter.getSequence();
+    const messageCount = active.transcriptWriter.getSequence();
 
     // Emit session ended event
-    this.emit(EventType.SESSION_ENDED, EventLevel.INFO, {
-      duration: Date.now() - new Date(this.currentSession.startedAt).getTime(),
-      eventCount: this.eventSequence,
+    this.emitForTask(active.session.taskId, EventType.SESSION_ENDED, EventLevel.INFO, {
+      duration: Date.now() - new Date(active.session.startedAt).getTime(),
+      eventCount: active.eventSequence,
       messageCount,
     });
 
     // Flush write stream before closing to ensure all events are persisted
-    if (this.writeStream) {
-      // Synchronous flush - ensure events are written before we continue
-      try {
-        this.writeStream.end();
-        this.writeStream = null;
-      } catch (error) {
-        console.error("[SessionManager] Error closing write stream:", error);
-      }
+    try {
+      active.writeStream.end();
+    } catch (error) {
+      console.error("[SessionManager] Error closing write stream:", error);
     }
 
     // Update session in database (after flush to ensure final event is written)
@@ -186,30 +224,29 @@ export class SessionManager {
     db.update(sessions)
       .set({
         completedAt,
-        eventCount: this.eventSequence,
+        eventCount: active.eventSequence,
         messageCount,
       })
-      .where(eq(sessions.id, this.currentSession.id))
+      .where(eq(sessions.id, active.session.id))
       .run();
 
     // Close transcript writer
     try {
-      this.transcriptWriter.close();
+      active.transcriptWriter.close();
     } catch (error) {
       console.error("[SessionManager] Error closing transcript writer:", error);
     }
 
-    // Clear session state (prevents double-close on subsequent calls)
-    this.currentSession = null;
-    this.eventSequence = 0;
-    this.taskId = null;
+    // Remove task session (prevents double-close on subsequent calls)
+    this.activeSessions.delete(active.session.taskId);
   }
 
   /**
    * Get the current session
    */
   getSession(): Session | null {
-    return this.currentSession;
+    const active = this.getActiveSessionFromContext();
+    return active?.session ?? null;
   }
 
   /**
@@ -269,11 +306,12 @@ export class SessionManager {
    * Write a message to the current session's transcript
    */
   writeTranscriptMessage(message: SdkMessage): void {
-    if (!this.currentSession) {
+    const active = this.getActiveSessionFromContext();
+    if (!active) {
       console.warn("No active session, cannot write transcript message");
       return;
     }
-    this.transcriptWriter.write(message);
+    active.transcriptWriter.write(message);
   }
 
   /**

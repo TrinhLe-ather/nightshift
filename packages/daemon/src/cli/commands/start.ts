@@ -213,6 +213,7 @@ export async function startCommand(): Promise<void> {
     executor = createExecutor({
       dataDir: NIGHTSHIFT_DIR,
       timeoutMs: config.taskTimeoutMs,
+      maxConcurrentTasks: config.maxConcurrentTasks,
     });
 
     // Wire up terminal providers for live preview and transcript reading
@@ -221,7 +222,7 @@ export async function startCommand(): Promise<void> {
     setTranscriptReader((taskId) => executor?.readTranscript(taskId) ?? []);
 
     executor.start();
-    console.log("Task executor started");
+    console.log(`Task executor started (max concurrent tasks: ${config.maxConcurrentTasks})`);
   } else {
     console.log("Local queue disabled, task executor not started");
   }

@@ -178,25 +178,27 @@ function ToolsMultiSelect({
 
   return (
     <Popover>
-      <PopoverTrigger>
-        <Button
-          type="button"
-          variant="outline"
-          className={cn(
-            "mt-2 h-9 w-full justify-start text-left font-normal bg-muted/30",
-            selectedTools.length === 0 && "text-muted-foreground",
-          )}
-        >
-          <span className="truncate text-sm">
-            {selectedTools.length === 0
-              ? "Select tools..."
-              : selectedTools.length === 1
-                ? selectedTools[0]
-                : `${selectedTools.length} tools selected`}
-          </span>
-          <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
+      <PopoverTrigger
+        render={
+          <Button
+            type="button"
+            variant="outline"
+            className={cn(
+              "mt-2 h-9 w-full justify-start text-left font-normal bg-muted/30",
+              selectedTools.length === 0 && "text-muted-foreground",
+            )}
+          >
+            <span className="truncate text-sm">
+              {selectedTools.length === 0
+                ? "Select tools..."
+                : selectedTools.length === 1
+                  ? selectedTools[0]
+                  : `${selectedTools.length} tools selected`}
+            </span>
+            <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        }
+      />
       <PopoverContent className="w-[260px] p-0" align="start">
         <div className="p-1">
           {/* Clear all option */}

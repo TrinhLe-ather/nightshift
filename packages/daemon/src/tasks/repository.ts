@@ -5,7 +5,7 @@
  */
 
 import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
-import { getDb, repos, tasks } from "../db/drizzle";
+import { type NewTask, getDb, repos, tasks } from "../db/drizzle";
 import type { CreateTask, Priority, Task, TaskState, UpdateTask } from "@nightshift/shared";
 import { TaskState as TaskStateEnum } from "@nightshift/shared";
 import { ensureInitialPromptInTranscript } from "./transcript";
@@ -49,7 +49,7 @@ export function createTask(input: CreateTask): Task {
     );
   }
 
-  const newTask = {
+  const newTask: NewTask = {
     id,
     prompt: input.prompt,
     repoId: input.repoId ?? null,
@@ -61,6 +61,9 @@ export function createTask(input: CreateTask): Task {
     createdAt: now,
     source: "local" as const,
     autoYes: input.autoYes ?? false,
+    // Workflow-only: ensure every task has a workflowId.
+    workflowId: input.workflowId ?? "quick-task",
+    model: input.model ?? null,
   };
 
   db.insert(tasks).values(newTask).run();

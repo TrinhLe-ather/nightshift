@@ -199,7 +199,7 @@ const create = orpc
       autoYes: z.boolean().optional().default(false),
       model: z.string().optional(),
       // Workflow fields
-      workflowId: z.string().optional(),
+      workflowId: z.string().optional().default("quick-task"),
       // Execution mode override (optional, allows overriding repo's default)
       executionMode: executionModeSchema.optional(),
     }),
@@ -261,7 +261,7 @@ const create = orpc
         autoYes: input.autoYes ?? false,
         model: input.model || null,
         // Workflow fields
-        workflowId: input.workflowId || null,
+        workflowId: input.workflowId,
         // Execution mode override (if provided by user)
         executionMode: input.executionMode || null,
       })

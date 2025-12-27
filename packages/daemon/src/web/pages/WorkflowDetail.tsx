@@ -93,13 +93,12 @@ function StepNode({
   const modelStyle = getModelStyle(step.model);
   const isLast = stepNumber === totalSteps;
   const hasTools = step.tools && (step.tools.enable?.length || step.tools.disable?.length);
-  const hasConfig = step.maxRetries !== undefined || step.autoCommit !== undefined;
 
   return (
     <div className="group relative">
       {/* Connector line to next step */}
       {!isLast && (
-        <div className="absolute left-6 top-full z-0 h-8 w-px bg-gradient-to-b from-border to-border/50" />
+        <div className="absolute left-6 top-full z-0 h-8 w-px bg-linear-to-b from-border to-border/50" />
       )}
 
       {/* Main node card */}
@@ -245,10 +244,7 @@ function StepNode({
                       </Badge>
                     ))}
                     {step.tools?.disable?.map((tool) => (
-                      <Badge
-                        key={tool}
-                        className="border-rose-500/30 bg-rose-500/10 text-rose-400"
-                      >
+                      <Badge key={tool} className="border-rose-500/30 bg-rose-500/10 text-rose-400">
                         - {tool}
                       </Badge>
                     ))}
@@ -325,7 +321,7 @@ export function WorkflowDetail() {
           description: "The workflow has been downloaded as JSON.",
         });
       },
-      onError: (err) => {
+      onError: (err: unknown) => {
         toast.error("Failed to export workflow", {
           description: err instanceof Error ? err.message : "An error occurred",
         });

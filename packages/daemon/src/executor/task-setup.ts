@@ -281,16 +281,15 @@ async function teardownDirectMode(
   commitMessage?: string,
 ): Promise<void> {
   const directModeManager = new DirectModeManager();
-  const taskType = (task as { type?: "interactive" | "workflow" }).type || "interactive";
 
   switch (outcome) {
     case "completed":
-      // Completed: return to original branch (workflow) or stay (interactive)
+      // Completed: return to original branch
       if (task.originalBranch) {
-        await directModeManager.teardown(repoPath, task.originalBranch, false, taskType);
+        await directModeManager.teardown(repoPath, task.originalBranch, false);
       }
       console.log(
-        `[TaskSetup] Direct mode completed${taskType === "interactive" ? " (staying on current branch)" : `, returned to ${task.originalBranch}`}`,
+        `[TaskSetup] Direct mode completed, returned to ${task.originalBranch}`,
       );
       break;
 
@@ -304,12 +303,12 @@ async function teardownDirectMode(
     }
 
     case "failed":
-      // Failed: return to original branch (workflow) or stay (interactive)
+      // Failed: return to original branch
       if (task.originalBranch) {
-        await directModeManager.teardown(repoPath, task.originalBranch, false, taskType);
+        await directModeManager.teardown(repoPath, task.originalBranch, false);
       }
       console.log(
-        `[TaskSetup] Direct mode failed${taskType === "interactive" ? " (staying on current branch)" : `, returned to ${task.originalBranch}`}`,
+        `[TaskSetup] Direct mode failed, returned to ${task.originalBranch}`,
       );
       break;
   }
@@ -372,7 +371,7 @@ export async function resumeTaskExecution(
       };
     }
   } else {
-    // Direct mode: checkout task branch (or stay on current for interactive)
+    // Direct mode: checkout task branch
     const directModeManager = new DirectModeManager();
 
     const result = await directModeManager.prepareForResume(task.id, repoPath);

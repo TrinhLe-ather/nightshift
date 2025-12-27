@@ -24,6 +24,7 @@ interface AddCommandArgs {
   priority?: Priority;
   autoYes?: boolean;
   model?: ClaudeModel;
+  workflowId?: string;
 }
 
 function parseArgs(args: string[]): AddCommandArgs | null {
@@ -53,6 +54,9 @@ function parseArgs(args: string[]): AddCommandArgs | null {
     } else if (arg === "--model" && i + 1 < args.length) {
       options.model = args[i + 1] as ClaudeModel;
       i++; // Skip next arg
+    } else if ((arg === "--workflow" || arg === "--workflowId") && i + 1 < args.length) {
+      options.workflowId = args[i + 1];
+      i++; // Skip next arg
     } else if (arg === "--auto-yes" || arg === "-y") {
       // SECURITY FIX: Require explicit opt-in for auto-approval
       options.autoYes = true;
@@ -74,12 +78,15 @@ export async function addCommand(): Promise<void> {
   // Parse arguments
   const parsed = parseArgs(args);
   if (!parsed) {
-    console.error('Usage: nightshift add "task prompt" [--repo path] [--priority level] [--model name] [--auto-yes]');
+    console.error(
+      'Usage: nightshift add "task prompt" [--repo path] [--priority level] [--model name] [--workflow id] [--auto-yes]',
+    );
     console.error("");
     console.error("Options:");
     console.error("  --repo path        Path to git repository");
     console.error("  --priority level   Priority level (low, medium, high, urgent)");
     console.error("  --model name       Claude model to use (opus, sonnet, haiku)");
+    console.error("  --workflow id      Workflow ID to run (default: quick-task)");
     console.error("  --auto-yes, -y     Auto-approve all Claude Code prompts (skip manual approval)");
     process.exit(1);
   }
@@ -125,6 +132,7 @@ export async function addCommand(): Promise<void> {
     priority: parsed.priority || "medium",
     autoYes: parsed.autoYes || false,
     model: parsed.model,
+    workflowId: parsed.workflowId || "quick-task",
   });
 
   // Display confirmation

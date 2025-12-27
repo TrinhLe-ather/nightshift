@@ -108,3 +108,6 @@ export const FilePlus = makeIcon("FilePlus", FileAddIcon);
 export const FolderSearch = makeIcon("FolderSearch", FolderSearchIcon);
 export const Globe = makeIcon("Globe", Globe02Icon);
 export const Eye = makeIcon("Eye", ViewIcon);
+
+// Edit icons
+export const Pencil = makeIcon("Pencil", FileEditIcon);

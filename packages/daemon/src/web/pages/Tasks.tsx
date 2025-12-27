@@ -372,21 +372,23 @@ export function Tasks() {
 
             {/* Status filter */}
             <Popover>
-              <PopoverTrigger>
-                <Button
-                  variant="outline"
-                  className="h-8 w-[140px] justify-start bg-card text-left text-xs font-normal"
-                >
-                  <span>
-                    {selectedStatuses.length === 0
-                      ? "All statuses"
-                      : selectedStatuses.length === 1
-                        ? statusFilters.find((f) => f.value === selectedStatuses[0])?.label
-                        : `${selectedStatuses.length} statuses`}
-                  </span>
-                  <ChevronDown className="ml-auto h-3.5 w-3.5 opacity-50" />
-                </Button>
-              </PopoverTrigger>
+              <PopoverTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    className="h-8 w-[140px] justify-start bg-card text-left text-xs font-normal"
+                  >
+                    <span>
+                      {selectedStatuses.length === 0
+                        ? "All statuses"
+                        : selectedStatuses.length === 1
+                          ? statusFilters.find((f) => f.value === selectedStatuses[0])?.label
+                          : `${selectedStatuses.length} statuses`}
+                    </span>
+                    <ChevronDown className="ml-auto h-3.5 w-3.5 opacity-50" />
+                  </Button>
+                }
+              />
               <PopoverContent className="w-[200px] p-0" align="end">
                 <div className="p-1">
                   <button

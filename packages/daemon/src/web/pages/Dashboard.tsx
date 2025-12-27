@@ -24,7 +24,6 @@ import {
   Plus,
   XCircle,
   LayoutDashboard,
-  Folder,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { Badge } from "@/components/ui/badge";
@@ -75,11 +74,7 @@ function StatCard({ label, value, icon: Icon, color, bgColor, borderColor, index
           <p className={cn("mt-1 text-2xl font-semibold tabular-nums", color)}>{value}</p>
         </div>
         <div
-          className={cn(
-            "flex h-10 w-10 items-center justify-center border",
-            bgColor,
-            borderColor,
-          )}
+          className={cn("flex h-10 w-10 items-center justify-center border", bgColor, borderColor)}
         >
           <Icon className={cn("h-5 w-5", color)} />
         </div>
@@ -116,7 +111,7 @@ function TaskRow({
       {/* Left status indicator */}
       <div className={cn("absolute left-0 top-0 h-full w-0.5", statusStyle.bgColor)} />
 
-      <div className="flex items-start justify-between gap-3 px-4 py-3 pl-5">
+      <div className="flex items-start justify-between gap-3 p-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-foreground group-hover:text-primary transition-colors">
             {truncate(task.prompt, 80)}
