@@ -33,3 +33,4 @@ repomix-output.xml
 
 _bmad-output/
 /.gemini-clipboard
+.claude/settings.local.json

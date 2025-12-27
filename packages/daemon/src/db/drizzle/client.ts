@@ -6,12 +6,10 @@
  */
 
 import { BunSQLiteDatabase, drizzle } from "drizzle-orm/bun-sqlite";
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import { Database } from "bun:sqlite";
-import { existsSync, readdirSync } from "fs";
-import { dirname, join } from "path";
 import { DB_PATH, ensureNightShiftDirectories } from "../../config/paths";
 import { type DrizzleSchema, schema } from "./schema";
+import { migrations } from "./migrate";
 
 // Type for our database instance with schema
 export type DrizzleDb = BunSQLiteDatabase<DrizzleSchema>;
@@ -271,33 +269,6 @@ export function checkDbHealth(): {
 }
 
 /**
- * Get the migrations folder path
- *
- * Resolves the path relative to the source/compiled location.
- */
-function getMigrationsFolder(): string {
-  // When running from source: ./src/db/drizzle/migrations
-  // When compiled: relative to the binary location
-  const possiblePaths = [
-    // Development: relative to this file
-    join(dirname(import.meta.path), "migrations"),
-    // Development: relative to project root
-    join(process.cwd(), "src/db/drizzle/migrations"),
-    // Compiled: alongside the binary
-    join(dirname(process.execPath), "migrations"),
-  ];
-
-  for (const p of possiblePaths) {
-    if (existsSync(p)) {
-      return p;
-    }
-  }
-
-  // Default to the development path (will be created if needed)
-  return join(dirname(import.meta.path), "migrations");
-}
-
-/**
  * Migration result
  */
 export interface MigrationResult {
@@ -323,10 +294,95 @@ export interface MigrationResult {
 }
 
 /**
+ * Run embedded migrations when file-based migrations are not available
+ *
+ * This is used when running from a compiled binary where the migrations
+ * folder is not bundled with the executable.
+ */
+function runEmbeddedMigrations(): MigrationResult {
+  if (!sqlite || !db) {
+    return {
+      success: false,
+      migrationsApplied: 0,
+      error: "Database not initialized.",
+      hasMigrations: false,
+    };
+  }
+
+  console.log("Running embedded migrations...");
+
+  try {
+    // Create Drizzle migrations table if it doesn't exist
+    sqlite.run(`
+      CREATE TABLE IF NOT EXISTS __drizzle_migrations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hash TEXT NOT NULL,
+        created_at INTEGER NOT NULL
+      )
+    `);
+
+    // Get already applied migrations
+    const appliedMigrations = sqlite.query("SELECT hash FROM __drizzle_migrations").all() as Array<{
+      hash: string;
+    }>;
+    const appliedHashes = new Set(appliedMigrations.map((m) => m.hash));
+
+    let migrationsApplied = 0;
+
+    for (const migration of migrations) {
+      // Drizzle uses the tag as the hash
+      if (appliedHashes.has(migration.tag)) {
+        continue;
+      }
+
+      console.log(`Applying migration: ${migration.tag}`);
+
+      // Split by Drizzle's statement breakpoint marker and execute each statement
+      const statements = migration.sql
+        .split("--> statement-breakpoint")
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      for (const statement of statements) {
+        sqlite.run(statement);
+      }
+
+      // Record the migration
+      sqlite.run("INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)", [
+        migration.tag,
+        new Date().getTime(),
+      ]);
+
+      migrationsApplied++;
+    }
+
+    console.log(`Embedded migrations complete. ${migrationsApplied} migration(s) applied.`);
+
+    return {
+      success: true,
+      migrationsApplied,
+      hasMigrations: true,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Embedded migration failed: ${errorMessage}`);
+
+    return {
+      success: false,
+      migrationsApplied: 0,
+      error: errorMessage,
+      hasMigrations: true,
+    };
+  }
+}
+
+/**
  * Run database migrations
  *
  * This should be called after initDb() during daemon startup.
  * It applies any pending migrations from the migrations folder.
+ * If file-based migrations are not available (e.g., running from compiled binary),
+ * it falls back to embedded migrations.
  *
  * @returns Migration result with status and count
  */
@@ -340,56 +396,5 @@ export async function runMigrations(): Promise<MigrationResult> {
     };
   }
 
-  const migrationsFolder = getMigrationsFolder();
-
-  // Check if migrations folder exists
-  if (!existsSync(migrationsFolder)) {
-    console.log("No migrations folder found. Run 'bun db:generate' to create migrations.");
-    return {
-      success: true,
-      migrationsApplied: 0,
-      hasMigrations: false,
-    };
-  }
-
-  // Check if there are any migration files
-  const files = readdirSync(migrationsFolder);
-  const sqlFiles = files.filter((f) => f.endsWith(".sql"));
-
-  if (sqlFiles.length === 0) {
-    console.log("No migration files found in migrations folder.");
-    return {
-      success: true,
-      migrationsApplied: 0,
-      hasMigrations: false,
-    };
-  }
-
-  try {
-    console.log(`Running migrations from ${migrationsFolder}...`);
-
-    // Run drizzle migrations
-    // Note: We use the existing db instance. The type assertion is needed because
-    // drizzle's migrate function has overly strict typing for schema-enabled instances.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    migrate<DrizzleSchema>(db as any, { migrationsFolder });
-
-    console.log(`Migrations complete. ${sqlFiles.length} migration file(s) processed.`);
-
-    return {
-      success: true,
-      migrationsApplied: sqlFiles.length,
-      hasMigrations: true,
-    };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Migration failed: ${errorMessage}`);
-
-    return {
-      success: false,
-      migrationsApplied: 0,
-      error: errorMessage,
-      hasMigrations: true,
-    };
-  }
+  return runEmbeddedMigrations();
 }

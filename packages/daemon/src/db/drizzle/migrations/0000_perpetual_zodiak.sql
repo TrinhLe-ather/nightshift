@@ -83,6 +83,7 @@ CREATE TABLE `tasks` (
 	`humanQuestion` text,
 	`humanResponse` text,
 	`autoYes` integer DEFAULT false,
+	`model` text,
 	`workflowId` text,
 	`currentStep` integer,
 	`totalSteps` integer
@@ -111,6 +112,7 @@ CREATE TABLE `workflows` (
 	`name` text NOT NULL,
 	`description` text,
 	`definition` text NOT NULL,
+	`model` text,
 	`isBuiltin` integer DEFAULT false,
 	`createdAt` text NOT NULL,
 	`updatedAt` text NOT NULL

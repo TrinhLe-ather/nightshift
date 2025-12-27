@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "6d58eb05-0cdf-493f-bb7e-d34af1a0a38d",
+  "id": "a457a027-d9e4-4624-81ab-e7d52b1f30f0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "config": {
@@ -571,6 +571,13 @@
           "autoincrement": false,
           "default": false
         },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "workflowId": {
           "name": "workflowId",
           "type": "text",
@@ -759,6 +766,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "isBuiltin": {
