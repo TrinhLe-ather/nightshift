@@ -17,7 +17,7 @@ export function Layout() {
   const shortcuts = useMemo(
     () => [
       {
-        key: "n",
+        key: "k",
         meta: true,
         handler: openNewTaskDialog,
       },

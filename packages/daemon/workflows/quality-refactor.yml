@@ -1,6 +1,6 @@
 name: Quality Refactor
 description: Safety-first refactoring with comprehensive test coverage and quality gates
-version: 1.0.0
+version: 1.1.0
 model: sonnet
 
 steps:
@@ -13,27 +13,42 @@ steps:
 
       Before making any changes, analyze the code and create a refactoring plan.
 
-      Complete this analysis:
+      ## Sub-Agent Strategy
+      Use the Task tool extensively to parallelize analysis:
+      - Use `subagent_type: Explore` to map dependencies, find usages, and locate test files
+      - Launch multiple Explore agents in parallel: (1) find all imports/callers, (2) find all tests, (3) find similar patterns
+      - Use `subagent_type: Plan` to design the refactoring approach if it's architecturally significant
+
+      ## Analysis Checklist
       1. MEASURE - Assess current code quality (complexity, duplication, naming)
       2. DEPENDENCIES - Map what uses this code (imports, callers, callees)
       3. TEST COVERAGE - Check existing test coverage
       4. RISKS - Identify refactoring risks (breaking changes, performance)
       5. PLAN - Create a step-by-step refactoring plan (3-7 incremental steps)
 
-      Quality metrics to document:
+      ## Quality Metrics to Document
       - Function/method length (lines per function)
       - Cyclomatic complexity (nested ifs, loops)
       - Code duplication (repeated patterns)
       - Naming clarity (vague vs. descriptive)
 
-      DO NOT make any code changes yet. This is analysis only.
+      ## Constraints
+      - DO NOT make any code changes yet. This is analysis only.
+      - Keep plan to 3-7 steps (if more needed, the refactor is too big - recommend splitting)
+      - Each step must be independently testable
 
-      Deliver an analysis report with:
-      - Current State (metrics + specific issues)
+      ## Deliverable
+      Analysis report with:
+      - Current State (metrics + specific issues with file:line references)
       - Dependencies (what might break)
-      - Test Coverage (what's protected)
-      - Refactoring Plan (numbered steps)
-      - Success Criteria (how we'll know we're done)
+      - Test Coverage (what's protected, what's not)
+      - Refactoring Plan (numbered steps, each with clear scope)
+      - Success Criteria (measurable goals)
+
+      ## Pass Forward
+      - List files to be changed
+      - List test files that provide coverage
+      - State the refactoring goal in one sentence
     tools:
       disable: [Write, Edit]
     maxRetries: 1
@@ -43,23 +58,37 @@ steps:
     prompt: |
       Good analysis. Before we start refactoring, we need a safety net.
 
-      Based on the test coverage gaps you identified, expand the test suite to protect against regressions.
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find test patterns and conventions in the codebase
+      - Use `subagent_type: general-purpose` to understand complex test setup if needed
+      - Launch parallel Explore agents: (1) find similar test files for patterns, (2) find test utilities/helpers
 
-      Test coverage goals:
+      ## Test Coverage Goals
+      Based on the coverage gaps identified, expand the test suite to protect against regressions:
       1. Cover ALL public APIs of the target code
       2. Cover critical internal logic paths
       3. Cover edge cases and error conditions
-      4. Target 80%+ coverage of the refactoring area
 
-      Test requirements:
+      ## Test Requirements
       - Test current behavior (even if imperfect - we're documenting what exists)
       - Focus on observable outcomes (not implementation details)
       - Include integration tests if there are dependencies
+      - Follow existing test patterns in the repository
 
-      Add 5-15 new test cases minimum.
+      ## Coverage Target
+      Aim for comprehensive coverage of the refactoring area. Add tests until:
+      - All public functions have at least one test
+      - All branch conditions are exercised
+      - Edge cases are covered
 
+      ## Verification
       Run the full test suite and show output proving 100% pass rate.
       These tests are our safety net - they must all pass before we proceed.
+
+      ## If Coverage is Difficult
+      - Document which areas can't be easily tested and why
+      - Add integration tests as alternative to unit tests
+      - Proceed with documented risk if truly untestable
     maxRetries: 2
 
   - name: Incremental Refactoring
@@ -67,29 +96,39 @@ steps:
     prompt: |
       Test coverage is in place. Now execute the refactoring plan.
 
-      Follow these rules strictly:
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` before each refactoring step to verify current state
+      - Use `subagent_type: general-purpose` for complex refactoring steps that touch multiple files
+      - After each step, use Explore to verify the change propagated correctly
+
+      ## Execution Rules (Strict)
       1. Execute the plan ONE STEP AT A TIME
       2. Run tests AFTER EACH STEP (must stay green)
       3. If tests fail, REVERT that step immediately
       4. Keep each change small and focused
 
-      Refactoring techniques to apply:
+      ## Refactoring Techniques
       - Extract Method: Long functions → smaller, named functions
       - Extract Variable: Magic values → named constants
       - Rename: Vague names → intention-revealing names
       - Simplify Conditionals: Complex ifs → guard clauses
       - Remove Duplication: Copy-paste → shared utilities
 
-      Golden rules:
+      ## Golden Rules
       - NEVER change external behavior (API stays the same)
       - NEVER skip running tests
       - NEVER proceed if tests fail
       - NEVER add new functionality (refactor only)
 
-      After each refactoring step, show:
+      ## After Each Step, Report
       - What was refactored
       - Test results (must be green)
       - Quality improvement (specific metric)
+
+      ## If Stuck
+      - If tests fail and you can't fix within 2 attempts, revert and skip that step
+      - Document skipped steps for human review
+      - Continue with remaining steps if independent
     maxRetries: 3
 
   - name: Quality Verification
@@ -97,31 +136,38 @@ steps:
     prompt: |
       Refactoring complete. Let's verify we achieved our goals.
 
-      Verification checklist:
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to compare before/after code structure
+      - Use `subagent_type: general-purpose` to run comprehensive verification
+      - Launch parallel agents: (1) run full test suite, (2) check for API changes, (3) measure metrics
+
+      ## Verification Checklist
       1. TESTS - Full test suite passes (no regressions)
       2. METRICS - Quality metrics improved from the baseline
       3. GOAL - Original refactoring request achieved
       4. API - Public interface unchanged (backward compatible)
       5. PERFORMANCE - No performance degradation
 
-      Compare before vs after:
+      ## Before vs After Comparison
       - Function lengths
       - Cyclomatic complexity
       - Code duplication
       - Naming clarity
 
-      Reality check:
+      ## Reality Check
       - Compare git diff to the refactoring plan
       - Verify only planned changes were made
       - Check no accidental new features were added
 
-      Deliver a quality report with:
+      ## Deliverable
+      Quality report with:
       - Before/after metrics (specific numbers)
-      - Goal achievement status
+      - Goal achievement status (achieved/partial/blocked)
       - Test summary (all passing)
       - API compatibility confirmation
+      - Any issues found (list for human review)
 
-      If any goals weren't fully met, list what remains for human review.
+      If any goals weren't fully met, clearly document what remains and why.
     tools:
       disable: [Write, Edit]
     maxRetries: 1

@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/web/api/client";
+import { cn, formatDate, formatUptime } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,34 +24,8 @@ import {
   Folder,
   FolderGit2,
   Clock,
-  Activity,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
-import { cn } from "@/lib/utils";
-
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-
-  return date.toLocaleDateString();
-}
-
-function formatUptime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
-}
 
 interface SettingsCardProps {
   title: string;
@@ -76,14 +51,14 @@ function SettingsCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border border-border bg-card transition-all duration-300",
-        "hover:border-primary/30 hover:shadow-[0_0_20px_rgba(var(--primary),0.05)]",
+        "group relative overflow-hidden border border-border bg-card transition-all duration-300",
+        "hover:border-primary/30 hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]",
         "animate-in fade-in slide-in-from-bottom-2",
       )}
       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
     >
       {/* Grid pattern background */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.015]">
+      <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
         <div
           className="h-full w-full"
           style={{
@@ -99,12 +74,12 @@ function SettingsCard({
         <div className="flex items-center gap-3">
           <div
             className={cn(
-              "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border",
+              "flex h-7 w-7 shrink-0 items-center justify-center border",
               iconBg,
               iconBorder,
             )}
           >
-            <Icon className={cn("h-4 w-4", iconColor)} />
+            <Icon className={cn("h-3.5 w-3.5", iconColor)} />
           </div>
           <div>
             <h2 className="text-sm font-medium text-foreground">{title}</h2>
@@ -248,7 +223,7 @@ export function Settings() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
                 <SettingsIcon className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -266,7 +241,7 @@ export function Settings() {
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                "h-2.5 w-2.5 rounded-full",
+                "h-2.5 w-2.5",
                 status?.running
                   ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                   : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]",
@@ -338,12 +313,12 @@ export function Settings() {
             {/* Last Check */}
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Clock className="h-3 w-3" />
-              <span>Last checked: {formatDate(updateStatus?.lastCheckAt ?? null)}</span>
+              <span>Last checked: {updateStatus?.lastCheckAt ? formatDate(updateStatus.lastCheckAt) : "Never"}</span>
             </div>
 
             {/* Update Available */}
             {updateStatus?.updateAvailable && (
-              <div className="rounded-lg border border-sky-500/30 bg-sky-500/5 p-4">
+              <div className="border border-sky-500/30 bg-sky-500/5 p-4">
                 <div className="flex items-start gap-3">
                   <Download className="mt-0.5 h-5 w-5 text-sky-400" />
                   <div className="flex-1">
@@ -351,7 +326,7 @@ export function Settings() {
                       <p className="font-medium text-foreground">Update Available</p>
                       <Badge
                         variant="outline"
-                        className="rounded border-sky-500/30 bg-sky-500/10 px-1.5 text-[10px] text-sky-400"
+                        className="border-sky-500/30 bg-sky-500/10 px-1.5 text-[10px] text-sky-400"
                       >
                         v{updateStatus.availableVersion}
                       </Badge>
@@ -396,7 +371,7 @@ export function Settings() {
 
             {/* Up to Date */}
             {!isLoadingUpdate && !updateStatus?.updateAvailable && (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
+              <div className="flex items-center gap-2 border border-emerald-500/30 bg-emerald-500/5 p-3">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 <p className="text-xs text-emerald-400">Running the latest version</p>
               </div>
@@ -418,7 +393,7 @@ export function Settings() {
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "h-2.5 w-2.5 rounded-full",
+                  "h-2.5 w-2.5",
                   modeStyle.bgColor.replace("/10", ""),
                   `shadow-[0_0_8px_rgba(var(--${modeStyle.color.replace("text-", "")}),0.6)]`,
                 )}
@@ -440,7 +415,7 @@ export function Settings() {
               <Badge
                 variant="outline"
                 className={cn(
-                  "rounded border px-2 py-0.5 text-xs uppercase tracking-wider",
+                  "border px-2 py-0.5 text-xs uppercase tracking-wider",
                   modeStyle.bgColor,
                   modeStyle.borderColor,
                   modeStyle.color,

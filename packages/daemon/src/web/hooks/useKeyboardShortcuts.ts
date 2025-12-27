@@ -71,8 +71,7 @@ export const KEYBOARD_SHORTCUTS = [
   {
     category: "Global",
     shortcuts: [
-      { keys: ["⌘", "N"], description: "New task (dual-mode)" },
-      { keys: ["⌘", "K"], description: "Quick task (command palette)" },
+      { keys: ["⌘", "K"], description: "New task" },
       { keys: ["?"], description: "Show keyboard shortcuts" },
       { keys: ["Esc"], description: "Close dialog/overlay" },
     ],

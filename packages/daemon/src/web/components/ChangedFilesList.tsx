@@ -32,7 +32,7 @@ function FileChangeItem({ change, onClick }: { change: FileChange; onClick?: () 
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors text-left rounded-md"
+      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 transition-colors text-left"
     >
       <Icon
         className={cn("h-4 w-4 shrink-0", change.isNewFile ? "text-emerald-500" : "text-amber-500")}
@@ -46,11 +46,7 @@ function FileChangeItem({ change, onClick }: { change: FileChange; onClick?: () 
   );
 }
 
-export function ChangedFilesList({
-  changes,
-  className,
-  variant = "card",
-}: ChangedFilesListProps) {
+export function ChangedFilesList({ changes, className, variant = "card" }: ChangedFilesListProps) {
   const [showModal, setShowModal] = useState(false);
   const [selectedFilePath, setSelectedFilePath] = useState<string | null>(null);
   const fileRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -97,10 +93,13 @@ export function ChangedFilesList({
               <button
                 key={change.filePath}
                 onClick={() => handleFileClick(change.filePath)}
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-muted/50 hover:bg-muted border border-border text-xs font-mono transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-muted/50 hover:bg-muted border border-border text-xs font-mono transition-colors"
               >
                 <Icon
-                  className={cn("h-3 w-3", change.isNewFile ? "text-emerald-500" : "text-amber-500")}
+                  className={cn(
+                    "h-3 w-3",
+                    change.isNewFile ? "text-emerald-500" : "text-amber-500",
+                  )}
                 />
                 <span className="text-foreground truncate max-w-[120px]">{fileName}</span>
                 {change.added > 0 && <span className="text-emerald-500">+{change.added}</span>}
@@ -113,7 +112,7 @@ export function ChangedFilesList({
         {/* Modal with all diffs */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-            <div className="bg-background rounded-lg border border-border max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+            <div className="bg-background border border-border max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
               <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
                 <h3 className="font-medium text-foreground">Changed Files ({changes.length})</h3>
                 <button
@@ -153,7 +152,7 @@ export function ChangedFilesList({
 
   return (
     <>
-      <div className={cn("rounded-lg border border-border bg-card", className)}>
+      <div className={cn("border border-border bg-card", className)}>
         {/* Header */}
         <div className="w-full flex items-center gap-2 px-4 py-3 bg-muted/30">
           <FileDiff className="h-4 w-4 text-muted-foreground" />
@@ -181,7 +180,7 @@ export function ChangedFilesList({
       {/* Modal with all diffs */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background rounded-lg border border-border max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
+          <div className="bg-background border border-border max-w-6xl w-full max-h-[85vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
               <h3 className="font-medium text-foreground">Changed Files ({changes.length})</h3>
               <button
@@ -245,7 +244,7 @@ export function ChangedFilesBadge({ changes, onClick, className }: ChangedFilesB
     <button
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted/50 hover:bg-muted border border-border text-sm transition-colors",
+        "inline-flex items-center gap-2 px-3 py-1.5 bg-muted/50 hover:bg-muted border border-border text-sm transition-colors",
         className,
       )}
     >

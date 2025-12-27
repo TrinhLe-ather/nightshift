@@ -38,7 +38,7 @@ export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDial
                       {shortcut.keys.map((key, i) => (
                         <span key={i}>
                           {i > 0 && <span className="mx-1 text-muted-foreground">/</span>}
-                          <kbd className="inline-flex min-w-6 items-center justify-center rounded-sm border border-border bg-background px-1.5 py-0.5 text-xs font-medium text-foreground">
+                          <kbd className="inline-flex min-w-6 items-center justify-center border border-border bg-background px-1.5 py-0.5 text-xs font-medium text-foreground">
                             {key}
                           </kbd>
                         </span>

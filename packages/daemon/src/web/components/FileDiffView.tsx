@@ -113,7 +113,7 @@ export function FileDiffView({
   // If hideHeader is true, just show the diff content directly
   if (hideHeader) {
     return (
-      <div className={cn("rounded-lg border border-border overflow-hidden", className)}>
+      <div className={cn("border border-border overflow-hidden", className)}>
         <div className="diff-view-wrapper text-sm">
           <DiffView
             diffFile={diffFile}
@@ -128,7 +128,7 @@ export function FileDiffView({
   }
 
   return (
-    <div className={cn("rounded-lg border border-border overflow-hidden", className)}>
+    <div className={cn("border border-border overflow-hidden", className)}>
       {/* Header */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -187,7 +187,7 @@ export function InlineDiffBadge({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-muted/50 hover:bg-muted border border-border text-xs font-mono transition-colors"
+      className="inline-flex items-center gap-1.5 px-2 py-1 bg-muted/50 hover:bg-muted border border-border text-xs font-mono transition-colors"
     >
       <Icon className="h-3.5 w-3.5 text-muted-foreground" />
       <span className="text-foreground truncate max-w-[200px]">{fileName}</span>

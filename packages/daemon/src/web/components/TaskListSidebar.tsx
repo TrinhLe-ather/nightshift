@@ -144,7 +144,7 @@ export function TaskListSidebar({ selectedTaskId, className }: TaskListSidebarPr
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search..."
-            className="h-8 rounded-md pl-8 pr-3 text-sm"
+            className="h-8 pl-8 pr-3 text-sm"
           />
         </div>
 
@@ -155,7 +155,7 @@ export function TaskListSidebar({ selectedTaskId, className }: TaskListSidebarPr
               key={f.value}
               onClick={() => setFilter(f.value)}
               className={cn(
-                "px-2 py-0.5 text-xs rounded-md transition-colors",
+                "px-2 py-0.5 text-xs transition-colors",
                 filter === f.value
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -180,7 +180,7 @@ export function TaskListSidebar({ selectedTaskId, className }: TaskListSidebarPr
             </p>
           </div>
         ) : (
-          <div className="py-1">
+          <div>
             {filteredTasks.map((task) => {
               const isSelected = task.id === selectedTaskId;
               const isRunning = task.status === "running" || task.status === "claimed";
@@ -195,15 +195,12 @@ export function TaskListSidebar({ selectedTaskId, className }: TaskListSidebarPr
                       : "border-l-transparent hover:bg-muted",
                   )}
                 >
-                  <button
-                    onClick={() => handleTaskClick(task.id)}
-                    className="w-full px-3 py-2.5 pr-10"
-                  >
+                  <button onClick={() => handleTaskClick(task.id)} className="w-full p-2.5 pr-10">
                     <div className="flex items-start gap-2">
                       {/* Status dot */}
                       <span
                         className={cn(
-                          "mt-1.5 h-2 w-2 rounded-full shrink-0",
+                          "mt-1.5 h-2 w-2 shrink-0",
                           statusColors[task.status as TaskStatus] || statusColors.pending,
                           isRunning && "animate-pulse",
                         )}

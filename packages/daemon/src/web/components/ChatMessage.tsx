@@ -63,7 +63,7 @@ function CollapsibleContent({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="border border-border rounded-md overflow-hidden">
+    <div className="border border-border overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-muted transition-colors"
@@ -83,7 +83,7 @@ function PromptMessage({ content, timestamp }: { content: string; timestamp?: st
   return (
     <div className="flex justify-end">
       <div className="max-w-[80%] flex flex-col items-end gap-1">
-        <div className="bg-primary text-primary-foreground rounded-2xl rounded-br-md px-4 py-3">
+        <div className="bg-primary text-primary-foreground px-4 py-3">
           <p className="whitespace-pre-wrap text-sm">{content}</p>
         </div>
         {timestamp && (
@@ -99,7 +99,7 @@ function AgentMessage({ content, timestamp }: { content: string; timestamp?: str
   return (
     <div className="flex justify-start">
       <div className="max-w-[80%] flex flex-col items-start gap-1">
-        <div className="bg-card border border-border text-card-foreground rounded-2xl rounded-bl-md px-4 py-3">
+        <div className="bg-card border border-border text-card-foreground px-4 py-3">
           <p className="whitespace-pre-wrap text-sm text-foreground">{content}</p>
         </div>
         {timestamp && (
@@ -139,7 +139,7 @@ function ToolCallMessage({
 
   return (
     <div className="flex items-center gap-2 py-1">
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border rounded-md text-sm font-mono">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border text-sm font-mono">
         <Terminal className="h-3.5 w-3.5 text-primary" />
         <span className="text-primary font-medium">{toolName}</span>
         <span className="text-muted-foreground truncate max-w-[300px]">{displayText}</span>
@@ -182,7 +182,7 @@ function NeedsHumanMessage({ content, data }: { content: string; data?: Record<s
 
   return (
     <div className="flex justify-start">
-      <div className="max-w-[85%] rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+      <div className="max-w-[85%] border border-amber-500/30 bg-amber-500/10 p-4">
         <div className="flex items-start gap-3">
           <MessageSquare className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
@@ -237,7 +237,7 @@ function SystemMessage({
 
   return (
     <div className="flex justify-center py-2">
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted border border-border">
+      <div className="flex items-center gap-2 px-3 py-1.5 bg-muted border border-border">
         {getIcon()}
         <span className={cn("text-xs font-medium", getTextColor())}>{content}</span>
         {timestamp && (
@@ -265,7 +265,7 @@ function ArtifactMessage({
 
   return (
     <div className="flex justify-center py-2">
-      <div className="flex items-center gap-3 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30">
+      <div className="flex items-center gap-3 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30">
         {isCommit ? (
           <GitBranch className="h-4 w-4 text-emerald-500" />
         ) : (

@@ -140,9 +140,7 @@ function ReadToolMessage({ args }: { args: ToolArgs }) {
     <div className="flex items-center gap-2 py-1">
       <File className="h-4 w-4 text-blue-400 shrink-0" />
       <span className="text-zinc-300">Read</span>
-      <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-cyan-400 font-mono text-sm">
-        {fileName}
-      </code>
+      <code className="px-1.5 py-0.5 bg-zinc-800 text-cyan-400 font-mono text-sm">{fileName}</code>
     </div>
   );
 }
@@ -156,7 +154,7 @@ function BashToolMessage({ args }: { args: ToolArgs }) {
       <div className="flex items-center gap-2">
         <Terminal className="h-4 w-4 text-emerald-400 shrink-0" />
         <span className="text-zinc-300">Ran</span>
-        <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-yellow-400 font-mono text-sm max-w-[500px] truncate">
+        <code className="px-1.5 py-0.5 bg-zinc-800 text-yellow-400 font-mono text-sm max-w-[500px] truncate">
           {command}
         </code>
       </div>
@@ -187,7 +185,7 @@ function EditToolMessage({
         <span className="text-zinc-300">Edited</span>
         <button
           onClick={onToggleDiff}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors"
         >
           <code className="text-cyan-400 font-mono text-sm">{fileName}</code>
           <span className="flex items-center gap-1 text-xs font-mono">
@@ -237,7 +235,7 @@ function WriteToolMessage({
         <span className="text-zinc-300">Created</span>
         <button
           onClick={onToggleDiff}
-          className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors"
+          className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 transition-colors"
         >
           <code className="text-cyan-400 font-mono text-sm">{fileName}</code>
           <span className="text-xs font-mono text-emerald-500">+{lines}</span>
@@ -270,9 +268,7 @@ function GrepToolMessage({ args }: { args: ToolArgs }) {
     <div className="flex items-start gap-2 py-1">
       <Search className="h-4 w-4 text-purple-400 shrink-0 mt-1" />
       <span className="text-zinc-300 pt-0.5">Searched</span>
-      <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-purple-400 font-mono text-sm">
-        {pattern}
-      </code>
+      <code className="px-1.5 py-0.5 bg-zinc-800 text-purple-400 font-mono text-sm">{pattern}</code>
     </div>
   );
 }
@@ -284,9 +280,7 @@ function GlobToolMessage({ args }: { args: ToolArgs }) {
     <div className="flex items-center gap-2 py-1">
       <FolderSearch className="h-4 w-4 text-orange-400 shrink-0" />
       <span className="text-zinc-300">Found files</span>
-      <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-orange-400 font-mono text-sm">
-        {pattern}
-      </code>
+      <code className="px-1.5 py-0.5 bg-zinc-800 text-orange-400 font-mono text-sm">{pattern}</code>
     </div>
   );
 }
@@ -298,7 +292,7 @@ function WebFetchToolMessage({ args }: { args: ToolArgs }) {
     <div className="flex items-center gap-2 py-1">
       <Globe className="h-4 w-4 text-blue-400 shrink-0" />
       <span className="text-zinc-300">Fetched</span>
-      <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-blue-400 font-mono text-sm max-w-[400px] truncate">
+      <code className="px-1.5 py-0.5 bg-zinc-800 text-blue-400 font-mono text-sm max-w-[400px] truncate">
         {url}
       </code>
     </div>
@@ -313,7 +307,7 @@ function GenericToolMessage({ toolName, args }: { toolName: string; args: ToolAr
       <Terminal className="h-4 w-4 text-zinc-400 shrink-0" />
       <span className="text-cyan-400 font-medium">{toolName}</span>
       {filePath && (
-        <code className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono text-sm truncate max-w-[300px]">
+        <code className="px-1.5 py-0.5 bg-zinc-800 text-zinc-400 font-mono text-sm truncate max-w-[300px]">
           {getFileName(filePath)}
         </code>
       )}
@@ -341,7 +335,7 @@ function TerminalMarkdown({ content }: { content: string }) {
         parts.push(
           <code
             key={`${key}-code-${partIndex++}`}
-            className="px-1.5 py-0.5 rounded bg-zinc-800 text-yellow-400 font-mono text-[0.9em]"
+            className="px-1.5 py-0.5 bg-zinc-800 text-yellow-400 font-mono text-[0.9em]"
           >
             {codeMatch[1]}
           </code>,
@@ -404,7 +398,7 @@ function TerminalMarkdown({ content }: { content: string }) {
         elements.push(
           <pre
             key={`${lineKey}-codeblock`}
-            className="my-2 p-3 rounded-md bg-zinc-800/80 border border-zinc-700/50 overflow-x-auto"
+            className="my-2 p-3 bg-zinc-800/80 border border-zinc-700/50 overflow-x-auto"
           >
             <code className="text-emerald-400 text-[0.9em]">{codeBlockContent.join("\n")}</code>
           </pre>,
@@ -498,7 +492,7 @@ function TerminalMarkdown({ content }: { content: string }) {
     elements.push(
       <pre
         key="unclosed-codeblock"
-        className="my-2 p-3 rounded-md bg-zinc-800/80 border border-zinc-700/50 overflow-x-auto"
+        className="my-2 p-3 bg-zinc-800/80 border border-zinc-700/50 overflow-x-auto"
       >
         <code className="text-emerald-400 text-[0.9em]">{codeBlockContent.join("\n")}</code>
       </pre>,
@@ -675,7 +669,7 @@ function TranscriptMessage({
 
     case "error":
       return (
-        <div className="my-2 p-3 rounded-md bg-red-900/20 border border-red-500/30 flex items-start gap-2">
+        <div className="my-2 p-3 bg-red-900/20 border border-red-500/30 flex items-start gap-2">
           <XCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
           <span className="text-red-300">{message.content}</span>
         </div>
@@ -690,7 +684,7 @@ function TranscriptMessage({
 
     case "user":
       return (
-        <div className="my-3 p-3 rounded-md bg-blue-900/20 border border-blue-500/30">
+        <div className="my-3 p-3 bg-blue-900/20 border border-blue-500/30">
           <div className="text-sm font-medium text-blue-400 mb-1">You</div>
           <div className="text-zinc-200">{message.content}</div>
         </div>
@@ -885,8 +879,8 @@ export function TranscriptViewer({
       {isConnected && !isComplete && (
         <div className="flex items-center gap-1.5 text-xs mb-2">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            <span className="animate-ping absolute inline-flex h-full w-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 bg-emerald-500" />
           </span>
           <span className="text-emerald-400">Live</span>
         </div>
@@ -894,7 +888,7 @@ export function TranscriptViewer({
 
       {/* Error indicator */}
       {error && (
-        <div className="mb-2 p-2 rounded bg-red-900/20 border border-red-500/30 text-red-300 text-sm">
+        <div className="mb-2 p-2 bg-red-900/20 border border-red-500/30 text-red-300 text-sm">
           {error}
         </div>
       )}
@@ -936,15 +930,15 @@ export function TranscriptViewer({
           <div className="flex items-center gap-2 text-zinc-400 text-sm mt-2">
             <span className="flex gap-1">
               <span
-                className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-zinc-500 animate-bounce"
                 style={{ animationDelay: "0ms" }}
               />
               <span
-                className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-zinc-500 animate-bounce"
                 style={{ animationDelay: "150ms" }}
               />
               <span
-                className="w-2 h-2 bg-zinc-500 rounded-full animate-bounce"
+                className="w-2 h-2 bg-zinc-500 animate-bounce"
                 style={{ animationDelay: "300ms" }}
               />
             </span>
@@ -968,7 +962,7 @@ export function TranscriptViewer({
       {/* Diff modal */}
       {activeDiff && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-zinc-900 rounded-lg border border-zinc-700 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="bg-zinc-900 border border-zinc-700 max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
             <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-700">
               <h3 className="font-mono text-sm text-zinc-100">{activeDiff.filePath}</h3>
               <button

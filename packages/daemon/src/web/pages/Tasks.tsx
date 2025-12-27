@@ -11,6 +11,8 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTasks, useDeleteTask } from "@/hooks/useTasks";
 import { useRepos } from "@/hooks/useRepos";
+import { cn, truncate, formatDate } from "@/lib/utils";
+import { getStatusStyle, getPriorityStyle } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +38,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
 
 type TaskStatus =
   | "pending"
@@ -58,121 +59,6 @@ const statusFilters: { value: TaskStatus | "all"; label: string }[] = [
   { value: "needs_human", label: "Needs Input" },
   { value: "canceled", label: "Canceled" },
 ];
-
-// Status color mapping
-function getStatusStyle(status: string): {
-  color: string;
-  bgColor: string;
-  borderColor: string;
-} {
-  switch (status) {
-    case "pending":
-    case "claimed":
-      return {
-        color: "text-sky-400",
-        bgColor: "bg-sky-500/10",
-        borderColor: "border-sky-500/30",
-      };
-    case "running":
-      return {
-        color: "text-primary",
-        bgColor: "bg-primary/10",
-        borderColor: "border-primary/30",
-      };
-    case "completed":
-      return {
-        color: "text-emerald-400",
-        bgColor: "bg-emerald-500/10",
-        borderColor: "border-emerald-500/30",
-      };
-    case "failed":
-      return {
-        color: "text-rose-400",
-        bgColor: "bg-rose-500/10",
-        borderColor: "border-rose-500/30",
-      };
-    case "paused":
-    case "needs_human":
-      return {
-        color: "text-amber-400",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-      };
-    case "canceled":
-      return {
-        color: "text-muted-foreground",
-        bgColor: "bg-muted/50",
-        borderColor: "border-border",
-      };
-    default:
-      return {
-        color: "text-muted-foreground",
-        bgColor: "bg-muted/50",
-        borderColor: "border-border",
-      };
-  }
-}
-
-// Priority color mapping
-function getPriorityStyle(priority: string): {
-  color: string;
-  bgColor: string;
-  borderColor: string;
-} {
-  switch (priority) {
-    case "urgent":
-      return {
-        color: "text-rose-400",
-        bgColor: "bg-rose-500/10",
-        borderColor: "border-rose-500/30",
-      };
-    case "high":
-      return {
-        color: "text-amber-400",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-      };
-    case "medium":
-      return {
-        color: "text-primary",
-        bgColor: "bg-primary/10",
-        borderColor: "border-primary/30",
-      };
-    case "low":
-      return {
-        color: "text-muted-foreground",
-        bgColor: "bg-muted/50",
-        borderColor: "border-border",
-      };
-    default:
-      return {
-        color: "text-primary",
-        bgColor: "bg-primary/10",
-        borderColor: "border-primary/30",
-      };
-  }
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
-}
-
-function truncatePrompt(prompt: string, maxLen = 80): string {
-  if (prompt.length <= maxLen) return prompt;
-  return prompt.substring(0, maxLen) + "...";
-}
 
 function startOfLocalDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -231,10 +117,10 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
       {/* Left status indicator */}
       <div className={cn("absolute left-0 top-0 h-full w-0.5", statusStyle.bgColor)} />
 
-      <div className="flex items-center justify-between gap-3 px-4 py-3 pl-5">
+      <div className="flex items-center justify-between gap-3 p-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-            {truncatePrompt(task.prompt, 100)}
+            {truncate(task.prompt, 100)}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -252,7 +138,7 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
           <Badge
             variant="outline"
             className={cn(
-              "shrink-0 rounded border px-1.5 py-0 text-[10px] uppercase tracking-wider",
+              "shrink-0 border px-1.5 py-0 text-[10px] uppercase tracking-wider",
               priorityStyle.bgColor,
               priorityStyle.borderColor,
               priorityStyle.color,
@@ -263,7 +149,7 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
           <Badge
             variant="outline"
             className={cn(
-              "shrink-0 rounded border px-1.5 py-0 text-[10px] uppercase tracking-wider",
+              "shrink-0 border px-1.5 py-0 text-[10px] uppercase tracking-wider",
               statusStyle.bgColor,
               statusStyle.borderColor,
               statusStyle.color,
@@ -388,8 +274,8 @@ export function Tasks() {
       <Container className="py-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-12 w-12 border-2 border-border" />
+            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Loading task queue...</p>
         </div>
@@ -414,7 +300,7 @@ export function Tasks() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
                 <ListTodo className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -572,12 +458,12 @@ export function Tasks() {
             <Badge
               key={filter.key}
               variant="outline"
-              className="h-6 gap-1 rounded border-primary/30 bg-primary/5 px-2 text-xs text-primary"
+              className="h-6 gap-1 border-primary/30 bg-primary/5 px-2 text-xs text-primary"
             >
               {filter.label}
               <button
                 onClick={filter.onRemove}
-                className="ml-1 rounded hover:bg-primary/20 transition-colors"
+                className="ml-1 hover:bg-primary/20 transition-colors"
               >
                 <X className="h-3 w-3" />
               </button>
@@ -588,8 +474,8 @@ export function Tasks() {
 
       {/* Empty State */}
       {filteredTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 py-20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+        <div className="flex flex-col items-center justify-center border border-dashed border-border bg-card/50 py-20">
+          <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <ListTodo className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">
@@ -627,7 +513,7 @@ export function Tasks() {
                 <div className="h-px flex-1 bg-primary/20" />
                 <span className="text-xs text-primary">{buckets.today.length}</span>
               </div>
-              <div className="overflow-hidden rounded-lg border border-border/50 bg-card">
+              <div className="overflow-hidden border border-border/50 bg-card">
                 {buckets.today.map((task, index) => (
                   <TaskRow
                     key={task.id}
@@ -652,7 +538,7 @@ export function Tasks() {
                 <div className="h-px flex-1 bg-border/50" />
                 <span className="text-xs text-muted-foreground">{buckets.yesterday.length}</span>
               </div>
-              <div className="overflow-hidden rounded-lg border border-border/50 bg-card">
+              <div className="overflow-hidden border border-border/50 bg-card">
                 {buckets.yesterday.map((task, index) => (
                   <TaskRow
                     key={task.id}
@@ -677,7 +563,7 @@ export function Tasks() {
                 <div className="h-px flex-1 bg-border/50" />
                 <span className="text-xs text-muted-foreground">{buckets.remaining.length}</span>
               </div>
-              <div className="overflow-hidden rounded-lg border border-border/50 bg-card">
+              <div className="overflow-hidden border border-border/50 bg-card">
                 {buckets.remaining.map((task, index) => (
                   <TaskRow
                     key={task.id}

@@ -161,7 +161,7 @@ export function AddRepoDialog({ open, onOpenChange, onCreated }: AddRepoDialogPr
           </div>
 
           {(inspectRepoMutation.isPending || inspectResult || inspectError) && (
-            <div className="rounded-md border border-border bg-background px-3 py-3">
+            <div className="border border-border bg-background px-3 py-3">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-foreground">Auto-detected</p>
                 {inspectRepoMutation.isPending && (
@@ -222,7 +222,7 @@ export function AddRepoDialog({ open, onOpenChange, onCreated }: AddRepoDialogPr
           )}
 
           {addError && (
-            <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="flex items-center gap-2 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {addError}
             </div>

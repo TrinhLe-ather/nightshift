@@ -17,6 +17,8 @@ import {
   type WorkflowDefinition,
   type WorkflowStep,
 } from "@/hooks/useWorkflows";
+import { cn } from "@/lib/utils";
+import { MODEL_OPTIONS, getModelColor } from "@/lib/models";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +49,6 @@ import {
   Play,
   Settings,
 } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
 
 // Available Claude Code tools
 const AVAILABLE_TOOLS = [
@@ -87,13 +88,6 @@ interface FormData {
   steps: FormStep[];
 }
 
-const MODEL_OPTIONS = [
-  { value: "", label: "Default (inherit)", color: "text-muted-foreground" },
-  { value: "haiku", label: "Haiku", color: "text-emerald-400" },
-  { value: "sonnet", label: "Sonnet", color: "text-primary" },
-  { value: "opus", label: "Opus", color: "text-violet-400" },
-];
-
 const DEFAULT_STEP: FormStep = {
   name: "",
   prompt: "",
@@ -104,16 +98,10 @@ const DEFAULT_STEP: FormStep = {
   toolsDisable: "",
 };
 
-// Get model styling
-function getModelColor(model: string): string {
-  const opt = MODEL_OPTIONS.find((o) => o.value === model);
-  return opt?.color ?? "text-muted-foreground";
-}
-
 // Mini preview component for step flow
 function StepFlowPreview({ steps, activeIndex }: { steps: FormStep[]; activeIndex: number }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-3">
+    <div className="flex items-center gap-2 border border-border/50 bg-muted/20 p-3">
       <div className="flex items-center gap-1">
         <Play className="h-3.5 w-3.5 text-emerald-400" />
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Start</span>
@@ -128,7 +116,7 @@ function StepFlowPreview({ steps, activeIndex }: { steps: FormStep[]; activeInde
             <div
               key={idx}
               className={cn(
-                "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-all",
+                "flex h-6 w-6 items-center justify-center text-xs font-medium transition-all",
                 isActive
                   ? "bg-primary text-primary-foreground ring-2 ring-primary/50 ring-offset-2 ring-offset-background"
                   : hasName
@@ -216,7 +204,7 @@ function ToolsMultiSelect({
             type="button"
             onClick={clearAll}
             className={cn(
-              "flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+              "flex w-full items-center px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
               selectedTools.length === 0 && "bg-accent",
             )}
           >
@@ -240,7 +228,7 @@ function ToolsMultiSelect({
                   key={tool.value}
                   onClick={() => toggleTool(tool.value)}
                   className={cn(
-                    "flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
+                    "flex w-full items-center px-2 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground",
                     isSelected && isDisableVariant && "bg-destructive/10",
                   )}
                 >
@@ -328,7 +316,7 @@ function StepEditor({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border transition-all duration-300",
+        "group relative overflow-hidden border transition-all duration-300",
         isActive
           ? "border-primary/50 bg-card shadow-[0_0_30px_rgba(var(--primary),0.1)]"
           : "border-border/50 bg-card/50 hover:border-border",
@@ -356,7 +344,7 @@ function StepEditor({
           {/* Step number */}
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 font-semibold transition-all",
+              "flex h-10 w-10 shrink-0 items-center justify-center border-2 font-semibold transition-all",
               isActive
                 ? "border-primary bg-primary/20 text-primary"
                 : "border-border bg-muted/50 text-muted-foreground",
@@ -387,7 +375,7 @@ function StepEditor({
           <Badge
             variant="outline"
             className={cn(
-              "shrink-0 rounded border px-2 py-0.5 text-[10px] uppercase tracking-wider",
+              "shrink-0 border px-2 py-0.5 text-[10px] uppercase tracking-wider",
               stepModel
                 ? cn(
                     modelColor,
@@ -534,7 +522,7 @@ function StepEditor({
 
             <CollapsibleContent className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2">
               {/* Auto commit */}
-              <div className="flex items-center gap-3 rounded-lg border border-border/50 bg-muted/20 p-3">
+              <div className="flex items-center gap-3 border border-border/50 bg-muted/20 p-3">
                 <Controller
                   name={`steps.${index}.autoCommit`}
                   control={control}
@@ -812,7 +800,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
     return (
       <Container className="py-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+          <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Workflow className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">Cannot edit system workflow</p>
@@ -833,8 +821,8 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
       <Container className="py-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-12 w-12 border-2 border-border" />
+            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Loading workflow...</p>
         </div>
@@ -860,7 +848,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
         {/* Header */}
         <div className="mb-8 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-primary/30 bg-primary/10">
               <Workflow className="h-6 w-6 text-primary" />
             </div>
             <div>
@@ -900,7 +888,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
           <div className="lg:col-span-1">
             <div className="sticky top-6 space-y-6">
               {/* Basic info card */}
-              <div className="rounded-lg border border-border/50 bg-card p-4">
+              <div className="border border-border/50 bg-card p-4">
                 <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Basic Information
                 </h2>
@@ -993,7 +981,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
               </div>
 
               {/* Live preview */}
-              <div className="rounded-lg border border-border/50 bg-card p-4">
+              <div className="border border-border/50 bg-card p-4">
                 <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Workflow Preview
                 </h2>
@@ -1030,7 +1018,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
             </div>
 
             {fields.length === 0 && (
-              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-12 text-center">
+              <div className="border border-dashed border-border bg-muted/20 p-12 text-center">
                 <Activity className="mx-auto h-10 w-10 text-muted-foreground/50" />
                 <p className="mt-3 text-sm text-foreground">No steps defined</p>
                 <p className="mt-1 text-xs text-muted-foreground">

@@ -10,6 +10,8 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorkflows, useDeleteWorkflow } from "@/hooks/useWorkflows";
+import { cn } from "@/lib/utils";
+import { getWorkflowTypeStyle } from "@/lib/status";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,19 +26,17 @@ import {
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Container } from "@/components/layout/Container";
 import {
-  Eye,
   FileEdit,
+  FilePlus,
   Loader2,
   Plus,
   Search,
   Trash2,
   Workflow,
   Activity,
-  Play,
-  X,
 } from "@/components/ui/icons";
 import { CloneWorkflowDialog } from "@/components/CloneWorkflowDialog";
-import { cn } from "@/lib/utils";
+import { ImportWorkflowDialog } from "@/components/ImportWorkflowDialog";
 
 type FilterCategory = "all" | "builtin" | "custom";
 
@@ -47,65 +47,6 @@ interface WorkflowSummary {
   isBuiltin: boolean;
   stepCount: number;
   model?: string;
-}
-
-// Workflow type detection based on name/description
-function getWorkflowType(
-  name: string,
-  description: string,
-): {
-  type: string;
-  color: string;
-  bgColor: string;
-  borderColor: string;
-} {
-  const lower = (name + " " + description).toLowerCase();
-  if (lower.includes("bug") || lower.includes("fix") || lower.includes("investigate")) {
-    return {
-      type: "fix",
-      color: "text-rose-400",
-      bgColor: "bg-rose-500/10",
-      borderColor: "border-rose-500/30",
-    };
-  }
-  if (lower.includes("refactor") || lower.includes("quality") || lower.includes("clean")) {
-    return {
-      type: "refactor",
-      color: "text-violet-400",
-      bgColor: "bg-violet-500/10",
-      borderColor: "border-violet-500/30",
-    };
-  }
-  if (lower.includes("quick") || lower.includes("simple") || lower.includes("task")) {
-    return {
-      type: "quick",
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/10",
-      borderColor: "border-emerald-500/30",
-    };
-  }
-  if (lower.includes("doc") || lower.includes("readme") || lower.includes("comment")) {
-    return {
-      type: "docs",
-      color: "text-sky-400",
-      bgColor: "bg-sky-500/10",
-      borderColor: "border-sky-500/30",
-    };
-  }
-  if (lower.includes("test") || lower.includes("spec")) {
-    return {
-      type: "test",
-      color: "text-amber-400",
-      bgColor: "bg-amber-500/10",
-      borderColor: "border-amber-500/30",
-    };
-  }
-  return {
-    type: "workflow",
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-    borderColor: "border-primary/30",
-  };
 }
 
 function WorkflowCard({
@@ -123,31 +64,21 @@ function WorkflowCard({
   onDelete: () => void;
   index: number;
 }) {
-  const workflowType = getWorkflowType(workflow.name, workflow.description);
+  const workflowType = getWorkflowTypeStyle(workflow.name, workflow.description);
   const stepCount = workflow.stepCount;
 
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border bg-card transition-all duration-300",
+        "flex flex-col justify-between",
+        "group relative cursor-pointer overflow-hidden border bg-card transition-all duration-300",
         "hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]",
         "animate-in fade-in slide-in-from-bottom-2",
         workflow.isBuiltin ? "border-border" : "border-primary/20",
       )}
       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
+      onClick={onView}
     >
-      {/* Grid pattern background */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
-        <div
-          className="h-full w-full"
-          style={{
-            backgroundImage:
-              "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-            backgroundSize: "20px 20px",
-          }}
-        />
-      </div>
-
       {/* Type indicator strip */}
       <div className={cn("absolute left-0 top-0 h-full w-1", workflowType.bgColor)} />
 
@@ -158,7 +89,7 @@ function WorkflowCard({
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded",
+                  "flex h-7 w-7 shrink-0 items-center justify-center",
                   workflowType.bgColor,
                   workflowType.borderColor,
                   "border",
@@ -174,48 +105,34 @@ function WorkflowCard({
           </div>
 
           {/* Quick actions - visible on hover */}
-          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                onView();
-              }}
-              title="View details"
-            >
-              <Eye className="h-3.5 w-3.5" />
-            </Button>
-            {!workflow.isBuiltin && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit();
-                  }}
-                  title="Edit"
-                >
-                  <FileEdit className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                  }}
-                  title="Delete"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </>
-            )}
-          </div>
+          {!workflow.isBuiltin && (
+            <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                title="Edit"
+              >
+                <FileEdit className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:text-destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                title="Delete"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -255,6 +172,7 @@ export function Workflows() {
   const [workflowToDelete, setWorkflowToDelete] = useState<WorkflowSummary | null>(null);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [workflowToClone, setWorkflowToClone] = useState<WorkflowSummary | null>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const workflows = useMemo(() => workflowsData?.workflows ?? [], [workflowsData]);
 
@@ -331,7 +249,7 @@ export function Workflows() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
                 <Workflow className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -342,10 +260,21 @@ export function Workflows() {
               </div>
             </div>
           </div>
-          <Button onClick={() => navigate("/workflows/new")} className="gap-2" size="sm">
-            <Plus className="h-4 w-4" />
-            <span>New Workflow</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setImportDialogOpen(true)}
+              className="gap-2"
+            >
+              <FilePlus className="h-4 w-4" />
+              <span>Import</span>
+            </Button>
+            <Button onClick={() => navigate("/workflows/new")} className="gap-2" size="sm">
+              <Plus className="h-4 w-4" />
+              <span>New Workflow</span>
+            </Button>
+          </div>
         </div>
 
         {/* Stats + Search/Filter row */}
@@ -409,19 +338,6 @@ export function Workflows() {
                 Custom
               </Button>
             </ButtonGroup>
-            {(searchQuery || filterCategory !== "all") && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-xs"
-                onClick={() => {
-                  setSearchQuery("");
-                  setFilterCategory("all");
-                }}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            )}
           </div>
         </div>
       </div>
@@ -430,8 +346,8 @@ export function Workflows() {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-12 w-12 border-2 border-border" />
+            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Loading workflows...</p>
         </div>
@@ -439,8 +355,8 @@ export function Workflows() {
 
       {/* Empty State */}
       {!isLoading && filteredWorkflows.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 py-20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+        <div className="flex flex-col items-center justify-center border border-dashed border-border bg-card/50 py-20">
+          <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Workflow className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">No workflows found</p>
@@ -524,7 +440,7 @@ export function Workflows() {
                   </h2>
                   <div className="h-px flex-1 bg-primary/20" />
                 </div>
-                <div className="rounded-lg border border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+                <div className="border border-dashed border-primary/30 bg-primary/5 p-8 text-center">
                   <p className="text-sm text-foreground">No custom workflows yet</p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Clone a system workflow or create a new one
@@ -590,6 +506,16 @@ export function Workflows() {
         onOpenChange={setCloneDialogOpen}
         workflow={workflowToClone}
         onSuccess={handleCloneSuccess}
+      />
+
+      {/* Import Workflow Dialog */}
+      <ImportWorkflowDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={(id) => {
+          setImportDialogOpen(false);
+          navigate(`/workflows/${id}/edit`);
+        }}
       />
     </Container>
   );

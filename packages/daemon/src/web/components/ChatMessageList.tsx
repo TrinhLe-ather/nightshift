@@ -224,7 +224,7 @@ export function ChatMessageList({
         {isLoading && displayEvents.length === 0 && (
           <div className="flex justify-center py-8">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="h-4 w-4 animate-spin border-2 border-primary border-t-transparent" />
               Waiting for activity...
             </div>
           </div>
@@ -235,7 +235,7 @@ export function ChatMessageList({
       {showJumpToBottom && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-card border border-border shadow-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-card border border-border shadow-lg text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
         >
           <ChevronDown className="h-3.5 w-3.5" />
           Jump to latest

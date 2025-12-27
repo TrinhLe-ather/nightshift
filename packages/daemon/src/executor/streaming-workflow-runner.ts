@@ -148,11 +148,11 @@ export class StreamingWorkflowRunner {
 
       // Create single query with streaming input generator
       // Cast to SDKUserMessage since the SDK accepts the simplified format at runtime
-      const messageGenerator = this.generateWorkflowMessages(steps, workflow, task) as AsyncGenerator<
-        SDKUserMessage,
-        void,
-        unknown
-      >;
+      const messageGenerator = this.generateWorkflowMessages(
+        steps,
+        workflow,
+        task,
+      ) as AsyncGenerator<SDKUserMessage, void, unknown>;
       const queryIterator = query({
         prompt: messageGenerator,
         options: queryOptions,
@@ -211,7 +211,7 @@ export class StreamingWorkflowRunner {
         if (this.sessionManager.taskId) {
           streamEventBus.emitError(
             this.sessionManager.taskId,
-            "Workflow execution timed out or was aborted"
+            "Workflow execution timed out or was aborted",
           );
         }
         return {
@@ -262,7 +262,7 @@ export class StreamingWorkflowRunner {
   private async *generateWorkflowMessages(
     steps: WorkflowStep[],
     workflow: WorkflowDefinition,
-    task: Task
+    task: Task,
   ): AsyncGenerator<StreamingUserMessage, void, unknown> {
     // Wait for the query iterator to be available for setModel() calls
     const queryIterator = await this.queryIteratorPromise!;
@@ -474,7 +474,7 @@ followed by a brief summary of what was accomplished.`;
 
         // Check for tool calls
         const toolUse = content.find(
-          (c): c is { type: "tool_use"; name: string; input: unknown } => c.type === "tool_use"
+          (c): c is { type: "tool_use"; name: string; input: unknown } => c.type === "tool_use",
         );
         if (toolUse) {
           this.sessionManager.emit(EventType.AGENT_TOOL_CALL, EventLevel.DEBUG, {
@@ -493,7 +493,7 @@ followed by a brief summary of what was accomplished.`;
 
         // Extract text content
         const textContent = content.find(
-          (c): c is { type: "text"; text: string } => c.type === "text" && "text" in c
+          (c): c is { type: "text"; text: string } => c.type === "text" && "text" in c,
         );
         if (textContent) {
           this.sessionManager.emit(EventType.AGENT_MESSAGE, EventLevel.INFO, {
@@ -517,7 +517,7 @@ followed by a brief summary of what was accomplished.`;
         if (content && Array.isArray(content)) {
           const toolResult = content.find(
             (c): c is { type: "tool_result"; content: string } =>
-              (c as { type?: string }).type === "tool_result"
+              (c as { type?: string }).type === "tool_result",
           );
           if (toolResult) {
             this.sessionManager.emit(EventType.AGENT_TOOL_RESULT, EventLevel.DEBUG, {
@@ -581,7 +581,7 @@ followed by a brief summary of what was accomplished.`;
       clearTimeout(this.stepTimeoutId);
     }
 
-    const stepTimeout = 10 * 60 * 1000; // 10 minutes per step
+    const stepTimeout = 60 * 60 * 1000; // 60 minutes per step
     this.stepTimeoutId = setTimeout(() => {
       console.warn(`[StreamingWorkflow] Step "${step.name}" timed out`);
       this.currentStepTimedOut = true;

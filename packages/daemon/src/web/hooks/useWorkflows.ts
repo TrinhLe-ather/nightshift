@@ -160,3 +160,39 @@ export function useCloneWorkflow() {
     },
   });
 }
+
+/**
+ * Export a workflow as JSON file
+ */
+export function useExportWorkflow() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await client.workflows.export({ id });
+
+      // Trigger browser download
+      const blob = new Blob([result.content], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = result.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      return result;
+    },
+  });
+}
+
+/**
+ * Import a workflow from JSON content
+ */
+export function useImportWorkflow() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { content: string; name?: string }) => client.workflows.import(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workflows"] });
+    },
+  });
+}

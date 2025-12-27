@@ -45,7 +45,8 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
   const [prompt, setPrompt] = useState("");
   const [selectedWorkflow, setSelectedWorkflow] = useState<string>("");
   const [selectedRepoId, setSelectedRepoId] = useState<string>("");
-  const [executionModeOverride, setExecutionModeOverride] = useState<ExecutionModeOverride>("default");
+  const [executionModeOverride, setExecutionModeOverride] =
+    useState<ExecutionModeOverride>("default");
 
   const { data: repos = [] } = useRepos();
 
@@ -77,9 +78,8 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
   });
 
   // Fetch workflow details when a workflow is selected
-  const { data: workflowDetails, isLoading: isLoadingWorkflowDetails } = useWorkflow(
-    selectedWorkflow,
-  );
+  const { data: workflowDetails, isLoading: isLoadingWorkflowDetails } =
+    useWorkflow(selectedWorkflow);
 
   const createTask = useMutation({
     mutationFn: async () => {
@@ -167,95 +167,95 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
             <p className="text-xs text-muted-foreground mt-1 mb-2">
               Leave empty for ad-hoc task execution
             </p>
-              <Select
-                value={selectedWorkflow}
-                onValueChange={(value) => setSelectedWorkflow(value || "")}
-              >
-                <SelectTrigger id="workflow-select" className="mt-1 w-full">
-                  <SelectValue>
-                    {selectedWorkflow
-                      ? workflows?.workflows.find((wf) => wf.id === selectedWorkflow)?.name
-                      : "Choose a workflow..."}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingWorkflows && (
-                    <div className="flex items-center justify-center py-6">
-                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            <Select
+              value={selectedWorkflow}
+              onValueChange={(value) => setSelectedWorkflow(value || "")}
+            >
+              <SelectTrigger id="workflow-select" className="mt-1 w-full">
+                <SelectValue>
+                  {selectedWorkflow
+                    ? workflows?.workflows.find((wf) => wf.id === selectedWorkflow)?.name
+                    : "Choose a workflow..."}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {isLoadingWorkflows && (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                {!isLoadingWorkflows && workflows?.workflows.length === 0 && (
+                  <div className="px-2 py-6 text-center text-xs text-muted-foreground">
+                    No workflows available
+                  </div>
+                )}
+                {workflows?.workflows.map((wf) => (
+                  <SelectItem key={wf.id} value={wf.id}>
+                    <div className="space-y-0.5">
+                      <div className="font-medium">{wf.name}</div>
+                      {wf.description && (
+                        <div className="text-xs text-muted-foreground">{wf.description}</div>
+                      )}
                     </div>
-                  )}
-                  {!isLoadingWorkflows && workflows?.workflows.length === 0 && (
-                    <div className="px-2 py-6 text-center text-xs text-muted-foreground">
-                      No workflows available
-                    </div>
-                  )}
-                  {workflows?.workflows.map((wf) => (
-                    <SelectItem key={wf.id} value={wf.id}>
-                      <div className="space-y-0.5">
-                        <div className="font-medium">{wf.name}</div>
-                        {wf.description && (
-                          <div className="text-xs text-muted-foreground">{wf.description}</div>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              {/* Workflow Preview */}
-              {selectedWorkflow && (
-                <div className="mt-3 rounded-md border border-border bg-muted/30 p-3">
-                  {isLoadingWorkflowDetails ? (
-                    <div className="flex items-center justify-center py-2">
-                      <Loader2 className="size-4 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : workflowDetails ? (
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="font-medium text-sm">{workflowDetails.name}</div>
-                          <div className="text-xs text-muted-foreground line-clamp-2">
-                            {workflowDetails.description}
-                          </div>
+            {/* Workflow Preview */}
+            {selectedWorkflow && (
+              <div className="mt-3 border border-border bg-muted/30 p-3">
+                {isLoadingWorkflowDetails ? (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                  </div>
+                ) : workflowDetails ? (
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="font-medium text-sm">{workflowDetails.name}</div>
+                        <div className="text-xs text-muted-foreground line-clamp-2">
+                          {workflowDetails.description}
                         </div>
-                        {workflowDetails.isBuiltin && (
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            Built-in
-                          </Badge>
-                        )}
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {workflowDetails.definition.steps.length} step
-                          {workflowDetails.definition.steps.length !== 1 ? "s" : ""}
+                      {workflowDetails.isBuiltin && (
+                        <Badge variant="secondary" className="text-xs shrink-0">
+                          Built-in
                         </Badge>
-                        {workflowDetails.definition.model && (
-                          <Badge variant="outline" className="text-xs">
-                            Model: {workflowDetails.definition.model}
-                          </Badge>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="link"
-                        size="sm"
-                        className="h-auto p-0 text-xs"
-                        onClick={() => {
-                          window.open(`/workflows/${selectedWorkflow}`, "_blank");
-                        }}
-                      >
-                        View workflow details
-                        <ExternalLink className="ml-1 size-3" />
-                      </Button>
+                      )}
                     </div>
-                  ) : (
-                    <div className="text-xs text-muted-foreground">
-                      Failed to load workflow details
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline" className="text-xs">
+                        {workflowDetails.definition.steps.length} step
+                        {workflowDetails.definition.steps.length !== 1 ? "s" : ""}
+                      </Badge>
+                      {workflowDetails.definition.model && (
+                        <Badge variant="outline" className="text-xs">
+                          Model: {workflowDetails.definition.model}
+                        </Badge>
+                      )}
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => {
+                        window.open(`/workflows/${selectedWorkflow}`, "_blank");
+                      }}
+                    >
+                      View workflow details
+                      <ExternalLink className="ml-1 size-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground">
+                    Failed to load workflow details
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Repository Selection (required) */}
           <div>
@@ -355,22 +355,20 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
 
               {/* Info for direct mode blocked (covers uncommitted changes, locks, etc.) */}
               {repoStatus && directModeBlocked && repoStatus.blockedReason && (
-                <div className="rounded-none border border-blue-500/50 bg-blue-500/10 p-3 text-xs">
+                <div className="border border-blue-500/50 bg-blue-500/10 p-3 text-xs">
                   <strong className="text-blue-600">ℹ Info:</strong> {repoStatus.blockedReason}.{" "}
                   Workflow will use worktree mode automatically.
                 </div>
               )}
 
               {/* Shared locks info (only show if not already covered by blockedReason) */}
-              {repoStatus &&
-                repoStatus.hasSharedLocks &&
-                !directModeBlocked && (
-                  <div className="rounded-none border border-orange-500/50 bg-orange-500/10 p-3 text-xs">
-                    <strong className="text-orange-600">Note:</strong>{" "}
-                    {repoStatus.sharedLockHolders.length} chat session(s) are active on this
-                    repository. Workflow will use worktree mode to avoid conflicts.
-                  </div>
-                )}
+              {repoStatus && repoStatus.hasSharedLocks && !directModeBlocked && (
+                <div className="border border-orange-500/50 bg-orange-500/10 p-3 text-xs">
+                  <strong className="text-orange-600">Note:</strong>{" "}
+                  {repoStatus.sharedLockHolders.length} chat session(s) are active on this
+                  repository. Workflow will use worktree mode to avoid conflicts.
+                </div>
+              )}
             </div>
           )}
         </div>

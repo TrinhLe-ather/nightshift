@@ -313,6 +313,112 @@ const clone = orpc
     }
   });
 
+// Export a workflow as JSON
+const exportWorkflow = orpc
+  .input(
+    z.object({
+      id: z.string(),
+    }),
+  )
+  .output(
+    z.object({
+      content: z.string(),
+      filename: z.string(),
+    }),
+  )
+  .handler(async ({ input, errors }) => {
+    const { id } = input;
+
+    try {
+      const definition = await getWorkflow(id);
+
+      if (!definition) {
+        throw errors.NOT_FOUND({
+          message: "Workflow not found",
+          data: { resource: "workflow", id },
+        });
+      }
+
+      const content = JSON.stringify(definition, null, 2);
+      const filename = `${definition.name.toLowerCase().replace(/\s+/g, "-")}.json`;
+
+      return { content, filename };
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error) {
+        throw error;
+      }
+      console.error("[workflows.export] Error:", error);
+      throw errors.INTERNAL_SERVER_ERROR({
+        message: "Failed to export workflow",
+      });
+    }
+  });
+
+// Import a workflow from JSON
+const importWorkflow = orpc
+  .input(
+    z.object({
+      content: z.string(),
+      name: z.string().min(3, "Name must be at least 3 characters").optional(),
+    }),
+  )
+  .output(workflowDetailSchema)
+  .handler(async ({ input, errors }) => {
+    // Parse JSON content
+    let parsedContent: unknown;
+    try {
+      parsedContent = JSON.parse(input.content);
+    } catch {
+      throw errors.BAD_REQUEST({
+        message: "Invalid JSON format",
+      });
+    }
+
+    // Validate against workflow definition schema
+    const validationResult = workflowDefinitionSchema.safeParse(parsedContent);
+    if (!validationResult.success) {
+      const firstIssue = validationResult.error.issues[0];
+      throw errors.BAD_REQUEST({
+        message: "Invalid workflow format",
+        data: {
+          field: firstIssue?.path.join(".") || undefined,
+          reason: firstIssue?.message || "Schema validation failed",
+        },
+      });
+    }
+
+    const definition = validationResult.data;
+
+    try {
+      // Create new workflow with optional name override
+      const name = input.name || definition.name;
+      const record = await createWorkflow(name, definition.description, {
+        name: definition.name,
+        description: definition.description,
+        version: definition.version,
+        model: definition.model,
+        steps: definition.steps,
+      });
+
+      const storedDefinition = JSON.parse(record.definition);
+
+      return {
+        id: record.id,
+        name: record.name,
+        description: record.description || "",
+        definition: storedDefinition,
+        isBuiltin: record.isBuiltin ?? false,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+      };
+    } catch (error) {
+      console.error("[workflows.import] Error:", error);
+      throw errors.INTERNAL_SERVER_ERROR({
+        message: error instanceof Error ? error.message : "Failed to import workflow",
+      });
+    }
+  });
+
 export const workflowsRouter = {
   list,
   get,
@@ -320,4 +426,6 @@ export const workflowsRouter = {
   update,
   delete: remove,
   clone,
+  export: exportWorkflow,
+  import: importWorkflow,
 };

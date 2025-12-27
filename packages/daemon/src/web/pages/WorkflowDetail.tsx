@@ -9,7 +9,9 @@
 
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useWorkflow, useDeleteWorkflow } from "@/hooks/useWorkflows";
+import { useWorkflow, useDeleteWorkflow, useExportWorkflow } from "@/hooks/useWorkflows";
+import { cn } from "@/lib/utils";
+import { getModelStyle } from "@/lib/models";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +29,7 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  Download,
   FileEdit,
   Loader2,
   Trash2,
@@ -38,7 +41,6 @@ import {
   Settings,
 } from "@/components/ui/icons";
 import { CloneWorkflowDialog } from "@/components/CloneWorkflowDialog";
-import { cn } from "@/lib/utils";
 
 interface WorkflowStep {
   name: string;
@@ -52,53 +54,6 @@ interface WorkflowStep {
   autoCommit?: boolean;
 }
 
-// Model color mapping
-function getModelStyle(model?: string): {
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  label: string;
-} {
-  if (!model) {
-    return {
-      color: "text-muted-foreground",
-      bgColor: "bg-muted/50",
-      borderColor: "border-border",
-      label: "Default",
-    };
-  }
-  if (model.includes("opus")) {
-    return {
-      color: "text-violet-400",
-      bgColor: "bg-violet-500/10",
-      borderColor: "border-violet-500/30",
-      label: "Opus",
-    };
-  }
-  if (model.includes("sonnet")) {
-    return {
-      color: "text-primary",
-      bgColor: "bg-primary/10",
-      borderColor: "border-primary/30",
-      label: "Sonnet",
-    };
-  }
-  if (model.includes("haiku")) {
-    return {
-      color: "text-emerald-400",
-      bgColor: "bg-emerald-500/10",
-      borderColor: "border-emerald-500/30",
-      label: "Haiku",
-    };
-  }
-  return {
-    color: "text-muted-foreground",
-    bgColor: "bg-muted/50",
-    borderColor: "border-border",
-    label: model,
-  };
-}
-
 // Highlight template variables in prompt
 function HighlightedPrompt({ text }: { text: string }) {
   const parts = text.split(/(\{\{[^}]+\}\})/g);
@@ -109,7 +64,7 @@ function HighlightedPrompt({ text }: { text: string }) {
           return (
             <span
               key={idx}
-              className="mx-0.5 inline-block rounded bg-primary/20 px-1.5 py-0.5 font-semibold text-primary"
+              className="mx-0.5 inline-block bg-primary/20 px-1.5 py-0.5 font-semibold text-primary"
             >
               {part}
             </span>
@@ -150,7 +105,7 @@ function StepNode({
       {/* Main node card */}
       <div
         className={cn(
-          "relative overflow-hidden rounded-lg border transition-all duration-300",
+          "relative overflow-hidden border transition-all duration-300",
           isExpanded
             ? "border-primary/50 bg-card shadow-[0_0_30px_rgba(var(--primary),0.1)]"
             : "border-border/50 bg-card/50 hover:border-border hover:bg-card",
@@ -177,7 +132,7 @@ function StepNode({
           <div className="relative">
             <div
               className={cn(
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border-2 font-semibold transition-all duration-300",
+                "flex h-12 w-12 shrink-0 items-center justify-center border-2 font-semibold transition-all duration-300",
                 isExpanded
                   ? "border-primary bg-primary/20 text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]"
                   : "border-border bg-muted/50 text-muted-foreground group-hover:border-primary/50 group-hover:text-foreground",
@@ -188,7 +143,7 @@ function StepNode({
             {/* Pulse animation on hover */}
             <div
               className={cn(
-                "absolute inset-0 rounded-lg border-2 border-primary opacity-0 transition-opacity duration-300",
+                "absolute inset-0 border-2 border-primary opacity-0 transition-opacity duration-300",
                 "group-hover:animate-ping group-hover:opacity-30",
               )}
             />
@@ -202,7 +157,7 @@ function StepNode({
               <Badge
                 variant="outline"
                 className={cn(
-                  "shrink-0 rounded border px-1.5 py-0 text-[10px] uppercase tracking-wider",
+                  "shrink-0 border px-1.5 py-0 text-[10px] uppercase tracking-wider",
                   modelStyle.bgColor,
                   modelStyle.borderColor,
                   modelStyle.color,
@@ -257,7 +212,7 @@ function StepNode({
                 <h4 className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Prompt Template
                 </h4>
-                <div className="rounded-lg border border-border/50 bg-muted/30 p-4">
+                <div className="border border-border/50 bg-muted/30 p-4">
                   <pre className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                     <HighlightedPrompt text={step.prompt} />
                   </pre>
@@ -284,7 +239,7 @@ function StepNode({
                     {step.tools?.enable?.map((tool) => (
                       <Badge
                         key={tool}
-                        className="rounded border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        className="border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                       >
                         + {tool}
                       </Badge>
@@ -292,7 +247,7 @@ function StepNode({
                     {step.tools?.disable?.map((tool) => (
                       <Badge
                         key={tool}
-                        className="rounded border-rose-500/30 bg-rose-500/10 text-rose-400"
+                        className="border-rose-500/30 bg-rose-500/10 text-rose-400"
                       >
                         - {tool}
                       </Badge>
@@ -308,7 +263,7 @@ function StepNode({
       {/* Connector arrow to next step */}
       {!isLast && (
         <div className="my-2 flex justify-center">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border/50 bg-card text-muted-foreground">
+          <div className="flex h-6 w-6 items-center justify-center border border-border/50 bg-card text-muted-foreground">
             <ChevronDown className="h-3 w-3" />
           </div>
         </div>
@@ -322,6 +277,7 @@ export function WorkflowDetail() {
   const navigate = useNavigate();
   const { data: workflow, isLoading, error } = useWorkflow(id ?? "");
   const deleteWorkflowMutation = useDeleteWorkflow();
+  const exportWorkflowMutation = useExportWorkflow();
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
@@ -361,6 +317,22 @@ export function WorkflowDetail() {
     setCloneDialogOpen(true);
   };
 
+  const handleExport = () => {
+    if (!id) return;
+    exportWorkflowMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success("Workflow exported", {
+          description: "The workflow has been downloaded as JSON.",
+        });
+      },
+      onError: (err) => {
+        toast.error("Failed to export workflow", {
+          description: err instanceof Error ? err.message : "An error occurred",
+        });
+      },
+    });
+  };
+
   const handleDelete = async () => {
     if (!workflow) return;
 
@@ -387,8 +359,8 @@ export function WorkflowDetail() {
       <Container className="py-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-12 w-12 border-2 border-border" />
+            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Loading workflow...</p>
         </div>
@@ -400,7 +372,7 @@ export function WorkflowDetail() {
     return (
       <Container className="py-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+          <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Workflow className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">Workflow not found</p>
@@ -437,7 +409,7 @@ export function WorkflowDetail() {
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-primary/30 bg-primary/10">
                 <Workflow className="h-6 w-6 text-primary" />
               </div>
               <div className="min-w-0">
@@ -448,14 +420,14 @@ export function WorkflowDetail() {
                   {workflow.isBuiltin ? (
                     <Badge
                       variant="secondary"
-                      className="shrink-0 rounded text-[10px] uppercase tracking-wider"
+                      className="shrink-0 text-[10px] uppercase tracking-wider"
                     >
                       System
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="shrink-0 rounded border-primary/30 bg-primary/5 text-[10px] uppercase tracking-wider text-primary"
+                      className="shrink-0 border-primary/30 bg-primary/5 text-[10px] uppercase tracking-wider text-primary"
                     >
                       Custom
                     </Badge>
@@ -468,6 +440,15 @@ export function WorkflowDetail() {
 
           {/* Actions */}
           <div className="flex shrink-0 items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={exportWorkflowMutation.isPending}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Export
+            </Button>
             <Button variant="outline" size="sm" onClick={handleClone}>
               Clone
             </Button>
@@ -562,7 +543,7 @@ export function WorkflowDetail() {
         </div>
 
         {/* Visual flow indicator */}
-        <div className="mb-6 flex items-center gap-2 rounded-lg border border-border/50 bg-muted/20 p-3">
+        <div className="mb-6 flex items-center gap-2 border border-border/50 bg-muted/20 p-3">
           <div className="flex items-center gap-1">
             <Play className="h-4 w-4 text-emerald-400" />
             <span className="text-xs text-muted-foreground">Start</span>
@@ -578,7 +559,7 @@ export function WorkflowDetail() {
                       <button
                         onClick={() => toggleStep(idx)}
                         className={cn(
-                          "flex h-6 w-6 items-center justify-center rounded text-xs font-medium transition-all",
+                          "flex h-6 w-6 items-center justify-center text-xs font-medium transition-all",
                           expandedSteps.has(idx)
                             ? "bg-primary/20 text-primary ring-2 ring-primary/50"
                             : cn(style.bgColor, style.color, "hover:ring-2 hover:ring-border"),

@@ -10,6 +10,8 @@ import { useParams } from "react-router-dom";
 import { useTask } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/web/integrations/orpc";
+import { cn } from "@/lib/utils";
+import { getStatusStyle, statusToVariant } from "@/lib/status";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,7 +33,6 @@ import {
   Activity,
   SidebarRight,
 } from "@/components/ui/icons";
-import { cn } from "@/lib/utils";
 
 const TASKCHAT_TASKLIST_SIZE_KEY = "taskchat_tasklist_size";
 const TASKCHAT_TASKLIST_MIN = 15;
@@ -44,68 +45,6 @@ function getStoredTaskListSize(): number {
   const n = raw ? Number(raw) : Number.NaN;
   if (!Number.isFinite(n)) return TASKCHAT_TASKLIST_DEFAULT;
   return Math.max(TASKCHAT_TASKLIST_MIN, Math.min(TASKCHAT_TASKLIST_MAX, n));
-}
-
-const statusToVariant: Record<
-  string,
-  "pending" | "running" | "completed" | "failed" | "canceled" | "paused"
-> = {
-  pending: "pending",
-  claimed: "pending",
-  running: "running",
-  completed: "completed",
-  failed: "failed",
-  needs_human: "paused",
-  paused: "paused",
-  canceled: "canceled",
-};
-
-// Status color mapping (matching Dashboard.tsx)
-function getStatusStyle(status: string): {
-  color: string;
-  bgColor: string;
-  borderColor: string;
-} {
-  switch (status) {
-    case "pending":
-    case "claimed":
-      return {
-        color: "text-sky-400",
-        bgColor: "bg-sky-500/10",
-        borderColor: "border-sky-500/30",
-      };
-    case "running":
-      return {
-        color: "text-primary",
-        bgColor: "bg-primary/10",
-        borderColor: "border-primary/30",
-      };
-    case "completed":
-      return {
-        color: "text-emerald-400",
-        bgColor: "bg-emerald-500/10",
-        borderColor: "border-emerald-500/30",
-      };
-    case "failed":
-      return {
-        color: "text-rose-400",
-        bgColor: "bg-rose-500/10",
-        borderColor: "border-rose-500/30",
-      };
-    case "paused":
-    case "needs_human":
-      return {
-        color: "text-amber-400",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-      };
-    default:
-      return {
-        color: "text-muted-foreground",
-        bgColor: "bg-muted/50",
-        borderColor: "border-border",
-      };
-  }
 }
 
 const EMPTY_EVENTS: SessionEvent[] = [];
@@ -307,7 +246,7 @@ export function TaskChat() {
                             href={task.prUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md bg-emerald-600 text-white hover:bg-emerald-600/90 dark:bg-emerald-500 dark:hover:bg-emerald-500/90 transition-colors"
+                            className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-emerald-600 text-white hover:bg-emerald-600/90 dark:bg-emerald-500 dark:hover:bg-emerald-500/90 transition-colors"
                           >
                             <GitPullRequest className="h-3.5 w-3.5" />
                             PR
@@ -328,7 +267,7 @@ export function TaskChat() {
                         <Badge
                           variant={statusToVariant[task.status] ?? "secondary"}
                           className={cn(
-                            "shrink-0 rounded border text-[10px] uppercase tracking-wider",
+                            "shrink-0 border text-[10px] uppercase tracking-wider",
                             statusStyle.bgColor,
                             statusStyle.borderColor,
                             statusStyle.color,

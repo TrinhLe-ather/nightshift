@@ -59,13 +59,13 @@ export function DeleteTaskDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <div className="space-y-3">
-          <div className="rounded-md bg-muted p-2 text-sm font-medium text-foreground">
+          <div className="bg-muted p-2 text-sm font-medium text-foreground">
             {task && truncatePrompt(task.prompt, 80)}
           </div>
 
           {/* Checkbox for deleting branch (only for worktree tasks) */}
           {isWorktree && (
-            <div className="space-y-2 rounded-md border border-border p-3">
+            <div className="space-y-2 border border-border p-3">
               <div className="flex items-start space-x-2">
                 <Checkbox
                   id="delete-branch"

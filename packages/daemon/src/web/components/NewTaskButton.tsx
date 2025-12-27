@@ -59,7 +59,7 @@ export function NewTaskButton({
       {showKbd && (
         <KbdGroup className="ml-2 hidden sm:inline-flex">
           <Kbd>⌘</Kbd>
-          <Kbd>N</Kbd>
+          <Kbd>K</Kbd>
         </KbdGroup>
       )}
     </Button>

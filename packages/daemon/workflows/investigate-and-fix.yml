@@ -1,6 +1,6 @@
 name: Investigate and Fix
 description: Deep bug investigation with root cause analysis and comprehensive fix
-version: 1.0.0
+version: 1.1.0
 model: opus
 
 steps:
@@ -13,26 +13,41 @@ steps:
 
       Your task is to deeply understand this bug before attempting any fix.
 
-      Complete this investigation checklist:
+      ## Sub-Agent Strategy
+      Use the Task tool with specialized agents to parallelize investigation:
+      - Use `subagent_type: Explore` to search the codebase for error patterns, related code, and dependencies
+      - Launch multiple Explore agents in parallel for independent searches (e.g., error messages, related functions, test files)
+      - Use `subagent_type: general-purpose` for complex traces requiring multi-step investigation
+
+      ## Investigation Checklist
       1. REPRODUCE - Verify the bug exists (run code, check logs, inspect state)
       2. ISOLATE - Narrow down to specific file/function
       3. TRACE - Follow the code path leading to the bug
       4. ROOT CAUSE - Identify the underlying cause (not just the symptom)
       5. IMPACT - List what else might be affected
 
-      Investigation techniques to use:
+      ## Investigation Techniques
       - Search for error messages in logs
-      - Check recent git commits for related changes
+      - Check recent git commits for related changes (`git log --oneline -20`)
       - Look for missing test coverage
       - Examine assumptions and edge cases
 
-      DO NOT propose fixes yet. Focus entirely on understanding.
+      ## Constraints
+      - DO NOT propose fixes yet. Focus entirely on understanding.
+      - If stuck after 3 reproduction attempts, document blockers and hypothesize causes
+      - Limit investigation scope to directly related code (max 10 files deep)
 
-      Deliver an investigation report with:
-      - Bug Reproduction (with evidence)
+      ## Deliverable
+      Investigation report with:
+      - Bug Reproduction (with evidence, or explanation why it couldn't be reproduced)
       - Root Cause Analysis (explain WHY it's broken)
       - Impact Assessment (what else is affected)
       - Files Involved (paths + line numbers)
+
+      ## Pass Forward to Next Step
+      - Summarize key findings in 3-5 bullets
+      - List exact file:line locations
+      - State the root cause in one sentence
     tools:
       disable: [Write, Edit]
     maxRetries: 1
@@ -42,19 +57,30 @@ steps:
     prompt: |
       Good investigation. Now let's prove the bug exists with a test.
 
-      Using the root cause you identified, write a test that:
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find existing test patterns and conventions in the codebase
+      - Use `subagent_type: general-purpose` if you need to understand complex test setup requirements
+
+      ## Test Requirements
+      Using the root cause identified, write a test that:
       1. Reproduces the exact bug behavior
       2. FAILS with the current code (proving the bug exists)
       3. Will PASS once we fix it (serving as verification)
       4. Covers edge cases related to this bug
 
-      Test requirements:
+      ## Test Quality Standards
       - Clear test name describing expected behavior
       - Arrange-Act-Assert structure
       - Specific assertions (not just "should work")
+      - Follow existing test patterns in the repository
 
+      ## Execution
       Run the test and show the ACTUAL failure output.
       If the test passes, you haven't captured the bug correctly - revise it.
+
+      ## If Blocked
+      - If no test framework exists, document manual reproduction steps instead
+      - If bug is non-deterministic, write test that fails >50% of runs and document flakiness
     maxRetries: 2
 
   - name: Implement Fix
@@ -62,23 +88,31 @@ steps:
     prompt: |
       We have a failing test proving the bug. Now implement the fix.
 
-      Fix strategy:
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to check for similar patterns elsewhere that might need the same fix
+      - Use `subagent_type: Plan` if the fix touches multiple files or has architectural implications
+      - Launch parallel Explore agents to check: (1) similar code patterns, (2) callers of affected code, (3) related tests
+
+      ## Fix Strategy
       1. Fix ONLY the root cause identified earlier
       2. Make minimal, surgical changes
       3. Preserve existing behavior for non-buggy cases
 
-      Fix principles:
+      ## Fix Principles
       - Minimal: Smallest change that fixes root cause
       - Safe: Don't break other functionality
       - Testable: The failing test must now pass
       - Clear: Code should explain why the fix works
 
+      ## Verification (Required)
       After implementing:
       1. Run the bug reproduction test - it must PASS
       2. Run all other tests - they must still PASS
       3. Show the test output as proof
 
-      If tests fail, debug and retry until green.
+      ## If Tests Fail
+      - Debug and retry (you have 3 attempts)
+      - If still failing after retries, document what's blocking and partial progress made
     maxRetries: 3
 
   - name: Regression Testing
@@ -86,22 +120,29 @@ steps:
     prompt: |
       The fix is implemented and the bug test passes. Final step: verify nothing else broke.
 
-      Comprehensive testing:
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find all test files related to the changed code
+      - Use `subagent_type: general-purpose` to run comprehensive test suites if they're complex
+      - Launch parallel agents to: (1) run unit tests, (2) check integration points, (3) verify edge cases
+
+      ## Comprehensive Testing
       1. Run the FULL test suite (not just bug-related tests)
       2. Test related functionality manually if no automated tests exist
       3. Check edge cases near the bug area
       4. Verify the fix works in integration scenarios
 
-      Focus on:
+      ## Focus Areas
       - Core functionality related to the bug
       - Edge cases from the impact assessment
       - Integration points identified during investigation
       - Error handling paths
 
-      Deliver a test summary:
+      ## Deliverable
+      Test summary with:
       - Total tests run and pass/fail counts
       - Verification of related functionality
       - Any issues found (list for human review)
+      - Confidence level (high/medium/low) with reasoning
     tools:
       disable: [Write, Edit]
     maxRetries: 1

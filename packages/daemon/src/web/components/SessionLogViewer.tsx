@@ -137,7 +137,7 @@ export function SessionLogViewer({
     return (
       <div
         className={cn(
-          "flex items-center justify-center rounded-lg border border-border bg-[#0A0A0A] p-8",
+          "flex items-center justify-center border border-border bg-[#0A0A0A] p-8",
           className,
         )}
       >
@@ -149,22 +149,20 @@ export function SessionLogViewer({
   return (
     <div className={cn("relative", className)}>
       {/* Header */}
-      <div className="flex items-center gap-2 rounded-t-lg border border-b-0 border-border bg-card px-4 py-2 text-card-foreground">
+      <div className="flex items-center gap-2 border border-b-0 border-border bg-card px-4 py-2 text-card-foreground">
         <Terminal className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">Session Log</span>
         <span className="text-xs text-muted-foreground">
           {events.length} event{events.length !== 1 ? "s" : ""}
         </span>
-        {isLoading && (
-          <Loader2 className="ml-auto h-4 w-4 animate-spin text-primary" />
-        )}
+        {isLoading && <Loader2 className="ml-auto h-4 w-4 animate-spin text-primary" />}
       </div>
 
       {/* Log content */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="max-h-[400px] overflow-y-auto rounded-b-lg border border-border bg-[#0A0A0A] p-4 font-mono text-xs"
+        className="max-h-[400px] overflow-y-auto border border-border bg-[#0A0A0A] p-4 font-mono text-xs"
       >
         {events.map((event) => (
           <div key={`${event.runId}-${event.seq}`} className="flex gap-2 py-0.5 hover:bg-white/5">
@@ -182,9 +180,7 @@ export function SessionLogViewer({
 
             {/* Event data */}
             {event.data && (
-              <span className="text-muted-foreground truncate">
-                {formatEventData(event.data)}
-              </span>
+              <span className="text-muted-foreground truncate">{formatEventData(event.data)}</span>
             )}
           </div>
         ))}
@@ -194,7 +190,7 @@ export function SessionLogViewer({
       {!autoScroll && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-4 right-4 flex items-center gap-1 rounded-md bg-card px-2 py-1 text-xs text-muted-foreground shadow-lg hover:bg-muted"
+          className="absolute bottom-4 right-4 flex items-center gap-1 bg-card px-2 py-1 text-xs text-muted-foreground shadow-lg hover:bg-muted"
         >
           <ChevronDown className="h-3 w-3" />
           Jump to end

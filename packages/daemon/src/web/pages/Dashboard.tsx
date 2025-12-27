@@ -8,10 +8,10 @@
  */
 
 import { useState } from "react";
-import { useStatus } from "@/web/hooks";
+import { useStatus } from "@/hooks/useStatus";
 import { useTasks } from "@/hooks/useTasks";
-import { truncate } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { cn, truncate, formatDate } from "@/lib/utils";
+import { getStatusStyle, statusToVariant } from "@/lib/status";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -31,84 +31,6 @@ import { Badge } from "@/components/ui/badge";
 import { AddRepoDialog, NewTaskButton } from "@/components";
 import { Button } from "@/components/ui/button";
 
-const statusToVariant: Record<
-  string,
-  "pending" | "running" | "completed" | "failed" | "canceled" | "paused"
-> = {
-  pending: "pending",
-  claimed: "pending",
-  running: "running",
-  completed: "completed",
-  failed: "failed",
-  needs_human: "paused",
-  paused: "paused",
-  canceled: "canceled",
-};
-
-// Status color mapping
-function getStatusStyle(status: string): {
-  color: string;
-  bgColor: string;
-  borderColor: string;
-} {
-  switch (status) {
-    case "pending":
-    case "claimed":
-      return {
-        color: "text-sky-400",
-        bgColor: "bg-sky-500/10",
-        borderColor: "border-sky-500/30",
-      };
-    case "running":
-      return {
-        color: "text-primary",
-        bgColor: "bg-primary/10",
-        borderColor: "border-primary/30",
-      };
-    case "completed":
-      return {
-        color: "text-emerald-400",
-        bgColor: "bg-emerald-500/10",
-        borderColor: "border-emerald-500/30",
-      };
-    case "failed":
-      return {
-        color: "text-rose-400",
-        bgColor: "bg-rose-500/10",
-        borderColor: "border-rose-500/30",
-      };
-    case "paused":
-    case "needs_human":
-      return {
-        color: "text-amber-400",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-      };
-    default:
-      return {
-        color: "text-muted-foreground",
-        bgColor: "bg-muted/50",
-        borderColor: "border-border",
-      };
-  }
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
-}
-
 interface StatCardProps {
   label: string;
   value: number;
@@ -123,17 +45,29 @@ function StatCard({ label, value, icon: Icon, color, bgColor, borderColor, index
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border bg-card transition-all duration-300",
+        "group relative overflow-hidden border bg-card transition-all duration-300",
         "hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]",
         "animate-in fade-in slide-in-from-bottom-2",
         borderColor,
       )}
       style={{ animationDelay: `${index * 50}ms`, animationFillMode: "both" }}
     >
+      {/* Grid pattern background */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
+        <div
+          className="h-full w-full"
+          style={{
+            backgroundImage:
+              "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+            backgroundSize: "16px 16px",
+          }}
+        />
+      </div>
+
       {/* Left indicator strip */}
       <div className={cn("absolute left-0 top-0 h-full w-1", bgColor)} />
 
-      <div className="flex items-center justify-between p-4">
+      <div className="relative flex items-center justify-between p-4">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {label}
@@ -142,7 +76,7 @@ function StatCard({ label, value, icon: Icon, color, bgColor, borderColor, index
         </div>
         <div
           className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-lg border",
+            "flex h-10 w-10 items-center justify-center border",
             bgColor,
             borderColor,
           )}
@@ -202,7 +136,7 @@ function TaskRow({
         <Badge
           variant={statusToVariant[task.status] ?? "secondary"}
           className={cn(
-            "shrink-0 rounded border text-[10px] uppercase tracking-wider",
+            "shrink-0 border text-[10px] uppercase tracking-wider",
             statusStyle.bgColor,
             statusStyle.borderColor,
             statusStyle.color,
@@ -233,8 +167,8 @@ export function Dashboard() {
       <Container className="py-6 lg:py-8">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-12 w-12 border-2 border-border" />
+            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Initializing command center...</p>
         </div>
@@ -258,7 +192,7 @@ export function Dashboard() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
                 <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -279,7 +213,7 @@ export function Dashboard() {
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                "h-2.5 w-2.5 rounded-full",
+                "h-2.5 w-2.5",
                 isDaemonRunning
                   ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"
                   : "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]",
@@ -306,7 +240,7 @@ export function Dashboard() {
                 <span className="text-muted-foreground">Mode:</span>
                 <Badge
                   variant="outline"
-                  className="h-5 rounded border-primary/30 bg-primary/5 px-1.5 text-[10px] uppercase tracking-wider text-primary"
+                  className="h-5 border-primary/30 bg-primary/5 px-1.5 text-[10px] uppercase tracking-wider text-primary"
                 >
                   {status.mode}
                 </Badge>
@@ -369,9 +303,9 @@ export function Dashboard() {
 
           {/* Repos Count */}
           {status.stats.repoCount === 0 ? (
-            <div className="mb-8 overflow-hidden rounded-lg border border-dashed border-border bg-card/50">
+            <div className="mb-8 overflow-hidden border border-dashed border-border bg-card/50">
               <div className="flex flex-col items-center justify-center py-16">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+                <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
                   <FolderGit2 className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <p className="mt-4 text-sm font-medium text-foreground">
@@ -409,16 +343,16 @@ export function Dashboard() {
           )}
         </>
       ) : (
-        <div className="mb-8 overflow-hidden rounded-lg border border-rose-500/30 bg-rose-500/5">
+        <div className="mb-8 overflow-hidden border border-rose-500/30 bg-rose-500/5">
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-rose-500/30 bg-rose-500/10">
+            <div className="flex h-16 w-16 items-center justify-center border border-rose-500/30 bg-rose-500/10">
               <AlertCircle className="h-8 w-8 text-rose-400" />
             </div>
             <p className="mt-4 text-sm font-medium text-foreground">Daemon Not Running</p>
             <p className="mt-2 text-center text-xs text-muted-foreground">
               Start the Night Shift daemon to begin executing tasks
             </p>
-            <code className="mt-4 rounded-lg border border-border bg-muted/50 px-4 py-2 font-mono text-xs text-foreground">
+            <code className="mt-4 border border-border bg-muted/50 px-4 py-2 font-mono text-xs text-foreground">
               nightshift start
             </code>
           </div>
@@ -427,9 +361,9 @@ export function Dashboard() {
 
       {/* Empty State */}
       {isDaemonRunning && !hasTasks && (
-        <div className="overflow-hidden rounded-lg border border-dashed border-border bg-card/50">
+        <div className="overflow-hidden border border-dashed border-border bg-card/50">
           <div className="flex flex-col items-center justify-center py-16">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+            <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
               <ListTodo className="h-8 w-8 text-muted-foreground" />
             </div>
             <p className="mt-4 text-sm font-medium text-foreground">No tasks yet</p>
@@ -459,12 +393,12 @@ export function Dashboard() {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-border/50 bg-card">
+          <div className="overflow-hidden border border-border/50 bg-card">
             {recentTasksLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="relative">
-                  <div className="h-8 w-8 rounded-full border-2 border-border" />
-                  <div className="absolute inset-0 h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                  <div className="h-8 w-8 border-2 border-border" />
+                  <div className="absolute inset-0 h-8 w-8 animate-spin border-2 border-primary border-t-transparent" />
                 </div>
               </div>
             ) : recentTasks.length === 0 ? (

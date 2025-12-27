@@ -9,6 +9,8 @@
 
 import { useState } from "react";
 import { useDeleteRepo, useRepoBranches, useRepos, useUpdateRepo } from "@/hooks/useRepos";
+import { cn, formatDate } from "@/lib/utils";
+import { getExecutionModeStyle } from "@/lib/status";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,52 +45,6 @@ import {
   X,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
-import { cn } from "@/lib/utils";
-
-// Execution mode styling
-function getExecutionModeStyle(mode: string | null): {
-  color: string;
-  bgColor: string;
-  borderColor: string;
-  label: string;
-} {
-  switch (mode) {
-    case "worktree":
-      return {
-        color: "text-violet-400",
-        bgColor: "bg-violet-500/10",
-        borderColor: "border-violet-500/30",
-        label: "Worktree",
-      };
-    case "direct":
-      return {
-        color: "text-amber-400",
-        bgColor: "bg-amber-500/10",
-        borderColor: "border-amber-500/30",
-        label: "Direct",
-      };
-    default:
-      return {
-        color: "text-emerald-400",
-        bgColor: "bg-emerald-500/10",
-        borderColor: "border-emerald-500/30",
-        label: "Auto",
-      };
-  }
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffDays < 1) return "Today";
-  if (diffDays === 1) return "Yesterday";
-  if (diffDays < 7) return `${diffDays}d ago`;
-
-  return date.toLocaleDateString();
-}
 
 interface RepoCardProps {
   repo: {
@@ -110,7 +66,7 @@ function RepoCard({ repo, index, onEdit, onDelete }: RepoCardProps) {
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-lg border bg-card transition-all duration-300",
+        "group relative overflow-hidden border bg-card transition-all duration-300",
         "hover:border-primary/50 hover:shadow-[0_0_20px_rgba(var(--primary),0.1)]",
         "animate-in fade-in slide-in-from-bottom-2",
         "border-border",
@@ -139,7 +95,7 @@ function RepoCard({ repo, index, onEdit, onDelete }: RepoCardProps) {
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  "flex h-7 w-7 shrink-0 items-center justify-center rounded border",
+                  "flex h-7 w-7 shrink-0 items-center justify-center border",
                   modeStyle.bgColor,
                   modeStyle.borderColor,
                 )}
@@ -186,7 +142,7 @@ function RepoCard({ repo, index, onEdit, onDelete }: RepoCardProps) {
         <div className="flex flex-wrap items-center gap-2">
           <Badge
             variant="outline"
-            className="rounded border-border bg-muted/30 px-1.5 py-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
+            className="border-border bg-muted/30 px-1.5 py-0 font-mono text-[10px] uppercase tracking-wider text-muted-foreground"
           >
             <GitBranch className="mr-1 h-3 w-3" />
             {repo.defaultBranch}
@@ -194,7 +150,7 @@ function RepoCard({ repo, index, onEdit, onDelete }: RepoCardProps) {
           <Badge
             variant="outline"
             className={cn(
-              "rounded border px-1.5 py-0 text-[10px] uppercase tracking-wider",
+              "border px-1.5 py-0 text-[10px] uppercase tracking-wider",
               modeStyle.bgColor,
               modeStyle.borderColor,
               modeStyle.color,
@@ -333,7 +289,7 @@ export function Repos() {
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/30 bg-primary/10">
+              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
                 <Folder className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -390,8 +346,8 @@ export function Repos() {
       {isLoading && (
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
-            <div className="h-12 w-12 rounded-full border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="h-12 w-12 border-2 border-border" />
+            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
           </div>
           <p className="mt-4 text-sm text-muted-foreground">Loading repositories...</p>
         </div>
@@ -399,8 +355,8 @@ export function Repos() {
 
       {/* Empty State */}
       {!isLoading && (!repos || repos.length === 0) && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 py-20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+        <div className="flex flex-col items-center justify-center border border-dashed border-border bg-card/50 py-20">
+          <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Folder className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">No repositories configured</p>
@@ -416,8 +372,8 @@ export function Repos() {
 
       {/* No search results */}
       {!isLoading && repos && repos.length > 0 && filteredRepos?.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 py-20">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted/50">
+        <div className="flex flex-col items-center justify-center border border-dashed border-border bg-card/50 py-20">
+          <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Search className="h-8 w-8 text-muted-foreground" />
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">No matching repositories</p>
@@ -464,7 +420,7 @@ export function Repos() {
           </DialogHeader>
           <div className="space-y-6">
             {/* Repository info */}
-            <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
+            <div className="border border-border/50 bg-muted/20 p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Repository
               </p>
@@ -559,7 +515,7 @@ export function Repos() {
               >
                 <label
                   className={cn(
-                    "relative flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all",
+                    "relative flex cursor-pointer items-start gap-3 border-2 p-4 transition-all",
                     editExecutionMode === "auto"
                       ? "border-emerald-500/50 bg-emerald-500/5"
                       : "border-border bg-card hover:border-border-hover",
@@ -571,7 +527,7 @@ export function Repos() {
                       <span className="text-sm font-medium text-emerald-400">Auto</span>
                       <Badge
                         variant="outline"
-                        className="rounded border-emerald-500/30 bg-emerald-500/10 px-1 text-[10px] text-emerald-400"
+                        className="border-emerald-500/30 bg-emerald-500/10 px-1 text-[10px] text-emerald-400"
                       >
                         Recommended
                       </Badge>
@@ -584,7 +540,7 @@ export function Repos() {
 
                 <label
                   className={cn(
-                    "relative flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all",
+                    "relative flex cursor-pointer items-start gap-3 border-2 p-4 transition-all",
                     editExecutionMode === "worktree"
                       ? "border-violet-500/50 bg-violet-500/5"
                       : "border-border bg-card hover:border-border-hover",
@@ -601,7 +557,7 @@ export function Repos() {
 
                 <label
                   className={cn(
-                    "relative flex cursor-pointer items-start gap-3 rounded-lg border-2 p-4 transition-all",
+                    "relative flex cursor-pointer items-start gap-3 border-2 p-4 transition-all",
                     editExecutionMode === "direct"
                       ? "border-amber-500/50 bg-amber-500/5"
                       : "border-border bg-card hover:border-border-hover",
