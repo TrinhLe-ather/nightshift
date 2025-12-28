@@ -5,6 +5,7 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
+import { networkInterfaces } from "os";
 import { getVersionDisplay } from "@nightshift/shared";
 import { NIGHTSHIFT_DIR, PID_FILE } from "../../config/paths";
 import { ensureNightShiftDirectories } from "../../config/paths";
@@ -46,6 +47,24 @@ function isDaemonRunning(): boolean {
  */
 function writePidFile(): void {
   writeFileSync(PID_FILE, process.pid.toString(), "utf-8");
+}
+
+/**
+ * Get local IP address for LAN access
+ */
+function getLocalIpAddress(): string | null {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    const netInterface = nets[name];
+    if (!netInterface) continue;
+    for (const net of netInterface) {
+      // Skip internal (loopback) and non-IPv4 addresses
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -239,7 +258,13 @@ export async function startCommand(): Promise<void> {
   } as any);
 
   const localUrl = `http://localhost:${actualPort}`;
+  const lanIp = getLocalIpAddress();
+  const lanUrl = lanIp ? `http://${lanIp}:${actualPort}` : null;
+
   console.log(`Night Shift running at ${localUrl}`);
+  if (lanUrl) {
+    console.log(`LAN access: ${lanUrl}`);
+  }
   console.log(`Version: ${getVersionDisplay()}`);
   if (config.allowLan) {
     console.log("LAN access: Enabled (see PIN above)");

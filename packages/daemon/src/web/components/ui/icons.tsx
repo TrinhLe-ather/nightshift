@@ -107,6 +107,7 @@ export const SidebarRight = makeIcon("SidebarRight", SidebarRightIcon);
 // File icons
 export const File = makeIcon("File", File01Icon);
 export const FileEdit = makeIcon("FileEdit", FileEditIcon);
+export const FileCode = makeIcon("FileCode", FileEditIcon);
 export const FilePlus = makeIcon("FilePlus", FileAddIcon);
 export const FolderSearch = makeIcon("FolderSearch", FolderSearchIcon);
 export const Globe = makeIcon("Globe", Globe02Icon);
