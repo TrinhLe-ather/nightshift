@@ -31,7 +31,6 @@ import {
   LinkSquare01Icon,
   Loading03Icon,
   MoonIcon,
-  Movie01Icon,
   PauseIcon,
   PlayIcon,
   PlusSignIcon,
@@ -126,6 +125,6 @@ export const QrCode = makeIcon("QrCode", QrCode01Icon);
 export const Copy = makeIcon("Copy", Copy01Icon);
 
 // Narrative Studio icons
-export const Film = makeIcon("Film", Movie01Icon);
+export const Film = makeIcon("Film", PlayIcon);
 export const FileText = makeIcon("FileText", TextIcon);
 export const BookOpen = makeIcon("BookOpen", Book02Icon);

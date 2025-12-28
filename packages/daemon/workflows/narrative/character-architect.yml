@@ -1,0 +1,447 @@
+name: Character Architect
+category: narrative
+description: Develops deep, memorable characters worthy of AAA production - backstories, psychology, arcs, relationships, and distinct voices. Creates characters that players remember long after the credits roll.
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Character Foundation
+    model: opus
+    prompt: |
+      You are a **Master Character Architect** with decades of experience creating iconic game and film characters. Your characters have become cultural touchstones - complex, memorable, and deeply human.
+
+      A character development task has been submitted:
+
+      {{prompt}}
+
+      ## Your Task
+      Develop the foundational elements of the character(s).
+
+      ## Scope Detection
+      Determine the scope of this request:
+      - **GRANULAR MODE**: If focusing on a single character
+      - **HOLISTIC MODE**: If developing the full cast
+
+      Explicitly state which mode you're operating in.
+
+      ## Character Foundation Template
+
+      For each character, develop:
+
+      ### IDENTITY
+
+      #### The Basics
+      - **Full Name**: And what different people call them
+      - **Age**: And how it affects them
+      - **Background**: One-paragraph origin summary
+      - **Role in Story**: Protagonist, antagonist, ally, etc.
+
+      #### The Contradiction
+      Every great character has an internal contradiction:
+      - **External Presentation**: How the world sees them
+      - **Internal Reality**: Who they really are
+      - **The Gap**: What they hide or deny
+
+      #### The Want vs. The Need
+      - **WANT** (External Goal): What they're actively pursuing
+      - **NEED** (Internal Growth): What they must learn/become
+      - **The Conflict**: Why getting the want doesn't satisfy the need
+
+      ### PSYCHOLOGY
+
+      #### The Wound
+      The formative trauma or experience that shaped them:
+      - What happened?
+      - How old were they?
+      - What did they conclude about the world?
+      - How does it affect their behavior NOW?
+
+      #### Defense Mechanisms
+      How they protect themselves from pain:
+      - Psychological patterns
+      - Behavioral habits
+      - Relationship patterns
+
+      #### Core Fear
+      The deepest fear that drives their actions:
+      - What terrifies them most?
+      - How do they avoid confronting it?
+      - When will the story force them to face it?
+
+      #### Core Desire
+      The deepest longing beneath their goals:
+      - What do they truly crave?
+      - Why can't they just ask for it?
+      - How might they finally get it?
+
+      ### DISTINCTIVENESS
+
+      #### Unique Traits
+      What makes them unforgettable:
+      - Physical distinctiveness
+      - Behavioral quirks
+      - Catchphrases or speech patterns
+      - Signature moments
+
+      #### Contradictory Traits
+      Complexity comes from contradiction:
+      - A weakness that's also a strength
+      - A belief they violate in practice
+      - A fear of becoming what they already are
+
+      ## Quality Standards
+      - No cardboard cutouts - every character needs depth
+      - Avoid stereotypes unless subverting them
+      - Characters should surprise us while staying consistent
+      - Flaws must be real, not "cute" weaknesses
+
+      ## Output
+      Complete Character Foundation Document for all developed characters.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Character Arcs
+    model: opus
+    prompt: |
+      Character foundations established. Now design their arcs.
+
+      ## Character Arc Framework
+
+      ### Arc Types
+
+      Identify each character's arc type:
+
+      #### POSITIVE ARC (Change for Better)
+      - Starts with a lie they believe
+      - Experiences truth through story events
+      - Overcomes flaw and achieves need
+
+      #### NEGATIVE ARC (Fall/Corruption)
+      - Starts with a truth or potential
+      - Gets corrupted by events or choices
+      - Ends worse than they started
+
+      #### FLAT ARC (Steadfast Hero)
+      - Knows a truth others don't
+      - Maintains conviction through trials
+      - Changes the world, not themselves
+
+      #### TESTING ARC (Tested Faith)
+      - Holds a belief
+      - Has it severely tested
+      - Emerges with refined/evolved version
+
+      ### Arc Structure
+
+      For each character with an arc:
+
+      #### STARTING STATE
+      - The lie/truth they hold
+      - Behavioral manifestation
+      - What they think they want
+      - Status quo comfort zone
+
+      #### INCITING DISRUPTION
+      - What event shakes their world?
+      - First cracks in their armor
+      - Initial resistance to change
+
+      #### PROGRESSIVE CHALLENGES
+      - 3-5 key moments that push their arc
+      - Each should escalate in stakes/difficulty
+      - Moments of backsliding (two steps forward, one back)
+
+      #### CRISIS POINT
+      - The moment of maximum pressure
+      - Old self vs. new self in direct conflict
+      - The choice that defines them
+
+      #### RESOLUTION
+      - Who have they become?
+      - How is this visible in behavior?
+      - What's the final image of this character?
+
+      ## Branching Arc Considerations
+
+      Your game has TWO ENDINGS. Address:
+
+      ### Arc Variations by Ending
+      - How does this character's arc differ in Ending A vs. Ending B?
+      - Which choices affect their development?
+      - Do they survive in both endings?
+      - What's their final state in each path?
+
+      ### Player-Influenced Arcs
+      - Which character arcs are affected by player choice?
+      - Which are fixed regardless of path?
+      - How do player actions become part of character development?
+
+      ## Arc Interweaving
+      Show how character arcs intersect:
+      - Characters who challenge each other's growth
+      - Parallel arcs (similar journeys, different outcomes)
+      - Mirror characters (showing alternative paths)
+
+      ## Output
+      Complete Character Arc Document mapping all character journeys.
+    maxRetries: 2
+
+  - name: Relationships & Dynamics
+    model: opus
+    prompt: |
+      Arcs designed. Now build the relationship architecture.
+
+      ## Relationship Web
+
+      ### Core Relationships
+
+      For each significant relationship:
+
+      #### RELATIONSHIP PROFILE
+
+      **[Character A] ↔ [Character B]**
+
+      ##### History
+      - How did they meet?
+      - Key shared experiences
+      - Formative moments in the relationship
+
+      ##### Current State
+      - Nature of relationship (allies, enemies, lovers, rivals, etc.)
+      - Power dynamic (who holds power? does it shift?)
+      - What each gets from the other
+      - Unspoken tensions
+
+      ##### Emotional Core
+      - What do they love about each other?
+      - What drives them crazy about each other?
+      - The thing they'll never say
+
+      ##### Story Function
+      - How does this relationship serve the narrative?
+      - Key scenes where this relationship is tested
+      - How the relationship changes by the end
+
+      ##### Dialogue Dynamics
+      - How do they talk to each other? (formal, casual, playful, tense)
+      - Private jokes or references
+      - Topics they avoid
+      - How they argue
+
+      ### Relationship Types to Include
+
+      Ensure the web includes:
+      - **The Core Bond**: The relationship that matters most to the protagonist
+      - **The Mentor Figure**: Who teaches/guides (even if flawed)
+      - **The Shadow**: A dark mirror or rival
+      - **The Conscience**: Who calls out the protagonist
+      - **The Comic Relief**: Who provides levity (without being trivial)
+      - **The Wild Card**: Unpredictable alliance
+
+      ### Relationship Evolution by Branch
+
+      For your two-ending structure:
+      - Which relationships are affected by player choices?
+      - Which relationships determine the ending?
+      - Relationship states at each ending:
+        - Ending A: [relationship outcomes]
+        - Ending B: [relationship outcomes]
+
+      ## Relationship Conflict Matrix
+
+      Create a table showing:
+      | Character | Allies With | In Conflict With | Complicated With |
+      |-----------|-------------|------------------|------------------|
+
+      ## Ensemble Dynamics
+
+      ### Group Scenes
+      - How does the group dynamic work?
+      - Who's the leader? Who challenges?
+      - Alliances within the group
+      - The weakest link
+
+      ### Betrayal Potential
+      - Who could betray whom?
+      - What would cause it?
+      - Is there a betrayal in your story?
+
+      ## Output
+      Complete Relationship Architecture Document with web mapping.
+    maxRetries: 2
+
+  - name: Voice & Dialogue Profiles
+    model: opus
+    prompt: |
+      Relationships established. Now define each character's voice.
+
+      ## Character Voice Profiles
+
+      For each significant character:
+
+      ### VOICE PROFILE TEMPLATE
+
+      #### Speech Patterns
+
+      ##### Vocabulary
+      - **Education Level**: How sophisticated is their language?
+      - **Profession/Background**: What jargon do they use?
+      - **Regional/Cultural**: Dialect, accent, cultural references
+      - **Favorite Words**: Words they use more than others
+      - **Avoided Words**: Words they'd never say
+
+      ##### Sentence Structure
+      - **Length**: Short and punchy? Long and flowing?
+      - **Complexity**: Simple or compound sentences?
+      - **Rhythm**: Staccato? Musical? Rambling?
+      - **Questions**: Do they ask or declare?
+
+      ##### Delivery
+      - **Speed**: Fast talker? Deliberate pauser?
+      - **Volume**: Quiet intensity? Booming presence?
+      - **Emotion Display**: Expressive or restrained?
+      - **Silence Usage**: Comfortable with quiet?
+
+      #### Personality in Speech
+
+      ##### Humor Style
+      - Do they make jokes? What kind?
+      - Self-deprecating or mocking others?
+      - Dark humor? Puns? Sarcasm?
+
+      ##### Conflict Style
+      - How do they argue?
+      - Do they escalate or de-escalate?
+      - Weapons: logic? emotion? silence?
+      - What triggers them?
+
+      ##### Intimacy Style
+      - How do they express affection?
+      - What do they sound like vulnerable?
+      - What would they say they love someone without saying "I love you"?
+
+      #### Signature Elements
+
+      ##### Catchphrases
+      - Repeated phrases (use sparingly - 2-3 per character)
+      - Why do they say this?
+      - When do they use it?
+
+      ##### Verbal Tics
+      - Filler words ("um," "you know," "basically")
+      - Starting phrases ("Listen," "Look," "Here's the thing")
+      - Trailing habits
+
+      ##### What They Don't Say
+      - Topics they avoid
+      - Emotions they won't express directly
+      - The subtext they carry
+
+      ### Voice Differentiation Test
+
+      Create a test: Write the same information delivered by 3 different characters.
+      Example: "We need to leave now."
+
+      Show how each character would say this differently - if you removed character names, readers should still identify the speaker.
+
+      ## Dialogue Sample Scenes
+
+      Write 2-3 short dialogue exchanges (10-15 lines each) showcasing:
+      - Characters in conflict
+      - Characters in collaboration
+      - Characters under pressure
+
+      These serve as voice reference for future writing.
+
+      ## Output
+      Complete Voice & Dialogue Profile Document for all major characters.
+    maxRetries: 2
+
+  - name: Character Bible Assembly
+    model: opus
+    prompt: |
+      Now assemble the complete **Character Bible** - the canonical reference for all character-related creative decisions.
+
+      ## Character Bible Structure
+
+      ### COVER PAGE
+      - Project Title
+      - "Character Bible"
+      - Version & Date
+      - Cast Overview (names and one-line roles)
+
+      ### SECTION 1: CAST OVERVIEW
+      - Character lineup at a glance
+      - Visual casting suggestions (describe types, not specific actors)
+      - Hierarchy of importance (protagonist, key supporting, secondary)
+
+      ### SECTION 2: PROTAGONIST DEEP DIVE
+      Complete profile including:
+      - Full character foundation
+      - Complete arc mapping
+      - Relationship summary
+      - Voice profile
+      - Key scenes that define them
+      - Evolution through branching paths
+
+      ### SECTION 3: ANTAGONIST/SHADOW DEEP DIVE
+      Complete profile as above, plus:
+      - How they mirror the protagonist
+      - Their justified perspective
+      - Why they're compelling, not just evil
+
+      ### SECTION 4: SUPPORTING CAST PROFILES
+      For each key supporting character:
+      - Foundation summary
+      - Arc summary
+      - Key relationships
+      - Voice quick reference
+      - Role in branching narrative
+
+      ### SECTION 5: RELATIONSHIP ARCHITECTURE
+      - Relationship web visualization (text-based diagram)
+      - Key relationship deep dives
+      - Group dynamics
+      - Relationship evolution by ending
+
+      ### SECTION 6: VOICE REFERENCE GUIDE
+      - Quick comparison table of speaking styles
+      - Sample dialogue scenes
+      - Differentiation tests
+      - Things each character would NEVER say
+
+      ### SECTION 7: CHARACTER-THEME CONNECTIONS
+      - How each character embodies the theme
+      - Character arcs that prove/challenge the theme
+      - Ensemble as thematic argument
+
+      ### SECTION 8: BRANCHING IMPACT ON CHARACTERS
+      - Character fate table by ending
+      - Relationship outcomes by ending
+      - Arc variations summary
+      - Player choice impact on character development
+
+      ### SECTION 9: CASTING & PERFORMANCE NOTES
+      - Archetype references (film/game characters for reference)
+      - Voice actor direction notes
+      - Physicality suggestions
+      - Key emotional moments per character
+
+      ### SECTION 10: OPEN QUESTIONS
+      - Character elements still in development
+      - Dependencies on story/world decisions
+      - Potential for expansion (DLC, sequels)
+
+      ## Quality Verification
+
+      Before finalizing:
+      - Can you distinguish each character by voice alone?
+      - Does every character have a justified perspective?
+      - Are the arcs emotionally satisfying?
+      - Do relationships feel organic, not convenient?
+      - Are both endings fairly supported by character development?
+
+      ## Output
+      The complete Character Bible in markdown format, ready for production use.
+    maxRetries: 2
