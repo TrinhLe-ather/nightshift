@@ -6,14 +6,10 @@
  * across all workflow steps.
  */
 
-import type { Task } from "@nightshift/shared";
+import type { Task } from "@/db/drizzle";
 import { SessionManager } from "./session-manager";
 import { StreamingWorkflowRunner } from "./streaming-workflow-runner";
-import {
-  getWorkflow,
-  type WorkflowDefinition,
-  createSmartCommitStep,
-} from "../workflows/loader";
+import { getWorkflow, type WorkflowDefinition, createSmartCommitStep } from "../workflows/loader";
 import { updateTask } from "../tasks/repository";
 import { getDb, workflowRuns as workflowRunsTable } from "../db/drizzle";
 import { eq } from "drizzle-orm";
@@ -50,15 +46,35 @@ export class WorkflowExecutor {
 
     this.currentWorkflow = workflow;
 
-    console.log(`[Workflow] Executing ${workflow.name} for task ${task.id}`);
+    // Check if this is a continued task
+    const isContinuation = !!(task.continuePrompt && task.sdkSessionId);
+
+    console.log(
+      `[Workflow] ${isContinuation ? "Continuing" : "Executing"} ${workflow.name} for task ${task.id}`,
+    );
 
     // Create workflow run record
     const runId = this.createWorkflowRun(task.id, task.workflowId);
 
-    // Auto-append smart commit step
-    const steps = [...workflow.steps];
-    const smartCommitStep = createSmartCommitStep(task.prompt);
-    steps.push(smartCommitStep);
+    // Build steps: for continuation, just send the continue prompt directly
+    let steps: typeof workflow.steps;
+    if (isContinuation) {
+      // Single step with the continue prompt
+      steps = [
+        {
+          name: "Continue",
+          prompt: task.continuePrompt!,
+        },
+      ];
+      // Add smart commit step
+      const smartCommitStep = createSmartCommitStep(task.continuePrompt!);
+      steps.push(smartCommitStep);
+    } else {
+      // Normal execution: use workflow steps
+      steps = [...workflow.steps];
+      const smartCommitStep = createSmartCommitStep(task.prompt);
+      steps.push(smartCommitStep);
+    }
 
     // Update task with initial state
     updateTask(task.id, {
@@ -122,6 +138,13 @@ export class WorkflowExecutor {
       },
     });
 
+    // Store SDK session ID for future resume (continue task feature)
+    // Also clear continuePrompt so it's not reused
+    updateTask(task.id, {
+      ...(result.sdkSessionId && { sdkSessionId: result.sdkSessionId }),
+      continuePrompt: undefined,
+    });
+
     // Handle result
     if (!result.success) {
       // Important: throw so TaskExecutor does NOT treat this as success and mark COMPLETED.
@@ -160,7 +183,7 @@ export class WorkflowExecutor {
    */
   private updateWorkflowRun(
     runId: string,
-    updates: Partial<{ stepResults: string; completedSteps: number }>
+    updates: Partial<{ stepResults: string; completedSteps: number }>,
   ) {
     const db = getDb();
     db.update(workflowRunsTable).set(updates).where(eq(workflowRunsTable.id, runId)).run();

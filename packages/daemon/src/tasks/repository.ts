@@ -4,9 +4,9 @@
  * Handles all database operations for tasks using Drizzle ORM.
  */
 
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
-import { type NewTask, getDb, repos, tasks } from "../db/drizzle";
-import type { CreateTask, Priority, Task, TaskState, UpdateTask } from "@nightshift/shared";
+import { and, count, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { type NewTask, type Task, type TaskStatus, getDb, repos, tasks } from "../db/drizzle";
+import type { CreateTask, Priority, UpdateTask } from "@nightshift/shared";
 import { TaskState as TaskStateEnum } from "@nightshift/shared";
 import { ensureInitialPromptInTranscript } from "./transcript";
 
@@ -59,7 +59,6 @@ export function createTask(input: CreateTask): Task {
     githubIssueUrl: input.githubIssueUrl ?? null,
     branch: input.branch ?? null,
     createdAt: now,
-    source: "local" as const,
     autoYes: input.autoYes ?? false,
     // Workflow-only: ensure every task has a workflowId.
     workflowId: input.workflowId ?? "quick-task",
@@ -77,7 +76,8 @@ export function createTask(input: CreateTask): Task {
     dataDirOverride: process.env.NIGHTSHIFT_DATA_DIR,
   });
 
-  return mapDbTaskToTask(newTask as typeof tasks.$inferSelect);
+  // Fetch the created task to get the full object with defaults
+  return db.select().from(tasks).where(eq(tasks.id, id)).get()!;
 }
 
 /**
@@ -85,17 +85,14 @@ export function createTask(input: CreateTask): Task {
  */
 export function getTaskById(taskId: string): Task | null {
   const db = getDb();
-
-  const result = db.select().from(tasks).where(eq(tasks.id, taskId)).get();
-
-  return result ? mapDbTaskToTask(result) : null;
+  return db.select().from(tasks).where(eq(tasks.id, taskId)).get() ?? null;
 }
 
 /**
  * Get all tasks with optional filtering
  */
 export interface GetTasksOptions {
-  status?: TaskState | TaskState[];
+  status?: TaskStatus | TaskStatus[];
   repoId?: string;
   priority?: Priority | Priority[];
   limit?: number;
@@ -106,7 +103,7 @@ export function getTasks(options: GetTasksOptions = {}): Task[] {
   const db = getDb();
 
   // Build conditions array
-  const conditions = [];
+  const conditions: SQL[] = [];
 
   if (options.status) {
     if (Array.isArray(options.status)) {
@@ -145,9 +142,7 @@ export function getTasks(options: GetTasksOptions = {}): Task[] {
     query = query.offset(options.offset) as typeof query;
   }
 
-  const results = query.all();
-
-  return results.map(mapDbTaskToTask);
+  return query.all();
 }
 
 /**
@@ -162,12 +157,7 @@ export function updateTask(taskId: string, updates: UpdateTask): Task | null {
   if (updates.status !== undefined) setValues.status = updates.status;
   if (updates.name !== undefined) setValues.name = updates.name;
   if (updates.priority !== undefined) setValues.priority = updates.priority;
-  if (updates.clarificationResponse !== undefined)
-    setValues.clarificationResponse = updates.clarificationResponse;
   if (updates.failureCode !== undefined) setValues.failureCode = updates.failureCode;
-  if (updates.needsHumanCode !== undefined) setValues.needsHumanCode = updates.needsHumanCode;
-  if (updates.needsHumanQuestion !== undefined)
-    setValues.needsHumanQuestion = updates.needsHumanQuestion;
   if (updates.prUrl !== undefined) setValues.prUrl = updates.prUrl;
   if (updates.claimedAt !== undefined) setValues.claimedAt = updates.claimedAt;
   if (updates.startedAt !== undefined) setValues.startedAt = updates.startedAt;
@@ -189,6 +179,13 @@ export function updateTask(taskId: string, updates: UpdateTask): Task | null {
   // Workflow fields
   if (updates.currentStep !== undefined) setValues.currentStep = updates.currentStep;
   if (updates.totalSteps !== undefined) setValues.totalSteps = updates.totalSteps;
+
+  // Model selection
+  if (updates.model !== undefined) setValues.model = updates.model;
+
+  // Session resume fields (continue task feature)
+  if (updates.sdkSessionId !== undefined) setValues.sdkSessionId = updates.sdkSessionId;
+  if (updates.continuePrompt !== undefined) setValues.continuePrompt = updates.continuePrompt;
 
   if (Object.keys(setValues).length === 0) {
     // No updates provided
@@ -265,15 +262,15 @@ export function getNextPendingTask(): Task | null {
     ELSE 5
   END`;
 
-  const result = db
-    .select()
-    .from(tasks)
-    .where(eq(tasks.status, "pending"))
-    .orderBy(priorityOrder, tasks.createdAt)
-    .limit(1)
-    .get();
-
-  return result ? mapDbTaskToTask(result) : null;
+  return (
+    db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.status, "pending"))
+      .orderBy(priorityOrder, tasks.createdAt)
+      .limit(1)
+      .get() ?? null
+  );
 }
 
 /**
@@ -309,67 +306,21 @@ export function claimNextPendingTask(): Task | null {
   // 1. Finds the highest priority pending task
   // 2. Updates it to claimed status
   // 3. Returns the updated row
-  const result = db
-    .update(tasks)
-    .set({
-      status: "claimed",
-      claimedAt: now,
-    })
-    .where(
-      eq(
-        tasks.id,
-        // Subquery to select the highest priority pending task
-        sql`(SELECT ${tasks.id} FROM ${tasks} WHERE ${tasks.status} = 'pending' ORDER BY ${priorityOrder}, ${tasks.createdAt} LIMIT 1)`,
-      ),
-    )
-    .returning()
-    .get();
-
-  return result ? mapDbTaskToTask(result) : null;
-}
-
-/**
- * Map database task to shared Task type
- *
- * Converts null values to undefined for optional fields
- */
-function mapDbTaskToTask(row: typeof tasks.$inferSelect): Task {
-  return {
-    id: row.id,
-    prompt: row.prompt,
-    name: row.name ?? undefined,
-    repoId: row.repoId ?? undefined,
-    repoPath: row.repoPath ?? undefined,
-    priority: row.priority as Priority,
-    status: row.status as TaskState,
-    failureCode: row.failureCode ?? undefined,
-    needsHumanCode: row.needsHumanCode ?? undefined,
-    needsHumanQuestion: row.needsHumanQuestion ?? undefined,
-    clarificationResponse: row.clarificationResponse ?? undefined,
-    githubIssueUrl: row.githubIssueUrl ?? undefined,
-    branch: row.branch ?? undefined,
-    prUrl: row.prUrl ?? undefined,
-    createdAt: row.createdAt,
-    claimedAt: row.claimedAt ?? undefined,
-    startedAt: row.startedAt ?? undefined,
-    completedAt: row.completedAt ?? undefined,
-    remoteId: row.remoteId ?? undefined,
-    source: row.source as "local" | "remote",
-    // Worktree & execution mode fields
-    executionMode: (row.executionMode as "worktree" | "direct") ?? undefined,
-    workDir: row.workDir ?? undefined,
-    baseCommitSha: row.baseCommitSha ?? undefined,
-    originalBranch: row.originalBranch ?? undefined,
-    // Pause/resume fields
-    pausedAt: row.pausedAt ?? undefined,
-    pauseReason: (row.pauseReason as "manual" | "needs_human" | "rate_limit") ?? undefined,
-    humanQuestion: row.humanQuestion ?? undefined,
-    humanResponse: row.humanResponse ?? undefined,
-    // Auto-yes
-    autoYes: row.autoYes ?? false,
-    // Workflow fields
-    workflowId: row.workflowId ?? undefined,
-    currentStep: row.currentStep ?? undefined,
-    totalSteps: row.totalSteps ?? undefined,
-  };
+  return (
+    db
+      .update(tasks)
+      .set({
+        status: "claimed",
+        claimedAt: now,
+      })
+      .where(
+        eq(
+          tasks.id,
+          // Subquery to select the highest priority pending task
+          sql`(SELECT ${tasks.id} FROM ${tasks} WHERE ${tasks.status} = 'pending' ORDER BY ${priorityOrder}, ${tasks.createdAt} LIMIT 1)`,
+        ),
+      )
+      .returning()
+      .get() ?? null
+  );
 }

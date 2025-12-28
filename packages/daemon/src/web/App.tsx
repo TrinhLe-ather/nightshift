@@ -8,6 +8,7 @@ import {
   Settings,
   TaskChat,
   Tasks,
+  Terminal,
   Workflows,
   WorkflowDetail,
   WorkflowForm,
@@ -49,6 +50,7 @@ function App() {
           <Route path="/workflows/:id" element={<WorkflowDetail />} />
           <Route path="/workflows/:id/edit" element={<WorkflowForm mode="edit" />} />
           <Route path="/repos" element={<Repos />} />
+          <Route path="/terminal" element={<Terminal />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

@@ -21,7 +21,7 @@ export {
 } from "./client";
 
 // Schema tables
-export { tasks, repos, sessions, config, syncQueue, workflows, workflowRuns, repoLocks } from "./schema/schema";
+export { tasks, repos, sessions, config, workflows, workflowRuns, repoLocks } from "./schema/schema";
 
 // Relations
 export { tasksRelations, reposRelations, sessionsRelations, workflowsRelations, workflowRunsRelations, repoLocksRelations } from "./schema/schema";
@@ -36,8 +36,6 @@ export type {
   NewSession,
   Config,
   NewConfig,
-  SyncQueueItem,
-  NewSyncQueueItem,
   Workflow,
   NewWorkflow,
   WorkflowRun,
@@ -50,18 +48,12 @@ export type {
 export {
   priorityEnum,
   taskStatusEnum,
-  sourceEnum,
   executionModeEnum,
   executionModeConfigEnum,
   pauseReasonEnum,
-  entityTypeEnum,
-  syncActionEnum,
   type Priority,
   type TaskStatus,
-  type Source,
   type ExecutionMode,
   type ExecutionModeConfig,
   type PauseReason,
-  type EntityType,
-  type SyncAction,
 } from "./schema/schema";

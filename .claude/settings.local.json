@@ -24,7 +24,11 @@
       "Bash(sqlite3:*)",
       "WebFetch(domain:orpc.dev)",
       "Bash(bun pm:*)",
-      "Skill(frontend-design:frontend-design)"
+      "Skill(frontend-design:frontend-design)",
+      "WebFetch(domain:github.com)",
+      "mcp__plugin_context7_context7__get-library-docs",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

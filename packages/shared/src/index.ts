@@ -64,7 +64,6 @@ export {
   // Enum schemas
   prioritySchema,
   taskStateSchema,
-  taskSourceSchema,
   eventLevelSchema,
   executionModeSchema,
   executionModeConfigSchema,
@@ -90,7 +89,6 @@ export {
 
 export type {
   Priority,
-  TaskSource,
   ExecutionMode,
   ExecutionModeConfig,
   PauseReason,

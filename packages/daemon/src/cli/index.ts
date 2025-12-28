@@ -11,7 +11,6 @@ import { statusCommand } from "./commands/status";
 import { versionCommand } from "./commands/version";
 import { doctorCommand } from "./commands/doctor";
 import { configCommand } from "./commands/config";
-import { addCommand } from "./commands/add";
 import { reposCommand } from "./commands/repos";
 
 /**
@@ -33,7 +32,6 @@ Commands:
              Options:
                -i, --interactive    Run in foreground (default: background)
   status     Show daemon status and active tasks
-  add        Add a new task to the queue
   repos      Manage configured repositories
   config     Open settings page in browser
   doctor     Validate system setup and prerequisites
@@ -45,7 +43,6 @@ Examples:
   nightshift start -i           # Start in foreground (interactive)
   nightshift restart            # Restart daemon
   nightshift status
-  nightshift add "Fix the login bug"
   nightshift repos add /path/to/repo
   nightshift repos list
   nightshift doctor
@@ -75,10 +72,6 @@ export async function cli(): Promise<void> {
 
     case "status":
       await statusCommand();
-      break;
-
-    case "add":
-      await addCommand();
       break;
 
     case "repos":

@@ -10,17 +10,25 @@
  */
 
 import _0000 from "./migrations/0000_perpetual_zodiak.sql" with { type: "text" };
+import _0001 from "./migrations/0001_grey_agent_zero.sql" with { type: "text" };
+import _0002 from "./migrations/0002_dear_patriot.sql" with { type: "text" };
 
 export type Migration = {
   tag: string;
   sql: string;
 };
 
-console.log(_0000);
-
 export const migrations: Migration[] = [
   {
     tag: "0000_perpetual_zodiak",
     sql: _0000,
+  },
+  {
+    tag: "0001_grey_agent_zero",
+    sql: _0001,
+  },
+  {
+    tag: "0002_dear_patriot",
+    sql: _0002,
   },
 ];

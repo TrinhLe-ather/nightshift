@@ -34,9 +34,6 @@ export type ExecutionModeConfig = z.infer<typeof executionModeConfigSchema>;
 export const pauseReasonSchema = z.enum(["manual", "needs_human", "rate_limit"]);
 export type PauseReason = z.infer<typeof pauseReasonSchema>;
 
-export const taskSourceSchema = z.enum(["local", "remote"]);
-export type TaskSource = z.infer<typeof taskSourceSchema>;
-
 export const eventLevelSchema = z.enum(["info", "warn", "error", "debug"]);
 
 export const modelSchema = z.enum(["haiku", "sonnet", "opus"]).optional();
@@ -51,79 +48,75 @@ export const taskSchema = z.object({
   /** Unique task identifier */
   id: z.string(),
   /** Task description/prompt text */
-  prompt: z.string().min(1, "Prompt is required"),
+  prompt: z.string(),
   /** Generated task name (max 50 chars) */
-  name: z.string().max(50).optional(),
+  name: z.string().nullable(),
   /** Reference to repo by ID */
-  repoId: z.string().optional(),
+  repoId: z.string().nullable(),
   /** Absolute path to repo (denormalized for quick access) */
-  repoPath: z.string().optional(),
+  repoPath: z.string().nullable(),
   /** Task priority level */
-  priority: prioritySchema.default("medium"),
+  priority: prioritySchema,
   /** Current task state */
   status: taskStateSchema,
   /** Error code when status=failed */
-  failureCode: z.string().optional(),
-  /** Error code when status=needs_human */
-  needsHumanCode: z.string().optional(),
-  /** Question for user when needs_human */
-  needsHumanQuestion: z.string().optional(),
-  /** User's response to clarification */
-  clarificationResponse: z.string().optional(),
+  failureCode: z.string().nullable(),
   /** Optional GitHub issue link for context */
-  githubIssueUrl: z.string().url().optional(),
+  githubIssueUrl: z.string().nullable(),
   /** Git branch for task */
-  branch: z.string().optional(),
+  branch: z.string().nullable(),
   /** Created PR URL */
-  prUrl: z.string().url().optional(),
+  prUrl: z.string().nullable(),
   /** ISO-8601 timestamp when task was created */
-  createdAt: z.string().datetime(),
+  createdAt: z.string(),
   /** ISO-8601 timestamp when task was claimed */
-  claimedAt: z.string().datetime().optional(),
+  claimedAt: z.string().nullable(),
   /** ISO-8601 timestamp when execution started */
-  startedAt: z.string().datetime().optional(),
+  startedAt: z.string().nullable(),
   /** ISO-8601 timestamp when task completed/failed */
-  completedAt: z.string().datetime().optional(),
-  /** Convex ID if synced (connected mode) */
-  remoteId: z.string().optional(),
-  /** Whether task originated locally or from remote */
-  source: taskSourceSchema.default("local"),
+  completedAt: z.string().nullable(),
 
   // === Worktree & Execution Mode Fields ===
   /** Resolved execution mode for this task */
-  executionMode: executionModeSchema.optional(),
+  executionMode: executionModeSchema.nullable(),
   /** Working directory (worktree path or repo path) */
-  workDir: z.string().optional(),
+  workDir: z.string().nullable(),
   /** SHA of commit when task started (for diffs) */
-  baseCommitSha: z.string().optional(),
+  baseCommitSha: z.string().nullable(),
   /** Original branch before task started (direct mode) */
-  originalBranch: z.string().optional(),
+  originalBranch: z.string().nullable(),
 
   // === Pause/Resume Fields ===
   /** ISO-8601 timestamp when task was paused */
-  pausedAt: z.string().datetime().optional(),
+  pausedAt: z.string().nullable(),
   /** Reason for pause */
-  pauseReason: pauseReasonSchema.optional(),
+  pauseReason: pauseReasonSchema.nullable(),
   /** Question from Claude requiring human input */
-  humanQuestion: z.string().optional(),
+  humanQuestion: z.string().nullable(),
   /** User's response to continue execution */
-  humanResponse: z.string().optional(),
+  humanResponse: z.string().nullable(),
 
   // === Auto-Yes Mode ===
   /** Enable auto-yes mode to auto-accept Claude prompts */
-  autoYes: z.boolean().default(false),
+  autoYes: z.boolean().nullable(),
 
   // === Model Selection ===
   /** Claude model to use for execution (overrides workflow default) */
-  model: modelSchema,
+  model: z.string().nullable(),
 
   // === Workflow Fields ===
   /** Reference to workflow definition */
-  workflowId: z.string().optional(),
+  workflowId: z.string().nullable(),
   /** Current step in workflow (0-indexed) */
-  currentStep: z.number().int().nonnegative().optional(),
+  currentStep: z.number().int().nullable(),
   /** Total number of steps in workflow */
-  totalSteps: z.number().int().nonnegative().optional(),
+  totalSteps: z.number().int().nullable(),
+
+  // === Session Resume Fields (Continue Task Feature) ===
+  /** Claude SDK session ID for resuming conversations */
+  sdkSessionId: z.string().nullable(),
+  /** Follow-up prompt when continuing a completed/failed task */
+  continuePrompt: z.string().nullable(),
 });
 
 export const createTaskSchema = taskSchema.pick({
@@ -143,10 +136,7 @@ export const updateTaskSchema = taskSchema
     status: true,
     name: true,
     priority: true,
-    clarificationResponse: true,
     failureCode: true,
-    needsHumanCode: true,
-    needsHumanQuestion: true,
     prUrl: true,
     claimedAt: true,
     startedAt: true,
@@ -170,6 +160,9 @@ export const updateTaskSchema = taskSchema
     workflowId: true,
     currentStep: true,
     totalSteps: true,
+    // Session resume fields
+    sdkSessionId: true,
+    continuePrompt: true,
   })
   .partial();
 

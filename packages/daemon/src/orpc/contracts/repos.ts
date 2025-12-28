@@ -18,19 +18,13 @@ import { GitOperations } from "../../executor/git-operations";
 import { SessionManager } from "../../executor/session-manager";
 import { resolveNightShiftDir } from "../../config/paths";
 import { execa } from "execa";
+import { createSelectSchema } from "drizzle-zod";
 
 // =============================================================================
 // Zod Schemas
 // =============================================================================
 
-const repoSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  path: z.string(),
-  defaultBranch: z.string().nullable(),
-  executionMode: z.enum(["auto", "worktree", "direct"]).nullable(),
-  createdAt: z.string(),
-});
+const repoSchema = createSelectSchema(repos);
 
 const taskStatsSchema = z.object({
   pending: z.number(),
@@ -866,6 +860,8 @@ const checkStatus = orpc
 // =============================================================================
 // Router Export
 // =============================================================================
+
+export type Repo = z.infer<typeof repoSchema>;
 
 export const reposRouter = {
   list,

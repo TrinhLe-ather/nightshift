@@ -18,7 +18,7 @@ import { type TaskSetupResult, setupTaskExecution, teardownTaskExecution } from 
 import { pauseTask } from "./task-lifecycle";
 import { claimNextPendingTask, getTaskById, getTasks, updateTask } from "../tasks/repository";
 import { EventLevel, EventType, TaskState } from "@nightshift/shared";
-import type { Task } from "@nightshift/shared";
+import type { Task } from "@/db/drizzle";
 import { WorkflowExecutor, WorkflowFailedError } from "./workflow-executor";
 
 const DEFAULT_POLL_INTERVAL_MS = 5000; // 5 seconds
@@ -283,7 +283,7 @@ export class TaskExecutor {
           workDir: setup.workDir,
           executionMode: setup.executionMode,
           baseCommitSha: setup.baseCommitSha,
-          originalBranch: setup.originalBranch,
+          originalBranch: setup.originalBranch ?? null,
           branch: setup.taskBranch,
         };
 

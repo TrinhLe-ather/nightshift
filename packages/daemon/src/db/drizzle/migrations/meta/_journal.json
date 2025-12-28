@@ -8,6 +8,20 @@
       "when": 1766830047827,
       "tag": "0000_perpetual_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1766846500326,
+      "tag": "0001_grey_agent_zero",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1766850891633,
+      "tag": "0002_dear_patriot",
+      "breakpoints": true
     }
   ]
 }

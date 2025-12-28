@@ -27,8 +27,6 @@ export const taskStatusEnum = [
 ] as const;
 export type TaskStatus = (typeof taskStatusEnum)[number];
 
-export const sourceEnum = ["local", "remote"] as const;
-export type Source = (typeof sourceEnum)[number];
 
 export const executionModeEnum = ["worktree", "direct"] as const;
 export type ExecutionMode = (typeof executionModeEnum)[number];
@@ -39,11 +37,6 @@ export type ExecutionModeConfig = (typeof executionModeConfigEnum)[number];
 export const pauseReasonEnum = ["manual", "needs_human", "rate_limit"] as const;
 export type PauseReason = (typeof pauseReasonEnum)[number];
 
-export const entityTypeEnum = ["task", "session", "config"] as const;
-export type EntityType = (typeof entityTypeEnum)[number];
-
-export const syncActionEnum = ["create", "update", "delete"] as const;
-export type SyncAction = (typeof syncActionEnum)[number];
 
 // ============================================================================
 // Tables
@@ -66,9 +59,6 @@ export const tasks = sqliteTable(
     priority: text("priority", { enum: priorityEnum }).default("medium"),
     status: text("status", { enum: taskStatusEnum }).notNull(),
     failureCode: text("failureCode"),
-    needsHumanCode: text("needsHumanCode"),
-    needsHumanQuestion: text("needsHumanQuestion"),
-    clarificationResponse: text("clarificationResponse"),
     githubIssueUrl: text("githubIssueUrl"),
     branch: text("branch"),
     prUrl: text("prUrl"),
@@ -76,8 +66,6 @@ export const tasks = sqliteTable(
     claimedAt: text("claimedAt"),
     startedAt: text("startedAt"),
     completedAt: text("completedAt"),
-    remoteId: text("remoteId"),
-    source: text("source", { enum: sourceEnum }).default("local"),
 
     // Worktree & Execution Mode Fields
     executionMode: text("executionMode", { enum: executionModeEnum }),
@@ -101,11 +89,14 @@ export const tasks = sqliteTable(
     workflowId: text("workflowId"),
     currentStep: integer("currentStep"),
     totalSteps: integer("totalSteps"),
+
+    // Session resume fields (for continue task feature)
+    sdkSessionId: text("sdkSessionId"), // Claude SDK session ID for resume
+    continuePrompt: text("continuePrompt"), // Follow-up prompt when continuing
   },
   (table) => [
     index("idx_tasks_status").on(table.status),
     index("idx_tasks_repoId").on(table.repoId),
-    index("idx_tasks_source").on(table.source),
     index("idx_tasks_createdAt").on(table.createdAt),
     index("idx_tasks_priority").on(table.priority),
     index("idx_tasks_workflowId").on(table.workflowId),
@@ -232,27 +223,6 @@ export const config = sqliteTable("config", {
   value: text("value").notNull(),
 });
 
-/**
- * Sync queue table - Pending uploads for connected mode
- *
- * Tracks entities that need syncing to Convex when connected.
- * Acts as a buffer for offline operation.
- */
-export const syncQueue = sqliteTable(
-  "sync_queue",
-  {
-    id: text("id").primaryKey(),
-    entityType: text("entityType", { enum: entityTypeEnum }).notNull(),
-    entityId: text("entityId").notNull(),
-    action: text("action", { enum: syncActionEnum }).notNull(),
-    createdAt: text("createdAt").notNull(),
-    syncedAt: text("syncedAt"),
-  },
-  (table) => [
-    index("idx_sync_queue_syncedAt").on(table.syncedAt),
-    index("idx_sync_queue_entityType").on(table.entityType),
-  ],
-);
 
 // ============================================================================
 // Relations
@@ -324,9 +294,6 @@ export type NewSession = typeof sessions.$inferInsert;
 
 export type Config = typeof config.$inferSelect;
 export type NewConfig = typeof config.$inferInsert;
-
-export type SyncQueueItem = typeof syncQueue.$inferSelect;
-export type NewSyncQueueItem = typeof syncQueue.$inferInsert;
 
 export type RepoLock = typeof repoLocks.$inferSelect;
 export type NewRepoLock = typeof repoLocks.$inferInsert;

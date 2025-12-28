@@ -5,7 +5,7 @@
  * Coordinates with task-setup for environment management.
  */
 
-import type { Task } from "@nightshift/shared";
+import type { Task } from "@/db/drizzle";
 import type { PauseReason } from "@nightshift/shared";
 import { EventLevel, EventType, TaskState } from "@nightshift/shared";
 import { getTaskById, updateTask } from "../tasks/repository";
@@ -238,3 +238,88 @@ This commit was automatically created when the task was paused.
 Resume the task to continue work.`;
 }
 
+/**
+ * Terminal states that allow continuation
+ */
+const CONTINUABLE_STATES: string[] = [TaskState.COMPLETED, TaskState.FAILED, TaskState.CANCELED];
+
+/**
+ * Continue a completed/failed/canceled task with a new prompt
+ *
+ * Uses Claude SDK session resume to maintain full conversation context.
+ * The task is reset to PENDING and re-enters the queue.
+ *
+ * @param taskId - Task to continue
+ * @param prompt - New prompt for continuation
+ * @param model - Optional model override for this continuation
+ * @param sessionManager - Session manager for logging events
+ */
+export async function continueTask(
+  taskId: string,
+  prompt: string,
+  model?: string,
+  sessionManager?: SessionManager,
+): Promise<LifecycleResult> {
+  const task = getTaskById(taskId);
+
+  if (!task) {
+    return {
+      success: false,
+      error: {
+        code: "TASK_NOT_FOUND",
+        message: `Task ${taskId} not found`,
+      },
+    };
+  }
+
+  // Validate state - can only continue from terminal states
+  if (!CONTINUABLE_STATES.includes(task.status)) {
+    return {
+      success: false,
+      error: {
+        code: "INVALID_STATE",
+        message: `Cannot continue task in ${task.status} state (must be completed, failed, or canceled)`,
+      },
+    };
+  }
+
+  // Validate that we have an SDK session to resume
+  if (!task.sdkSessionId) {
+    return {
+      success: false,
+      error: {
+        code: "NO_SESSION",
+        message: `Task ${taskId} has no SDK session to resume. Cannot continue.`,
+      },
+    };
+  }
+
+  // Update task: store continue prompt and reset to pending
+  const updatedTask = updateTask(taskId, {
+    continuePrompt: prompt,
+    status: TaskState.PENDING,
+    // Clear completion-related fields
+    completedAt: null,
+    failureCode: null,
+    // Keep sdkSessionId for resume
+    // Keep branch for reuse
+    // Set model override if provided
+    ...(model && { model }),
+  });
+
+  // Log event
+  if (sessionManager) {
+    sessionManager.emit(EventType.TASK_RESUMED, EventLevel.INFO, {
+      taskId,
+      continuePrompt: prompt.substring(0, 200),
+      previousStatus: task.status,
+    });
+  }
+
+  console.log(`[TaskLifecycle] Task ${taskId} continued with new prompt`);
+
+  return {
+    success: true,
+    task: updatedTask || undefined,
+  };
+}

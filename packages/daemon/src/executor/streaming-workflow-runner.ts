@@ -21,7 +21,7 @@ import {
   type SDKSystemMessage,
   type Options,
 } from "@anthropic-ai/claude-agent-sdk";
-import type { Task } from "@nightshift/shared";
+import type { Task } from "@/db/drizzle";
 import { EventLevel, EventType } from "@nightshift/shared";
 import type { SessionManager } from "./session-manager";
 import type { WorkflowStep, WorkflowDefinition } from "../workflows/loader";
@@ -140,6 +140,8 @@ export class StreamingWorkflowRunner {
         allowDangerouslySkipPermissions: true,
         abortController: this.abortController,
         enableFileCheckpointing: true,
+        // Resume existing Claude session if continuing a task
+        ...(task.sdkSessionId && { resume: task.sdkSessionId }),
       };
 
       // Emit typing indicator
@@ -231,6 +233,7 @@ export class StreamingWorkflowRunner {
 
       return {
         success: false,
+        sdkSessionId, // Include session ID so task can be continued even after failure
         stepResults: this.stepResults,
         error: message,
       };
@@ -298,6 +301,15 @@ export class StreamingWorkflowRunner {
 
       // Set up per-step timeout (10 minutes default)
       this.resetStepTimeout(step);
+
+      // Write user message to transcript before yielding to SDK
+      const userMessage: SdkMessage = {
+        type: "user",
+        timestamp: new Date().toISOString(),
+        content: prompt,
+      };
+      this.sessionManager.writeTranscriptMessage(userMessage);
+      streamEventBus.emitMessage(task.id, userMessage);
 
       // Yield the step prompt as a user message
       yield {

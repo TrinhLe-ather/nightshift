@@ -5,9 +5,9 @@
  * Features a task list sidebar and a chat-style message view.
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect, type FormEvent } from "react";
 import { useParams } from "react-router-dom";
-import { useTask } from "@/hooks/useTasks";
+import { useTask, useContinueTask } from "@/hooks/useTasks";
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/web/integrations/orpc";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,17 @@ import {
   FolderGit2,
   Activity,
   SidebarRight,
+  Send,
 } from "@/components/ui/icons";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { MODEL_OPTIONS, getModelColor } from "@/web/lib/models";
 
 const TASKCHAT_TASKLIST_SIZE_KEY = "taskchat_tasklist_size";
 const TASKCHAT_TASKLIST_MIN = 15;
@@ -83,6 +93,34 @@ export function TaskChat() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [taskListDefaultSize] = useState(getStoredTaskListSize);
   const taskListSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Continue task functionality
+  const [continuePrompt, setContinuePrompt] = useState("");
+  const [continueModel, setContinueModel] = useState("");
+  const continueTask = useContinueTask();
+  const canContinue = isTerminal && task?.sdkSessionId;
+
+  const handleContinueSubmit = useCallback(
+    (e: FormEvent) => {
+      e.preventDefault();
+      if (!taskId || !continuePrompt.trim() || continueTask.isPending) return;
+
+      continueTask.mutate(
+        {
+          id: taskId,
+          prompt: continuePrompt.trim(),
+          model: continueModel || undefined,
+        },
+        {
+          onSuccess: () => {
+            setContinuePrompt("");
+            setContinueModel("");
+          },
+        },
+      );
+    },
+    [taskId, continuePrompt, continueModel, continueTask],
+  );
 
   // Avoid flashing stale changed-files UI when switching tasks.
   useEffect(() => {
@@ -329,6 +367,68 @@ export function TaskChat() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Continue Task Input */}
+            {canContinue && (
+              <div className="shrink-0 border-t border-border/50 bg-card p-4">
+                <form onSubmit={handleContinueSubmit} className="flex flex-col gap-2">
+                  <Textarea
+                    value={continuePrompt}
+                    onChange={(e) => setContinuePrompt(e.target.value)}
+                    placeholder="Continue this task with a follow-up prompt..."
+                    className="min-h-[60px] max-h-[200px] resize-none w-full"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        handleContinueSubmit(e);
+                      }
+                    }}
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={continueModel}
+                        onValueChange={(v) => setContinueModel(v ?? "")}
+                      >
+                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                          <SelectValue>
+                            {continueModel ? (
+                              <span className={getModelColor(continueModel)}>
+                                {MODEL_OPTIONS.find((m) => m.value === continueModel)?.label}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">Default model</span>
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MODEL_OPTIONS.map((option) => (
+                            <SelectItem key={option.value || "_default"} value={option.value}>
+                              <span className={option.color}>{option.label}</span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="text-xs text-muted-foreground">
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">⌘</kbd>+
+                        <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> to
+                        send
+                      </span>
+                    </div>
+                    <Button
+                      type="submit"
+                      disabled={!continuePrompt.trim() || continueTask.isPending}
+                    >
+                      {continueTask.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
+                      <span className="ml-2">Continue</span>
+                    </Button>
+                  </div>
+                </form>
               </div>
             )}
           </div>

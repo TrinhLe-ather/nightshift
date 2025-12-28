@@ -5,7 +5,7 @@
  * Supports both worktree mode (parallel execution) and direct mode (large repos).
  */
 
-import type { Repo, Task } from "@nightshift/shared";
+import type { Task, Repo } from "@/db/drizzle";
 
 import {
   DirectModeManager,
@@ -288,9 +288,7 @@ async function teardownDirectMode(
       if (task.originalBranch) {
         await directModeManager.teardown(repoPath, task.originalBranch, false);
       }
-      console.log(
-        `[TaskSetup] Direct mode completed, returned to ${task.originalBranch}`,
-      );
+      console.log(`[TaskSetup] Direct mode completed, returned to ${task.originalBranch}`);
       break;
 
     case "paused": {
@@ -307,9 +305,7 @@ async function teardownDirectMode(
       if (task.originalBranch) {
         await directModeManager.teardown(repoPath, task.originalBranch, false);
       }
-      console.log(
-        `[TaskSetup] Direct mode failed, returned to ${task.originalBranch}`,
-      );
+      console.log(`[TaskSetup] Direct mode failed, returned to ${task.originalBranch}`);
       break;
   }
 }

@@ -17,7 +17,6 @@ import type {
   configSchema,
   updateConfigSchema,
   prioritySchema,
-  taskSourceSchema,
 } from './schemas';
 import type { TaskState } from './taskStates';
 import type { ErrorCode, FailureCode, NeedsHumanCode } from './errorCodes';
@@ -56,9 +55,6 @@ export type UpdateConfig = z.infer<typeof updateConfigSchema>;
 
 /** Task priority level */
 export type Priority = z.infer<typeof prioritySchema>;
-
-/** Task source (local or remote) */
-export type TaskSource = z.infer<typeof taskSourceSchema>;
 
 // =============================================================================
 // Re-exports for Convenience
@@ -125,7 +121,6 @@ export interface TaskFilterParams extends PaginationParams {
   status?: TaskState | TaskState[];
   repoId?: string;
   priority?: Priority | Priority[];
-  source?: TaskSource;
 }
 
 /** GitHub issue info extracted from URL */

@@ -9,11 +9,12 @@ import { z } from "zod";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { type Task, getDb, repos, sessions, tasks } from "../../db/drizzle";
 import { TaskState, executionModeSchema } from "@nightshift/shared";
-import { pauseTask, resumeTask } from "../../executor/task-lifecycle";
+import { pauseTask, resumeTask, continueTask } from "../../executor/task-lifecycle";
 import { teardownTaskExecution } from "../../executor/task-setup";
 import { type DiffStats, getDiffFromBase } from "../../repo/git";
 import { orpc } from "../base";
 import { ensureInitialPromptInTranscript } from "../../tasks/transcript";
+import { createSelectSchema } from "drizzle-zod";
 
 /**
  * Generate a unique task ID
@@ -36,37 +37,7 @@ const taskStatusSchema = z.enum([
 ]);
 const pauseReasonSchema = z.enum(["manual", "needs_human", "rate_limit"]);
 
-const taskSchema = z.object({
-  id: z.string(),
-  prompt: z.string(),
-  repoId: z.string().nullable(),
-  repoPath: z.string().nullable(),
-  priority: prioritySchema.nullable(),
-  status: taskStatusSchema,
-  failureCode: z.string().nullable(),
-  needsHumanCode: z.string().nullable(),
-  needsHumanQuestion: z.string().nullable(),
-  clarificationResponse: z.string().nullable(),
-  githubIssueUrl: z.string().nullable(),
-  branch: z.string().nullable(),
-  prUrl: z.string().nullable(),
-  createdAt: z.string(),
-  claimedAt: z.string().nullable(),
-  startedAt: z.string().nullable(),
-  completedAt: z.string().nullable(),
-  remoteId: z.string().nullable(),
-  source: z.enum(["local", "remote"]).nullable(),
-  executionMode: z.enum(["worktree", "direct"]).nullable(),
-  workDir: z.string().nullable(),
-  baseCommitSha: z.string().nullable(),
-  originalBranch: z.string().nullable(),
-  pausedAt: z.string().nullable(),
-  pauseReason: pauseReasonSchema.nullable(),
-  humanQuestion: z.string().nullable(),
-  humanResponse: z.string().nullable(),
-  autoYes: z.boolean().nullable(),
-  model: z.string().nullable(),
-});
+const taskSchema = createSelectSchema(tasks);
 
 const sessionInfoSchema = z.object({
   id: z.string(),
@@ -329,10 +300,6 @@ const update = orpc
       updates.priority = normalizedPriority;
     }
 
-    if (updateFields.clarificationResponse) {
-      updates.clarificationResponse = updateFields.clarificationResponse;
-    }
-
     if (Object.keys(updates).length === 0) {
       throw errors.BAD_REQUEST({ message: "No valid updates provided" });
     }
@@ -495,6 +462,49 @@ const resume = orpc
     return task;
   });
 
+// Continue a completed/failed/canceled task with a new prompt
+const continueTaskEndpoint = orpc
+  .input(
+    z.object({
+      id: z.string(),
+      prompt: z.string().min(1),
+      model: z.string().optional(),
+    }),
+  )
+  .output(taskSchema)
+  .handler(async ({ input, errors }) => {
+    const { id, prompt, model } = input;
+
+    const result = await continueTask(id, prompt, model);
+
+    if (!result.success) {
+      if (result.error?.code === "TASK_NOT_FOUND") {
+        throw errors.NOT_FOUND({ message: "Task not found", data: { resource: "task", id } });
+      }
+      if (result.error?.code === "INVALID_STATE") {
+        throw errors.INVALID_STATE({
+          message: result.error.message || "Cannot continue task in current state",
+        });
+      }
+      if (result.error?.code === "NO_SESSION") {
+        throw errors.BAD_REQUEST({
+          message: result.error.message || "Task has no session to resume",
+        });
+      }
+      throw errors.INTERNAL_SERVER_ERROR({ message: "Failed to continue task" });
+    }
+
+    // Fetch updated task
+    const db = getDb();
+    const task = db.select().from(tasks).where(eq(tasks.id, id)).get();
+
+    if (!task) {
+      throw errors.INTERNAL_SERVER_ERROR({ message: "Task not found after continue" });
+    }
+
+    return task;
+  });
+
 // Get git diff stats from base commit
 const getDiff = orpc
   .input(z.object({ id: z.string() }))
@@ -553,5 +563,6 @@ export const tasksRouter = {
   remove: deleteTask,
   pause,
   resume,
+  continue: continueTaskEndpoint,
   getDiff,
 };

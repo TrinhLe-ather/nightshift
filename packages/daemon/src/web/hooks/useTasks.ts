@@ -134,6 +134,20 @@ export function useResumeTask() {
   });
 }
 
+export function useContinueTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, prompt, model }: { id: string; prompt: string; model?: string }) =>
+      client.tasks.continue({ id, prompt, model }),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["task", id] });
+      queryClient.invalidateQueries({ queryKey: ["status"] });
+    },
+  });
+}
+
 export function useTaskDiff(id: string, enabled = true) {
   return useQuery({
     queryKey: ["task-diff", id],
