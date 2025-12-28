@@ -33,7 +33,9 @@ import {
   Copy,
   Globe,
   Terminal,
+  Moon,
 } from "@/components/ui/icons";
+import { useThemeSync } from "@/web/hooks";
 import { Container } from "@/components/layout/Container";
 import { LanQRDialog } from "@/components/LanQRDialog";
 import {
@@ -142,6 +144,9 @@ export function Settings() {
     taskTimeoutMs: 14400000, // 4 hours default
     maxConcurrentTasks: 1,
   });
+
+  // Theme sync hook
+  const { theme, setTheme, isLoading: isThemeLoading } = useThemeSync();
 
   // Fetch update status
   const { data: updateStatus, isLoading: isLoadingUpdate } = useQuery({
@@ -525,6 +530,62 @@ export function Settings() {
           </div>
         </SettingsCard>
 
+        {/* Appearance */}
+        <SettingsCard
+          title="Appearance"
+          description="Theme and display preferences"
+          icon={Moon}
+          iconColor="text-indigo-400"
+          iconBg="bg-indigo-500/10"
+          iconBorder="border-indigo-500/30"
+          index={1}
+        >
+          <div className="space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">Theme</p>
+                <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+                  Choose your preferred color scheme
+                </p>
+              </div>
+              <Select
+                value={theme || "dark"}
+                onValueChange={(value) => value && setTheme(value)}
+                disabled={isThemeLoading}
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">Light</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="solarized-light">Solarized Light</SelectItem>
+                  <SelectItem value="solarized-dark">Solarized Dark</SelectItem>
+                  <SelectItem value="system">System</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Theme Preview */}
+            <div className="border-t border-border/50 pt-4">
+              <p className="text-xs text-muted-foreground mb-2">Preview</p>
+              <div className="flex gap-2">
+                <div
+                  className="h-8 w-8 rounded border border-border bg-background"
+                  title="Background"
+                />
+                <div className="h-8 w-8 rounded border border-border bg-primary" title="Primary" />
+                <div
+                  className="h-8 w-8 rounded border border-border bg-secondary"
+                  title="Secondary"
+                />
+                <div className="h-8 w-8 rounded border border-border bg-accent" title="Accent" />
+                <div className="h-8 w-8 rounded border border-border bg-muted" title="Muted" />
+              </div>
+            </div>
+          </div>
+        </SettingsCard>
+
         {/* Network Access - LAN and Tailscale */}
         <SettingsCard
           title="Network Access"
@@ -533,7 +594,7 @@ export function Settings() {
           iconColor={status?.lan?.enabled ? "text-cyan-400" : "text-muted-foreground"}
           iconBg={status?.lan?.enabled ? "bg-cyan-500/10" : "bg-muted/50"}
           iconBorder={status?.lan?.enabled ? "border-cyan-500/30" : "border-border"}
-          index={1}
+          index={2}
           headerAction={
             <div className="flex items-center gap-2">
               {isTogglingLan && (
@@ -695,7 +756,7 @@ export function Settings() {
           iconColor="text-violet-400"
           iconBg="bg-violet-500/10"
           iconBorder="border-violet-500/30"
-          index={2}
+          index={3}
           headerAction={
             isEditingConfig ? (
               <div className="flex items-center gap-2">
@@ -822,7 +883,7 @@ export function Settings() {
           iconColor="text-amber-400"
           iconBg="bg-amber-500/10"
           iconBorder="border-amber-500/30"
-          index={3}
+          index={4}
         >
           <div className="divide-y divide-border/50">
             <ConfigItem

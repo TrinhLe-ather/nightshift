@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { updateChannelSchema } from "@nightshift/shared";
+import { updateChannelSchema, themeSchema } from "@nightshift/shared";
 import { loadConfig, saveConfig } from "../../config";
 import { getAvailableShells } from "../../terminal/shells";
 import { scheduleRestart } from "../../update";
@@ -17,6 +17,7 @@ const SafeConfigSchema = z.object({
   allowLan: z.boolean(),
   terminalShell: z.string(),
   updateChannel: updateChannelSchema,
+  theme: themeSchema,
 });
 
 const configUpdateSchema = z.object({
@@ -37,6 +38,7 @@ const configUpdateSchema = z.object({
   allowLan: z.boolean().optional(),
   terminalShell: z.string().optional(),
   updateChannel: updateChannelSchema.optional(),
+  theme: themeSchema.optional(),
 });
 
 const ShellInfoSchema = z.object({
@@ -61,6 +63,7 @@ const get = orpc.output(SafeConfigSchema).handler(async () => {
     allowLan: config.allowLan ?? false,
     terminalShell: config.terminalShell ?? "auto",
     updateChannel: config.updateChannel ?? "stable",
+    theme: config.theme ?? "dark",
   };
 });
 
@@ -119,6 +122,10 @@ const update = orpc
       updates.updateChannel = input.updateChannel;
     }
 
+    if (input.theme !== undefined) {
+      updates.theme = input.theme;
+    }
+
     if (Object.keys(updates).length === 0) {
       throw errors.BAD_REQUEST({ message: "No valid updates provided" });
     }
@@ -145,6 +152,7 @@ const update = orpc
       allowLan: newConfig.allowLan ?? false,
       terminalShell: newConfig.terminalShell ?? "auto",
       updateChannel: newConfig.updateChannel ?? "stable",
+      theme: newConfig.theme ?? "dark",
     };
   });
 

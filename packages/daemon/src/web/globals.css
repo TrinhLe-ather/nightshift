@@ -3,7 +3,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is(.dark *, .solarized-dark *));
 
 @theme inline {
   --font-sans: var(--font-sans);
@@ -122,6 +122,112 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+}
+
+/* Solarized Dark Theme */
+.solarized-dark {
+  /* Base colors - dark background */
+  --background: oklch(0.205 0.031 215);
+  --foreground: oklch(0.607 0.022 215);
+  --card: oklch(0.247 0.034 215);
+  --card-foreground: oklch(0.607 0.022 215);
+  --popover: oklch(0.247 0.034 215);
+  --popover-foreground: oklch(0.607 0.022 215);
+
+  /* Primary = blue accent */
+  --primary: oklch(0.580 0.150 240);
+  --primary-foreground: oklch(0.205 0.031 215);
+
+  /* Secondary = base01 */
+  --secondary: oklch(0.483 0.024 215);
+  --secondary-foreground: oklch(0.607 0.022 215);
+
+  /* Muted = base02 */
+  --muted: oklch(0.247 0.034 215);
+  --muted-foreground: oklch(0.533 0.023 215);
+
+  /* Accent = cyan */
+  --accent: oklch(0.630 0.100 185);
+  --accent-foreground: oklch(0.205 0.031 215);
+
+  /* Destructive = red */
+  --destructive: oklch(0.550 0.200 25);
+  --destructive-foreground: oklch(0.970 0.021 95);
+
+  /* Borders & inputs */
+  --border: oklch(0.483 0.024 215 / 50%);
+  --input: oklch(0.483 0.024 215 / 30%);
+  --ring: oklch(0.580 0.150 240);
+
+  /* Charts - Solarized accent colors */
+  --chart-1: oklch(0.580 0.150 240);
+  --chart-2: oklch(0.630 0.100 185);
+  --chart-3: oklch(0.610 0.160 115);
+  --chart-4: oklch(0.640 0.160 85);
+  --chart-5: oklch(0.560 0.180 45);
+
+  /* Sidebar */
+  --sidebar: oklch(0.247 0.034 215);
+  --sidebar-foreground: oklch(0.607 0.022 215);
+  --sidebar-primary: oklch(0.580 0.150 240);
+  --sidebar-primary-foreground: oklch(0.205 0.031 215);
+  --sidebar-accent: oklch(0.247 0.034 215);
+  --sidebar-accent-foreground: oklch(0.607 0.022 215);
+  --sidebar-border: oklch(0.483 0.024 215 / 50%);
+  --sidebar-ring: oklch(0.580 0.150 240);
+}
+
+/* Solarized Light Theme */
+.solarized-light {
+  /* Base colors - light background */
+  --background: oklch(0.970 0.021 95);
+  --foreground: oklch(0.483 0.024 215);
+  --card: oklch(0.929 0.021 90);
+  --card-foreground: oklch(0.483 0.024 215);
+  --popover: oklch(0.929 0.021 90);
+  --popover-foreground: oklch(0.483 0.024 215);
+
+  /* Primary = blue accent */
+  --primary: oklch(0.580 0.150 240);
+  --primary-foreground: oklch(0.970 0.021 95);
+
+  /* Secondary = base1 */
+  --secondary: oklch(0.660 0.017 195);
+  --secondary-foreground: oklch(0.483 0.024 215);
+
+  /* Muted = base2 */
+  --muted: oklch(0.929 0.021 90);
+  --muted-foreground: oklch(0.533 0.023 215);
+
+  /* Accent = cyan */
+  --accent: oklch(0.630 0.100 185);
+  --accent-foreground: oklch(0.970 0.021 95);
+
+  /* Destructive = red */
+  --destructive: oklch(0.550 0.200 25);
+  --destructive-foreground: oklch(0.970 0.021 95);
+
+  /* Borders & inputs */
+  --border: oklch(0.660 0.017 195 / 70%);
+  --input: oklch(0.660 0.017 195 / 50%);
+  --ring: oklch(0.580 0.150 240);
+
+  /* Charts - Solarized accent colors */
+  --chart-1: oklch(0.580 0.150 240);
+  --chart-2: oklch(0.630 0.100 185);
+  --chart-3: oklch(0.610 0.160 115);
+  --chart-4: oklch(0.640 0.160 85);
+  --chart-5: oklch(0.560 0.180 45);
+
+  /* Sidebar */
+  --sidebar: oklch(0.929 0.021 90);
+  --sidebar-foreground: oklch(0.483 0.024 215);
+  --sidebar-primary: oklch(0.580 0.150 240);
+  --sidebar-primary-foreground: oklch(0.970 0.021 95);
+  --sidebar-accent: oklch(0.929 0.021 90);
+  --sidebar-accent-foreground: oklch(0.483 0.024 215);
+  --sidebar-border: oklch(0.660 0.017 195 / 70%);
+  --sidebar-ring: oklch(0.580 0.150 240);
 }
 
 @layer base {
