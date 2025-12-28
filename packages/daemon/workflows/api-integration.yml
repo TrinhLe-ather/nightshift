@@ -1,0 +1,247 @@
+name: API Integration
+description: Add external API integrations with proper error handling, authentication, rate limiting, and testing
+version: 1.0.0
+model: opus
+
+steps:
+  - name: API Research
+    model: opus
+    prompt: |
+      You are an Integration Engineer. An API integration has been requested:
+
+      {{prompt}}
+
+      Your task is to research the API and plan the integration.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to gather information:
+      - Use `subagent_type: Explore` to find existing integrations and patterns
+      - Use web search if API documentation URLs are provided
+      - Find similar integrations in the codebase
+
+      ## Research Checklist
+      1. API DOCUMENTATION - Understand the API
+         - Base URL and endpoints needed
+         - Authentication method (API key, OAuth, etc.)
+         - Request/response formats
+         - Rate limits and quotas
+         - Error response formats
+      2. CODEBASE PATTERNS - How are similar integrations done
+         - Existing HTTP clients
+         - Error handling patterns
+         - Configuration patterns
+         - Testing patterns
+      3. REQUIREMENTS - What we need to build
+         - Which endpoints to integrate
+         - What data to send/receive
+         - Error handling requirements
+         - Retry/fallback requirements
+
+      ## Security Considerations
+      - How to store API credentials securely
+      - What data is being sent (PII, sensitive?)
+      - Authentication token refresh if needed
+
+      ## Deliverables
+      Integration plan:
+      - API Overview (endpoints, auth, limits)
+      - Integration Requirements (what to build)
+      - Technical Approach (how to implement)
+      - Security Plan (credential handling)
+      - Testing Strategy (how to verify)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Client Implementation
+    model: sonnet
+    prompt: |
+      Research complete. Now implement the API client.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find HTTP client patterns in the codebase
+      - Follow existing integration patterns
+      - Check for existing utilities to reuse
+
+      ## Client Architecture
+      Build a well-structured API client:
+
+      ### Configuration
+      - Base URL configuration
+      - Timeout settings
+      - Retry configuration
+      - Authentication setup
+
+      ### Core Methods
+      For each endpoint needed:
+      - Clear method name reflecting the operation
+      - Typed request parameters
+      - Typed response objects
+      - Proper error handling
+
+      ### Error Handling
+      - Parse API error responses
+      - Map to application error types
+      - Include helpful error messages
+      - Handle network failures gracefully
+
+      ### Rate Limiting
+      - Implement rate limit tracking
+      - Handle 429 responses appropriately
+      - Add backoff/retry logic if needed
+
+      ## Implementation Standards
+      - Follow existing patterns in the codebase
+      - Use existing HTTP client libraries
+      - Add proper TypeScript types
+      - Make it mockable for testing
+    maxRetries: 2
+
+  - name: Authentication Setup
+    model: sonnet
+    prompt: |
+      Client implemented. Now set up authentication properly.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find existing auth patterns
+      - Check how credentials are stored elsewhere
+      - Find configuration patterns
+
+      ## Authentication Implementation
+
+      ### Credential Storage
+      - Never hardcode credentials
+      - Use environment variables or secure config
+      - Document required environment variables
+      - Add validation for missing credentials
+
+      ### Auth Methods (implement as needed)
+
+      #### API Key
+      - Add key to headers or query params
+      - Support key rotation
+
+      #### OAuth 2.0
+      - Token acquisition flow
+      - Token refresh before expiry
+      - Secure token storage
+
+      #### Basic Auth
+      - Proper encoding
+      - Secure credential handling
+
+      ### Configuration
+      - Add to application configuration
+      - Include in example/template configs
+      - Document setup steps
+
+      ## Security Checklist
+      - [ ] Credentials not in source code
+      - [ ] Credentials not logged
+      - [ ] Tokens refreshed properly
+      - [ ] Failed auth handled gracefully
+    maxRetries: 2
+
+  - name: Integration Tests
+    model: sonnet
+    prompt: |
+      Authentication set up. Now write comprehensive tests.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find test patterns for integrations
+      - Find existing mock utilities
+      - Check for test configuration patterns
+
+      ## Test Requirements
+
+      ### Unit Tests (with mocks)
+      - Test each API method
+      - Test successful responses
+      - Test error responses (400, 401, 404, 500)
+      - Test timeout handling
+      - Test rate limit handling
+      - Test retry logic
+
+      ### Mock Strategy
+      - Mock HTTP client (don't make real requests)
+      - Create realistic mock responses
+      - Mock authentication if needed
+      - Make mocks reusable
+
+      ### Integration Tests (optional, with real API)
+      - Test against sandbox/staging API if available
+      - Skip in CI if credentials not available
+      - Use test accounts/data
+
+      ## Test Scenarios
+      - Happy path (successful request/response)
+      - Invalid input (validation errors)
+      - Auth failure (401/403 responses)
+      - Server errors (500 responses)
+      - Network failures (timeouts, disconnects)
+      - Rate limiting (429 responses)
+
+      ## Execution
+      - Run all tests
+      - All tests must pass
+      - Show output as proof
+    maxRetries: 2
+
+  - name: Documentation & Verification
+    model: opus
+    prompt: |
+      Tests complete. Now document and verify the integration.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to verify all components work together
+      - Check integration end-to-end
+      - Review documentation requirements
+
+      ## Documentation Requirements
+
+      ### Code Documentation
+      - JSDoc/docstrings for all public methods
+      - Clear parameter descriptions
+      - Return type documentation
+      - Error throw documentation
+
+      ### Usage Documentation
+      - How to configure the integration
+      - Required environment variables
+      - Example usage code
+      - Error handling examples
+
+      ### Setup Instructions
+      - How to get API credentials
+      - Configuration steps
+      - Testing the connection
+
+      ## Final Verification
+
+      ### Functionality
+      - All endpoints work correctly
+      - Authentication is successful
+      - Errors are handled properly
+      - Rate limiting is respected
+
+      ### Code Quality
+      - Follows codebase patterns
+      - Types are complete and correct
+      - No security issues
+      - Tests are comprehensive
+
+      ### Documentation
+      - Setup is clearly documented
+      - Usage examples provided
+      - Error handling explained
+
+      ## Deliverables
+      Integration summary:
+      - Endpoints Implemented (list)
+      - Configuration Required (env vars, etc.)
+      - Test Coverage (summary)
+      - Usage Examples (working code)
+      - Known Limitations (if any)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

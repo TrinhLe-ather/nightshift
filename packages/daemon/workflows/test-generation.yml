@@ -1,0 +1,207 @@
+name: Test Generation
+description: Generate comprehensive test coverage for existing code with focus on edge cases and reliability
+version: 1.0.0
+model: sonnet
+
+steps:
+  - name: Code Analysis
+    model: opus
+    prompt: |
+      You are a Test Engineering Expert. Test coverage has been requested for:
+
+      {{prompt}}
+
+      Your task is to analyze the code and design a comprehensive test strategy.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to parallelize analysis:
+      - Use `subagent_type: Explore` to find the target code and its dependencies
+      - Launch multiple Explore agents: (1) find the code to test, (2) find existing tests, (3) find test utilities
+      - Use `subagent_type: general-purpose` to trace complex logic paths
+
+      ## Analysis Checklist
+      1. UNDERSTAND - Read and understand the code's purpose
+      2. INTERFACES - Identify all public APIs and entry points
+      3. BRANCHES - Map all conditional logic paths
+      4. DEPENDENCIES - Identify external dependencies to mock
+      5. EXISTING TESTS - Review any existing test coverage
+
+      ## Coverage Analysis
+      For each function/method, identify:
+      - Happy path scenarios
+      - Edge cases (nulls, empty, boundaries)
+      - Error scenarios (throws, rejects, invalid input)
+      - Async behavior (if applicable)
+      - State transitions (if stateful)
+
+      ## Deliverables
+      Test strategy document with:
+      - Code Overview (what does this code do)
+      - Current Coverage (what's already tested)
+      - Coverage Gaps (what's missing)
+      - Test Plan (prioritized list of tests to write)
+      - Mocking Strategy (what needs to be mocked and how)
+      - Risk Areas (complex logic that needs extra attention)
+
+      ## Constraints
+      - DO NOT write tests yet. This is analysis only.
+      - Prioritize tests by impact (critical paths first)
+      - Identify if test framework setup is needed
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Test Infrastructure Setup
+    model: sonnet
+    prompt: |
+      Good analysis. Before writing tests, ensure the test infrastructure is ready.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find test configuration and utilities
+      - Check for existing test helpers, fixtures, and mocks
+      - Identify test framework conventions
+
+      ## Infrastructure Checklist
+      1. Test framework is configured and working
+      2. Required test utilities exist (or create them)
+      3. Mock/stub patterns are established
+      4. Test data fixtures are available (or create them)
+      5. Test file naming conventions are clear
+
+      ## Setup Tasks (if needed)
+      - Create test helper utilities for common operations
+      - Set up mock factories for external dependencies
+      - Create test fixtures for common data scenarios
+      - Ensure test commands work (`npm test`, `bun test`, etc.)
+
+      ## Deliverables
+      - Test infrastructure verified or set up
+      - Test utilities created (if needed)
+      - Mock strategies implemented
+      - Verify tests can run: execute existing tests as proof
+
+      ## If No Test Framework
+      If no test framework exists:
+      1. Recommend appropriate framework for the codebase
+      2. Set up basic configuration
+      3. Create one example test as template
+    maxRetries: 2
+
+  - name: Unit Tests
+    model: sonnet
+    prompt: |
+      Infrastructure is ready. Now write comprehensive unit tests.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to reference test patterns in the codebase
+      - Study existing tests for style and conventions
+      - Check for test utilities and helpers
+
+      ## Unit Test Requirements
+      For each function/method in the test plan:
+
+      ### Happy Path Tests
+      - Normal usage with valid inputs
+      - Expected outputs verified
+      - Multiple valid input variations
+
+      ### Edge Case Tests
+      - Boundary values (min, max, zero)
+      - Empty inputs (null, undefined, empty string/array)
+      - Special characters and unicode
+      - Large inputs (if applicable)
+
+      ### Error Case Tests
+      - Invalid input types
+      - Out-of-range values
+      - Missing required parameters
+      - Verify error messages are helpful
+
+      ## Test Quality Standards
+      - Descriptive test names: "should [expected behavior] when [condition]"
+      - Arrange-Act-Assert structure
+      - One concept per test
+      - Fast execution (mock I/O operations)
+      - Deterministic (no flaky tests)
+
+      ## Execution
+      After writing each test file:
+      - Run the tests
+      - All tests must pass
+      - Show output as proof
+    maxRetries: 3
+
+  - name: Integration Tests
+    model: sonnet
+    prompt: |
+      Unit tests complete. Now write integration tests.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find integration points
+      - Identify how components work together
+      - Find integration test patterns in the codebase
+
+      ## Integration Test Focus
+      Test how components work together:
+      1. Module interactions (how modules call each other)
+      2. Data flow (data passing through multiple functions)
+      3. State management (state changes across operations)
+      4. External integrations (API calls, database, file system)
+
+      ## Integration Test Scenarios
+      - End-to-end workflows (user stories)
+      - Cross-module functionality
+      - Real dependency behavior (where safe to test)
+      - Error propagation across boundaries
+
+      ## Mocking Strategy
+      - Mock external services (APIs, databases) for reliability
+      - Use real implementations for internal modules
+      - Create realistic test scenarios
+
+      ## Execution
+      - Run all integration tests
+      - Verify they work with unit tests
+      - Show combined test output
+    maxRetries: 2
+
+  - name: Coverage Report
+    model: opus
+    prompt: |
+      All tests written. Generate final coverage report.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to verify all test files
+      - Run coverage tools if available
+      - Compare against original test plan
+
+      ## Coverage Verification
+      1. Run full test suite with coverage (if available)
+      2. Review coverage report for gaps
+      3. Identify any remaining untested paths
+      4. Verify all planned tests were implemented
+
+      ## Quality Assessment
+      For each tested file, evaluate:
+      - Line coverage percentage
+      - Branch coverage (all conditions tested)
+      - Critical path coverage
+      - Edge case coverage
+
+      ## Deliverable
+      Test coverage report with:
+      - Test Summary (total tests, pass rate)
+      - Coverage Metrics (lines, branches, functions)
+      - Files Tested (list with coverage percentage)
+      - Gaps Remaining (what's still untested and why)
+      - Recommendations (suggested additional tests)
+      - How to Run Tests (commands and expected output)
+
+      ## Final Verification
+      - All new tests pass
+      - All existing tests still pass
+      - No flaky tests introduced
+      - Tests are maintainable and readable
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

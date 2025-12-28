@@ -1,0 +1,270 @@
+name: Security Audit
+description: Comprehensive security audit covering OWASP Top 10, dependency vulnerabilities, and security best practices
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Attack Surface Mapping
+    model: opus
+    prompt: |
+      You are a Security Engineer. A security audit has been requested:
+
+      {{prompt}}
+
+      Your task is to map the attack surface before diving into specific vulnerabilities.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to map the codebase:
+      - Use `subagent_type: Explore` to find entry points, auth code, and data handling
+      - Launch multiple Explore agents: (1) find API endpoints, (2) find auth/authz, (3) find data processing
+      - Map the security-relevant code paths
+
+      ## Attack Surface Mapping
+      1. ENTRY POINTS - All ways data enters the system
+         - API endpoints
+         - User input forms
+         - File uploads
+         - WebSocket connections
+         - CLI arguments
+      2. AUTH/AUTHZ - Authentication and authorization
+         - Login/logout flows
+         - Session management
+         - Permission checks
+         - API key handling
+      3. DATA HANDLING - How sensitive data is processed
+         - User data (PII)
+         - Credentials/secrets
+         - Payment information
+         - Logging
+      4. INTEGRATIONS - External system connections
+         - Third-party APIs
+         - Database connections
+         - File system access
+         - Network operations
+
+      ## Deliverables
+      Attack surface map:
+      - Entry Points (all input vectors)
+      - Trust Boundaries (where auth is required)
+      - Data Classifications (sensitive data locations)
+      - High-Risk Areas (prioritized for audit)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: OWASP Top 10 Scan
+    model: opus
+    prompt: |
+      Attack surface mapped. Now scan for OWASP Top 10 vulnerabilities.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find code patterns for each vulnerability type
+      - Use `subagent_type: general-purpose` to trace complex attack vectors
+      - Search for common vulnerability patterns
+
+      ## OWASP Top 10 Checklist
+
+      ### A01: Broken Access Control
+      - [ ] Authorization checked on all sensitive operations
+      - [ ] No IDOR (Insecure Direct Object Reference)
+      - [ ] No privilege escalation paths
+      - [ ] CORS properly configured
+
+      ### A02: Cryptographic Failures
+      - [ ] Sensitive data encrypted at rest
+      - [ ] TLS/HTTPS enforced
+      - [ ] Strong algorithms used (no MD5, SHA1 for security)
+      - [ ] Keys properly managed (not hardcoded)
+
+      ### A03: Injection
+      - [ ] SQL queries parameterized
+      - [ ] No command injection
+      - [ ] No LDAP/XPath injection
+      - [ ] Template injection prevented
+
+      ### A04: Insecure Design
+      - [ ] Security in design (not bolted on)
+      - [ ] Threat modeling considered
+      - [ ] Fail-secure defaults
+
+      ### A05: Security Misconfiguration
+      - [ ] Default credentials changed
+      - [ ] Unnecessary features disabled
+      - [ ] Error handling doesn't leak info
+      - [ ] Security headers set
+
+      ### A06: Vulnerable Components
+      - [ ] Dependencies up to date
+      - [ ] No known CVEs in dependencies
+      - [ ] Unused dependencies removed
+
+      ### A07: Auth Failures
+      - [ ] Strong password policies
+      - [ ] Brute force protection
+      - [ ] Session management secure
+      - [ ] MFA supported (if applicable)
+
+      ### A08: Data Integrity Failures
+      - [ ] Deserialization is safe
+      - [ ] Updates verified (signatures)
+      - [ ] CI/CD pipeline secure
+
+      ### A09: Logging & Monitoring
+      - [ ] Security events logged
+      - [ ] Logs don't contain sensitive data
+      - [ ] Audit trail maintained
+
+      ### A10: SSRF
+      - [ ] URL validation on server-side requests
+      - [ ] Whitelisting for external calls
+      - [ ] Internal network protected
+
+      ## Finding Format
+      For each vulnerability:
+      - OWASP Category
+      - Severity (Critical/High/Medium/Low)
+      - Location (file:line)
+      - Description
+      - Proof of Concept (if safe to demonstrate)
+      - Remediation
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Dependency Audit
+    model: sonnet
+    prompt: |
+      OWASP scan complete. Now audit dependencies for vulnerabilities.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find dependency files (package.json, requirements.txt, etc.)
+      - Check for security advisories
+      - Review dependency update status
+
+      ## Dependency Audit Steps
+      1. List all dependencies (direct and transitive)
+      2. Check for known vulnerabilities (CVEs)
+      3. Check for outdated packages with security updates
+      4. Review dependency licenses for compliance
+
+      ## Audit Commands (run where applicable)
+      - npm audit / pnpm audit / yarn audit
+      - pip-audit / safety check
+      - cargo audit
+      - bundler-audit
+      - snyk test (if available)
+
+      ## For Each Vulnerable Dependency
+      - Package name and version
+      - CVE identifier
+      - Severity (CVSS score if available)
+      - Affected versions
+      - Fixed version
+      - Upgrade path
+
+      ## Recommendations
+      - Immediate updates needed (critical CVEs)
+      - Planned updates (high/medium CVEs)
+      - Dependencies to consider replacing
+      - Lock file updates needed
+    maxRetries: 1
+
+  - name: Secrets Scan
+    model: sonnet
+    prompt: |
+      Dependency audit complete. Now scan for exposed secrets.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find configuration files and potential secret locations
+      - Search for common secret patterns
+      - Check git history if accessible
+
+      ## Secrets to Scan For
+      - API keys (AWS, GCP, Azure, Stripe, etc.)
+      - Database credentials
+      - JWT secrets
+      - Private keys (SSH, TLS)
+      - OAuth client secrets
+      - Webhook secrets
+      - Encryption keys
+      - Password hashes
+      - Internal URLs with credentials
+
+      ## Scan Locations
+      - Source code files
+      - Configuration files (.env, config.*, etc.)
+      - Documentation (READMEs, wikis)
+      - Comments in code
+      - Error messages and logs
+      - Test fixtures and mock data
+
+      ## Secret Patterns (regex examples)
+      - AWS: AKIA[0-9A-Z]{16}
+      - Private keys: -----BEGIN (RSA|DSA|EC) PRIVATE KEY-----
+      - Generic: password\s*=\s*['"][^'"]+['"]
+      - JWT: eyJ[A-Za-z0-9-_=]+\.eyJ[A-Za-z0-9-_=]+\.[A-Za-z0-9-_.+/=]*
+
+      ## For Each Finding
+      - Secret type
+      - Location (file:line, redact the actual secret)
+      - Risk level
+      - Remediation steps (rotate, remove, encrypt)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Security Report
+    model: opus
+    prompt: |
+      All scans complete. Generate comprehensive security report.
+
+      ## Sub-Agent Strategy
+      - Compile all findings from previous steps
+      - Prioritize by risk and exploitability
+      - Create actionable remediation plan
+
+      ## Report Structure
+
+      ### Executive Summary
+      - Overall security posture (score or rating)
+      - Critical findings count
+      - Top 3 risks
+      - Key recommendations
+
+      ### Findings by Severity
+
+      #### Critical (immediate action required)
+      [Detailed findings with remediation]
+
+      #### High (action within 1 week)
+      [Detailed findings with remediation]
+
+      #### Medium (action within 1 month)
+      [Detailed findings with remediation]
+
+      #### Low (scheduled maintenance)
+      [Detailed findings with remediation]
+
+      ### Remediation Roadmap
+      1. Immediate actions (do now)
+      2. Short-term fixes (this sprint)
+      3. Long-term improvements (backlog)
+
+      ### Positive Findings
+      - Security controls that are working well
+      - Best practices being followed
+
+      ### Recommendations
+      - Process improvements
+      - Tool recommendations
+      - Training suggestions
+      - Ongoing security practices
+
+      ## Report Format
+      - Clear and professional
+      - Technical enough for developers
+      - Executive summary for management
+      - Actionable remediation steps
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

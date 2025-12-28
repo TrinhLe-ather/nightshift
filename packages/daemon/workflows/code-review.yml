@@ -1,0 +1,236 @@
+name: Code Review
+description: Thorough code review with actionable feedback on quality, security, performance, and maintainability
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Context Gathering
+    model: sonnet
+    prompt: |
+      You are a Senior Code Reviewer. A code review has been requested:
+
+      {{prompt}}
+
+      Your task is to understand the context before reviewing.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to gather context:
+      - Use `subagent_type: Explore` to find the code to review
+      - Launch multiple Explore agents: (1) find the changed files, (2) find related code, (3) find tests
+      - Understand the PR/commit/changes in context
+
+      ## Context Gathering
+      1. CHANGES - Identify all files and changes to review
+      2. PURPOSE - Understand what the changes are trying to accomplish
+      3. HISTORY - Check recent commits for context
+      4. TESTS - Find related test files
+      5. PATTERNS - Understand existing code patterns in the area
+
+      ## Scope Definition
+      - List all files to review
+      - Note the type of change (feature, bug fix, refactor, etc.)
+      - Identify the most critical/complex changes
+      - Flag any large files for focused attention
+
+      ## Deliverables
+      Context summary with:
+      - Change Overview (what's being changed and why)
+      - Files to Review (prioritized list)
+      - Risk Assessment (which changes are highest risk)
+      - Review Focus Areas (what to pay attention to)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Code Quality Review
+    model: opus
+    prompt: |
+      Context gathered. Now review code quality.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to compare against codebase patterns
+      - Check for similar implementations for consistency
+      - Find style guides or linting rules
+
+      ## Code Quality Checklist
+
+      ### Readability
+      - [ ] Clear, intention-revealing names (variables, functions, classes)
+      - [ ] Functions are focused (single responsibility)
+      - [ ] Code is self-documenting (minimal comments needed)
+      - [ ] Consistent formatting and style
+      - [ ] No dead code or commented-out code
+
+      ### Maintainability
+      - [ ] DRY (no unnecessary duplication)
+      - [ ] Appropriate abstractions (not over/under-engineered)
+      - [ ] Clear module boundaries
+      - [ ] Dependencies are explicit
+      - [ ] Error handling is consistent
+
+      ### Correctness
+      - [ ] Logic is correct for all cases
+      - [ ] Edge cases are handled
+      - [ ] Error conditions are handled gracefully
+      - [ ] No obvious bugs or typos
+      - [ ] Types are correct (if typed language)
+
+      ## Review Output
+      For each issue found:
+      - File and line number
+      - Issue description
+      - Severity (critical, major, minor, nitpick)
+      - Suggested fix (if applicable)
+
+      ## Be Constructive
+      - Praise good patterns as well as noting issues
+      - Explain WHY something is an issue
+      - Offer specific suggestions, not just criticism
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Security Review
+    model: opus
+    prompt: |
+      Quality review complete. Now focus on security.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to trace data flow
+      - Check for security patterns in the codebase
+      - Look for similar security implementations
+
+      ## Security Checklist
+
+      ### Input Validation
+      - [ ] All user input is validated
+      - [ ] Input is sanitized before use
+      - [ ] No SQL injection vulnerabilities
+      - [ ] No command injection vulnerabilities
+      - [ ] No XSS vulnerabilities
+
+      ### Authentication & Authorization
+      - [ ] Auth checks are in place where needed
+      - [ ] Permissions are verified correctly
+      - [ ] No privilege escalation paths
+      - [ ] Sessions are handled securely
+
+      ### Data Security
+      - [ ] Sensitive data is encrypted at rest
+      - [ ] Sensitive data is encrypted in transit
+      - [ ] No secrets in code (API keys, passwords)
+      - [ ] PII is handled appropriately
+      - [ ] Logs don't contain sensitive data
+
+      ### Common Vulnerabilities
+      - [ ] No path traversal vulnerabilities
+      - [ ] No insecure deserialization
+      - [ ] No SSRF vulnerabilities
+      - [ ] Dependencies are secure (no known CVEs)
+      - [ ] Error messages don't leak sensitive info
+
+      ## Security Issues Format
+      For each security issue:
+      - Severity (critical, high, medium, low)
+      - Vulnerability type (OWASP category if applicable)
+      - Affected code location
+      - Attack scenario (how could this be exploited)
+      - Remediation (specific fix recommendation)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Performance Review
+    model: sonnet
+    prompt: |
+      Security review complete. Now review performance.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to understand data volumes and usage patterns
+      - Check for performance-critical paths
+      - Find existing performance optimizations
+
+      ## Performance Checklist
+
+      ### Algorithmic Efficiency
+      - [ ] Appropriate data structures used
+      - [ ] No unnecessary O(n^2) or worse operations
+      - [ ] Loops are efficient (no repeated work)
+      - [ ] Early returns where possible
+
+      ### Resource Usage
+      - [ ] No memory leaks
+      - [ ] Resources are properly cleaned up
+      - [ ] No excessive object creation
+      - [ ] Caching used appropriately
+
+      ### Database & I/O
+      - [ ] Queries are efficient (indexed, limited)
+      - [ ] No N+1 query problems
+      - [ ] Batch operations where possible
+      - [ ] Async operations used appropriately
+
+      ### Scalability
+      - [ ] Works with expected data volumes
+      - [ ] No hard-coded limits that won't scale
+      - [ ] Concurrency handled correctly
+
+      ## Performance Issues Format
+      For each issue:
+      - Impact (high, medium, low)
+      - Affected code location
+      - Current behavior
+      - Recommended optimization
+      - Expected improvement
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Review Summary
+    model: opus
+    prompt: |
+      All reviews complete. Generate final review summary.
+
+      ## Sub-Agent Strategy
+      - Compile findings from all previous steps
+      - Prioritize issues by severity and impact
+      - Identify patterns across issues
+
+      ## Summary Structure
+
+      ### Overall Assessment
+      - Approve / Request Changes / Needs Discussion
+      - Brief summary (2-3 sentences)
+      - Key strengths of the code
+      - Main areas for improvement
+
+      ### Issues by Severity
+
+      #### Critical (must fix before merge)
+      [List critical issues]
+
+      #### Major (should fix before merge)
+      [List major issues]
+
+      #### Minor (nice to fix)
+      [List minor issues]
+
+      #### Nitpicks (optional style suggestions)
+      [List nitpicks]
+
+      ### Test Coverage Assessment
+      - Are changes adequately tested?
+      - Suggested additional tests
+
+      ### Recommendations
+      - Specific action items in priority order
+      - Patterns to consider for future work
+
+      ## Tone Guidelines
+      - Be constructive and helpful
+      - Acknowledge good work
+      - Focus on code, not the author
+      - Provide learning opportunities
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

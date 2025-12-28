@@ -13,6 +13,14 @@ import type { Workflow, NewWorkflow } from "../db/drizzle";
 import quickTaskYaml from "../../workflows/quick-task.yml";
 import investigateAndFixYaml from "../../workflows/investigate-and-fix.yml";
 import qualityRefactorYaml from "../../workflows/quality-refactor.yml";
+import featureImplementationYaml from "../../workflows/feature-implementation.yml";
+import testGenerationYaml from "../../workflows/test-generation.yml";
+import codeReviewYaml from "../../workflows/code-review.yml";
+import documentationGeneratorYaml from "../../workflows/documentation-generator.yml";
+import securityAuditYaml from "../../workflows/security-audit.yml";
+import performanceOptimizationYaml from "../../workflows/performance-optimization.yml";
+import dependencyUpgradeYaml from "../../workflows/dependency-upgrade.yml";
+import apiIntegrationYaml from "../../workflows/api-integration.yml";
 
 // ============================================================================
 // Type Definitions
@@ -107,9 +115,23 @@ export interface WorkflowSummary {
  * These are imported directly and bundled by Bun
  */
 const BUILTIN_WORKFLOWS = [
+  // Core workflows
   { id: "quick-task", definition: quickTaskYaml as WorkflowDefinition },
   { id: "investigate-and-fix", definition: investigateAndFixYaml as WorkflowDefinition },
   { id: "quality-refactor", definition: qualityRefactorYaml as WorkflowDefinition },
+  // Feature development
+  { id: "feature-implementation", definition: featureImplementationYaml as WorkflowDefinition },
+  // Testing & Quality
+  { id: "test-generation", definition: testGenerationYaml as WorkflowDefinition },
+  { id: "code-review", definition: codeReviewYaml as WorkflowDefinition },
+  // Documentation
+  { id: "documentation-generator", definition: documentationGeneratorYaml as WorkflowDefinition },
+  // Security & Performance
+  { id: "security-audit", definition: securityAuditYaml as WorkflowDefinition },
+  { id: "performance-optimization", definition: performanceOptimizationYaml as WorkflowDefinition },
+  // Maintenance
+  { id: "dependency-upgrade", definition: dependencyUpgradeYaml as WorkflowDefinition },
+  { id: "api-integration", definition: apiIntegrationYaml as WorkflowDefinition },
 ];
 
 // ============================================================================
