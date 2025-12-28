@@ -43,16 +43,19 @@ function BottomSheet({
     startY.current = touch.clientY;
   }, []);
 
-  const handleTouchMove = React.useCallback((e: React.TouchEvent) => {
-    if (!isDragging) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const deltaY = touch.clientY - startY.current;
-    // Only allow dragging down (positive delta)
-    if (deltaY > 0) {
-      setDragOffset(deltaY);
-    }
-  }, [isDragging]);
+  const handleTouchMove = React.useCallback(
+    (e: React.TouchEvent) => {
+      if (!isDragging) return;
+      const touch = e.touches[0];
+      if (!touch) return;
+      const deltaY = touch.clientY - startY.current;
+      // Only allow dragging down (positive delta)
+      if (deltaY > 0) {
+        setDragOffset(deltaY);
+      }
+    },
+    [isDragging],
+  );
 
   const handleTouchEnd = React.useCallback(() => {
     setIsDragging(false);
@@ -89,7 +92,7 @@ function BottomSheet({
               "fixed inset-0 z-50 bg-black/40 backdrop-blur-sm",
               "data-open:animate-in data-closed:animate-out",
               "data-closed:fade-out-0 data-open:fade-in-0",
-              "duration-200"
+              "duration-200",
             )}
           />
           <SheetPrimitive.Popup
@@ -101,7 +104,7 @@ function BottomSheet({
               "data-closed:slide-out-to-bottom data-open:slide-in-from-bottom",
               "data-closed:fade-out-0 data-open:fade-in-0",
               "duration-300 ease-out",
-              className
+              className,
             )}
             style={{
               transform: isDragging ? `translateY(${dragOffset}px)` : undefined,
@@ -153,7 +156,7 @@ function FloatingActionButton({
         "active:scale-95 transition-transform",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         position === "right" ? "right-4" : "left-4",
-        className
+        className,
       )}
       {...props}
     >

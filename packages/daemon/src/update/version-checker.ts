@@ -2,10 +2,13 @@
  * Version Checker
  *
  * Checks for updates from GitHub releases.
+ * Supports two update channels:
+ * - stable: Only production releases (default)
+ * - latest: Includes prereleases (beta, rc, canary)
  */
 
 import { VERSION } from "@nightshift/shared";
-import type { UpdateInfo } from "@nightshift/shared";
+import type { UpdateInfo, UpdateChannel } from "@nightshift/shared";
 import { join } from "path";
 import { NIGHTSHIFT_DIR } from "../config/paths";
 import { existsSync, readFileSync, writeFileSync } from "fs";
@@ -16,7 +19,11 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
  */
 const NIGHTSHIFT_REPO = process.env.NIGHTSHIFT_REPO || "sipherxyz/nightshift";
 const GITHUB_API = process.env.GITHUB_API || "https://api.github.com";
-const RELEASES_URL = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases/latest`;
+
+/** Stable channel: only non-prerelease versions */
+const RELEASES_STABLE_URL = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases/latest`;
+/** Latest channel: includes prereleases (fetches all, takes first) */
+const RELEASES_ALL_URL = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases?per_page=1`;
 
 /**
  * Path to update state file
@@ -61,6 +68,24 @@ interface UpdateState {
   releaseNotes: string | null;
   publishedAt: string | null;
   dismissed: boolean;
+  /** Channel the update was fetched from */
+  channel: UpdateChannel | null;
+  /** Whether the available update is a prerelease */
+  isPrerelease: boolean | null;
+}
+
+/**
+ * Get configured update channel from config
+ * Falls back to "stable" if not configured
+ */
+async function getUpdateChannel(): Promise<UpdateChannel> {
+  try {
+    const { getConfig } = await import("../config");
+    const config = getConfig();
+    return config.updateChannel || "stable";
+  } catch {
+    return "stable";
+  }
 }
 
 /**
@@ -75,6 +100,8 @@ export function getUpdateState(): UpdateState {
     releaseNotes: null,
     publishedAt: null,
     dismissed: false,
+    channel: null,
+    isPrerelease: null,
   };
 
   if (!existsSync(UPDATE_STATE_PATH)) {
@@ -151,28 +178,66 @@ interface GitHubRelease {
   name: string;
   body: string;
   published_at: string;
+  prerelease: boolean;
   assets: GitHubAsset[];
 }
 
 /**
+ * Common headers for GitHub API requests
+ */
+function getGitHubHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": `NightShift/${VERSION}`,
+  };
+  if (process.env.GITHUB_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+  return headers;
+}
+
+/**
+ * Fetch release based on channel
+ * - stable: Uses /releases/latest (excludes prereleases)
+ * - latest: Uses /releases?per_page=1 (includes prereleases)
+ */
+async function fetchReleaseByChannel(channel: UpdateChannel): Promise<GitHubRelease | null> {
+  const url = channel === "stable" ? RELEASES_STABLE_URL : RELEASES_ALL_URL;
+
+  try {
+    const response = await fetch(url, { headers: getGitHubHeaders() });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+
+    // For "latest" channel, response is an array
+    if (channel === "latest") {
+      const releases = data as GitHubRelease[];
+      return releases[0] || null;
+    }
+
+    // For "stable" channel, response is a single release object
+    return data as GitHubRelease;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Check for updates from GitHub releases
+ * Uses the configured update channel (stable or latest)
  */
 export async function checkForUpdates(): Promise<UpdateInfo | null> {
   const now = new Date().toISOString();
+  const channel = await getUpdateChannel();
 
   try {
-    const response = await fetch(RELEASES_URL, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": `NightShift/${VERSION}`,
-        // Support GITHUB_TOKEN to avoid rate limits (matches install.sh)
-        ...(process.env.GITHUB_TOKEN
-          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-          : {}),
-      },
-    });
+    const release = await fetchReleaseByChannel(channel);
 
-    if (!response.ok) {
+    if (!release) {
       // No releases yet or API error
       saveUpdateState({
         ...getUpdateState(),
@@ -181,7 +246,6 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
       return null;
     }
 
-    const release = (await response.json()) as GitHubRelease;
     const latestVersion = release.tag_name.replace(/^v/, "");
 
     // Find binary for this platform (matches install.sh naming)
@@ -203,7 +267,7 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
             // Match: hash followed by two spaces and filename
             const match = line.match(/^([a-f0-9]{64})\s+(.+)$/);
             if (match && match[2] === binaryName) {
-              checksum = match[1];
+              checksum = match[1] ?? null;
               break;
             }
           }
@@ -219,6 +283,7 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
       checksum: checksum || "",
       releaseNotes: release.body || undefined,
       publishedAt: release.published_at,
+      isPrerelease: release.prerelease,
     };
 
     // Check if this is actually newer
@@ -229,9 +294,11 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
       availableVersion: isNewer ? latestVersion : null,
       downloadUrl: isNewer && binaryAsset ? binaryAsset.browser_download_url : null,
       checksum: isNewer ? checksum : null,
-      releaseNotes: isNewer ? release.body : null,
+      releaseNotes: isNewer ? release.body || null : null,
       publishedAt: isNewer ? release.published_at : null,
       dismissed: false,
+      channel: isNewer ? channel : null,
+      isPrerelease: isNewer ? release.prerelease : null,
     });
 
     return isNewer ? updateInfo : null;
@@ -246,36 +313,39 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
 }
 
 /**
- * Fetch release info for a specific version (matches install.sh tag support)
- * @param target - Version string (e.g., "0.1.0", "v0.1.0", "latest", "stable")
+ * Fetch release info for a specific version or channel
+ * @param target - Version string (e.g., "0.1.0", "v0.1.0") or channel ("latest", "stable")
+ *
+ * Channel behavior:
+ * - "stable": Fetches /releases/latest (excludes prereleases)
+ * - "latest": Fetches /releases (includes prereleases, returns first)
+ * - Specific version: Fetches /releases/tags/v{version}
  */
 export async function fetchRelease(target: string = "latest"): Promise<UpdateInfo | null> {
-  // Resolve release URL based on target (matches install.sh logic)
-  let releaseUrl: string;
-  if (target === "latest" || target === "stable" || !target) {
-    releaseUrl = RELEASES_URL;
-  } else {
-    // Ensure tag has 'v' prefix
-    const tag = target.startsWith("v") ? target : `v${target}`;
-    releaseUrl = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases/tags/${tag}`;
-  }
+  let release: GitHubRelease | null = null;
 
   try {
-    const response = await fetch(releaseUrl, {
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": `NightShift/${VERSION}`,
-        ...(process.env.GITHUB_TOKEN
-          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
-          : {}),
-      },
-    });
+    // Handle channel shortcuts
+    if (target === "latest") {
+      release = await fetchReleaseByChannel("latest");
+    } else if (target === "stable" || !target) {
+      release = await fetchReleaseByChannel("stable");
+    } else {
+      // Fetch specific version by tag
+      const tag = target.startsWith("v") ? target : `v${target}`;
+      const releaseUrl = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases/tags/${tag}`;
 
-    if (!response.ok) {
+      const response = await fetch(releaseUrl, { headers: getGitHubHeaders() });
+      if (!response.ok) {
+        return null;
+      }
+      release = (await response.json()) as GitHubRelease;
+    }
+
+    if (!release) {
       return null;
     }
 
-    const release = (await response.json()) as GitHubRelease;
     const version = release.tag_name.replace(/^v/, "");
 
     // Find binary for this platform
@@ -298,7 +368,7 @@ export async function fetchRelease(target: string = "latest"): Promise<UpdateInf
           for (const line of lines) {
             const match = line.match(/^([a-f0-9]{64})\s+(.+)$/);
             if (match && match[2] === binaryName) {
-              checksum = match[1];
+              checksum = match[1] ?? null;
               break;
             }
           }
@@ -314,6 +384,7 @@ export async function fetchRelease(target: string = "latest"): Promise<UpdateInf
       checksum: checksum || "",
       releaseNotes: release.body || undefined,
       publishedAt: release.published_at,
+      isPrerelease: release.prerelease,
     };
   } catch {
     return null;

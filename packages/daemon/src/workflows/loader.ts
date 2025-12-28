@@ -143,31 +143,95 @@ const BUILTIN_WORKFLOWS: Array<{
   // Core Workflows - Essential task execution
   // ============================================================================
   { id: "quick-task", category: "core", definition: quickTaskYaml as WorkflowDefinition },
-  { id: "investigate-and-fix", category: "core", definition: investigateAndFixYaml as WorkflowDefinition },
-  { id: "quality-refactor", category: "core", definition: qualityRefactorYaml as WorkflowDefinition },
+  {
+    id: "investigate-and-fix",
+    category: "core",
+    definition: investigateAndFixYaml as WorkflowDefinition,
+  },
+  {
+    id: "quality-refactor",
+    category: "core",
+    definition: qualityRefactorYaml as WorkflowDefinition,
+  },
 
   // ============================================================================
   // Development Workflows - Software engineering tasks
   // ============================================================================
-  { id: "feature-implementation", category: "development", definition: featureImplementationYaml as WorkflowDefinition },
-  { id: "test-generation", category: "development", definition: testGenerationYaml as WorkflowDefinition },
+  {
+    id: "feature-implementation",
+    category: "development",
+    definition: featureImplementationYaml as WorkflowDefinition,
+  },
+  {
+    id: "test-generation",
+    category: "development",
+    definition: testGenerationYaml as WorkflowDefinition,
+  },
   { id: "code-review", category: "development", definition: codeReviewYaml as WorkflowDefinition },
-  { id: "documentation-generator", category: "development", definition: documentationGeneratorYaml as WorkflowDefinition },
-  { id: "security-audit", category: "development", definition: securityAuditYaml as WorkflowDefinition },
-  { id: "performance-optimization", category: "development", definition: performanceOptimizationYaml as WorkflowDefinition },
-  { id: "dependency-upgrade", category: "development", definition: dependencyUpgradeYaml as WorkflowDefinition },
-  { id: "api-integration", category: "development", definition: apiIntegrationYaml as WorkflowDefinition },
+  {
+    id: "documentation-generator",
+    category: "development",
+    definition: documentationGeneratorYaml as WorkflowDefinition,
+  },
+  {
+    id: "security-audit",
+    category: "development",
+    definition: securityAuditYaml as WorkflowDefinition,
+  },
+  {
+    id: "performance-optimization",
+    category: "development",
+    definition: performanceOptimizationYaml as WorkflowDefinition,
+  },
+  {
+    id: "dependency-upgrade",
+    category: "development",
+    definition: dependencyUpgradeYaml as WorkflowDefinition,
+  },
+  {
+    id: "api-integration",
+    category: "development",
+    definition: apiIntegrationYaml as WorkflowDefinition,
+  },
 
   // ============================================================================
   // Narrative Workflows - Game story and cinematic development
   // ============================================================================
-  { id: "story-architect", category: "narrative", definition: storyArchitectYaml as WorkflowDefinition },
-  { id: "world-builder", category: "narrative", definition: worldBuilderYaml as WorkflowDefinition },
-  { id: "character-architect", category: "narrative", definition: characterArchitectYaml as WorkflowDefinition },
-  { id: "plot-designer", category: "narrative", definition: plotDesignerYaml as WorkflowDefinition },
-  { id: "cinematic-screenwriter", category: "narrative", definition: cinematicScreenwriterYaml as WorkflowDefinition },
-  { id: "dialogue-specialist", category: "narrative", definition: dialogueSpecialistYaml as WorkflowDefinition },
-  { id: "cinematic-director", category: "narrative", definition: cinematicDirectorYaml as WorkflowDefinition },
+  {
+    id: "story-architect",
+    category: "narrative",
+    definition: storyArchitectYaml as WorkflowDefinition,
+  },
+  {
+    id: "world-builder",
+    category: "narrative",
+    definition: worldBuilderYaml as WorkflowDefinition,
+  },
+  {
+    id: "character-architect",
+    category: "narrative",
+    definition: characterArchitectYaml as WorkflowDefinition,
+  },
+  {
+    id: "plot-designer",
+    category: "narrative",
+    definition: plotDesignerYaml as WorkflowDefinition,
+  },
+  {
+    id: "cinematic-screenwriter",
+    category: "narrative",
+    definition: cinematicScreenwriterYaml as WorkflowDefinition,
+  },
+  {
+    id: "dialogue-specialist",
+    category: "narrative",
+    definition: dialogueSpecialistYaml as WorkflowDefinition,
+  },
+  {
+    id: "cinematic-director",
+    category: "narrative",
+    definition: cinematicDirectorYaml as WorkflowDefinition,
+  },
   { id: "story-editor", category: "narrative", definition: storyEditorYaml as WorkflowDefinition },
 ];
 

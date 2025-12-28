@@ -1,3 +1,5 @@
+/* eslint-disable no-control-regex */
+
 /**
  * Worktree Manager
  *
@@ -198,14 +200,22 @@ export class WorktreeManager {
       console.log(`[WorktreeManager] Removed worktree: ${worktreePath}`);
     } catch (gitError) {
       // Force remove if git command fails
-      console.warn(`[WorktreeManager] Git worktree remove failed, force removing directory:`, gitError);
+      console.warn(
+        `[WorktreeManager] Git worktree remove failed, force removing directory:`,
+        gitError,
+      );
       try {
         rmSync(worktreePath, { recursive: true, force: true });
         console.log(`[WorktreeManager] Force removed directory: ${worktreePath}`);
       } catch (rmError) {
         // If even force remove fails, this is a serious error - log and throw
-        console.error(`[WorktreeManager] CRITICAL: Failed to remove worktree directory ${worktreePath}:`, rmError);
-        throw new Error(`Failed to cleanup worktree at ${worktreePath}: ${rmError instanceof Error ? rmError.message : "Unknown error"}`);
+        console.error(
+          `[WorktreeManager] CRITICAL: Failed to remove worktree directory ${worktreePath}:`,
+          rmError,
+        );
+        throw new Error(
+          `Failed to cleanup worktree at ${worktreePath}: ${rmError instanceof Error ? rmError.message : "Unknown error"}`,
+        );
       }
     }
 

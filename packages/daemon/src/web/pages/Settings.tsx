@@ -23,7 +23,6 @@ import {
   Loader2,
   RefreshCw,
   Settings as SettingsIcon,
-  Folder,
   FolderGit2,
   Clock,
   Pencil,
@@ -33,9 +32,17 @@ import {
   QrCode,
   Copy,
   Globe,
+  Terminal,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { LanQRDialog } from "@/components/LanQRDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SettingsCardProps {
   title: string;
@@ -155,6 +162,12 @@ export function Settings() {
     queryFn: () => client.status.getStatus(),
   });
 
+  // Fetch available shells
+  const { data: availableShells } = useQuery({
+    queryKey: ["shells"],
+    queryFn: () => client.config.getShells(),
+  });
+
   // Sync form values when config loads
   useEffect(() => {
     if (config) {
@@ -225,6 +238,47 @@ export function Settings() {
     toggleLanMutation.mutate(enabled);
   };
 
+  // Update shell mutation
+  const updateShellMutation = useMutation({
+    mutationFn: (shellId: string) => client.config.update({ terminalShell: shellId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      toast.success("Terminal shell updated");
+    },
+    onError: (error) => {
+      toast.error("Failed to update shell", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
+  const handleShellChange = (shellId: string | null) => {
+    if (shellId) {
+      updateShellMutation.mutate(shellId);
+    }
+  };
+
+  // Update channel mutation
+  const updateChannelMutation = useMutation({
+    mutationFn: (channel: string) =>
+      client.config.update({ updateChannel: channel as "stable" | "latest" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["config"] });
+      toast.success("Update channel changed");
+    },
+    onError: (error) => {
+      toast.error("Failed to change update channel", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
+  const handleChannelChange = (channel: string | null) => {
+    if (channel) {
+      updateChannelMutation.mutate(channel);
+    }
+  };
+
   // Check for updates mutation
   const checkMutation = useMutation({
     mutationFn: () => client.update.check(),
@@ -277,35 +331,6 @@ export function Settings() {
     }
     installMutation.mutate();
   };
-
-  // Operating mode styling
-  const getModeStyle = (mode?: string) => {
-    switch (mode) {
-      case "connected":
-        return {
-          color: "text-primary",
-          bgColor: "bg-primary/10",
-          borderColor: "border-primary/30",
-          label: "Connected",
-        };
-      case "hybrid":
-        return {
-          color: "text-violet-400",
-          bgColor: "bg-violet-500/10",
-          borderColor: "border-violet-500/30",
-          label: "Hybrid",
-        };
-      default:
-        return {
-          color: "text-emerald-400",
-          bgColor: "bg-emerald-500/10",
-          borderColor: "border-emerald-500/30",
-          label: "Standalone",
-        };
-    }
-  };
-
-  const modeStyle = getModeStyle(status?.mode);
 
   return (
     <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
@@ -363,7 +388,7 @@ export function Settings() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-2">
+      <div className="flex flex-col gap-4 lg:gap-6 max-w-2xl">
         {/* Updates Section */}
         <SettingsCard
           title="Updates"
@@ -470,73 +495,45 @@ export function Settings() {
                 <p className="text-xs text-emerald-400">Running the latest version</p>
               </div>
             )}
-          </div>
-        </SettingsCard>
 
-        {/* Operating Mode */}
-        <SettingsCard
-          title="Operating Mode"
-          description="Daemon execution configuration"
-          icon={Folder}
-          iconColor={modeStyle.color}
-          iconBg={modeStyle.bgColor}
-          iconBorder={modeStyle.borderColor}
-          index={1}
-        >
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  "h-2.5 w-2.5",
-                  modeStyle.bgColor.replace("/10", ""),
-                  `shadow-[0_0_8px_rgba(var(--${modeStyle.color.replace("text-", "")}),0.6)]`,
-                )}
-                style={{
-                  backgroundColor:
-                    status?.mode === "connected"
-                      ? "var(--primary)"
-                      : status?.mode === "hybrid"
-                        ? "#a78bfa"
-                        : "#34d399",
-                  boxShadow:
-                    status?.mode === "connected"
-                      ? "0 0 8px rgba(var(--primary), 0.6)"
-                      : status?.mode === "hybrid"
-                        ? "0 0 8px rgba(167, 139, 250, 0.6)"
-                        : "0 0 8px rgba(52, 211, 153, 0.6)",
-                }}
-              />
-              <Badge
-                variant="outline"
-                className={cn(
-                  "border px-2 py-0.5 text-xs uppercase tracking-wider",
-                  modeStyle.bgColor,
-                  modeStyle.borderColor,
-                  modeStyle.color,
-                )}
-              >
-                {modeStyle.label}
-              </Badge>
+            {/* Update Channel */}
+            <div className="border-t border-border/50 pt-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground">Update Channel</p>
+                  <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+                    {config?.updateChannel === "latest"
+                      ? "Includes beta, RC, and canary releases"
+                      : "Production releases only"}
+                  </p>
+                </div>
+                <Select
+                  value={config?.updateChannel || "stable"}
+                  onValueChange={handleChannelChange}
+                  disabled={updateChannelMutation.isPending}
+                >
+                  <SelectTrigger className="w-28">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="stable">Stable</SelectItem>
+                    <SelectItem value="latest">Latest</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {status?.mode === "standalone" || !status?.mode
-                ? "Running locally without server connection. Tasks are managed from the local queue only."
-                : status?.mode === "connected"
-                  ? "Connected to Control Center. Tasks are synchronized with the cloud."
-                  : "Hybrid mode active. Both local and remote queues are being processed."}
-            </p>
           </div>
         </SettingsCard>
 
-        {/* LAN Access - Always shown with toggle */}
+        {/* Network Access - LAN and Tailscale */}
         <SettingsCard
-          title="LAN Access"
-          description="Connect from devices on your local network"
+          title="Network Access"
+          description="Connect from other devices"
           icon={Wifi}
           iconColor={status?.lan?.enabled ? "text-cyan-400" : "text-muted-foreground"}
           iconBg={status?.lan?.enabled ? "bg-cyan-500/10" : "bg-muted/50"}
           iconBorder={status?.lan?.enabled ? "border-cyan-500/30" : "border-border"}
-          index={2}
+          index={1}
           headerAction={
             <div className="flex items-center gap-2">
               {isTogglingLan && (
@@ -555,7 +552,7 @@ export function Settings() {
               <div className="space-y-4">
                 {/* PIN Display */}
                 {status.lan.pin && (
-                  <div className="flex items-center justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3">
+                  <div className="flex items-center justify-between border border-cyan-500/30 bg-cyan-500/5 p-3">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                         Access PIN
@@ -579,32 +576,29 @@ export function Settings() {
                   </div>
                 )}
 
-                {/* Local IP */}
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Local IP
-                    </p>
-                    <p className="mt-1 font-mono text-lg font-semibold text-foreground">
+                {/* LAN Sub-block */}
+                <div className="border border-border/50 p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Wifi className="h-3.5 w-3.5 text-cyan-400" />
+                    <span className="text-xs font-medium text-foreground">Local Network</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <p className="font-mono text-sm font-medium text-foreground">
                       {status.lan.localIp || "Not available"}
                     </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowLanQR(true)}
+                      className="h-7 text-xs"
+                    >
+                      <QrCode className="mr-1.5 h-3 w-3" />
+                      QR
+                    </Button>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowLanQR(true)}
-                    className="h-8"
-                  >
-                    <QrCode className="mr-2 h-3.5 w-3.5" />
-                    Show QR
-                  </Button>
-                </div>
-
-                {status.lan.url && (
-                  <div className="rounded border border-border bg-muted/30 p-3">
-                    <p className="mb-1 text-xs text-muted-foreground">Connection URL</p>
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 truncate font-mono text-sm text-foreground">
+                  {status.lan.url && (
+                    <div className="flex items-center gap-2 bg-muted/30 px-2 py-1.5">
+                      <code className="flex-1 truncate font-mono text-xs text-muted-foreground">
                         {status.lan.url.replace(/\?pin=\d+/, "?pin=****")}
                       </code>
                       <Button
@@ -614,34 +608,75 @@ export function Settings() {
                           navigator.clipboard.writeText(status.lan!.url!);
                           toast.success("URL copied to clipboard");
                         }}
-                        className="h-6 w-6 shrink-0 p-0"
+                        className="h-5 w-5 shrink-0 p-0"
                       >
-                        <Copy className="h-3.5 w-3.5" />
+                        <Copy className="h-3 w-3" />
                       </Button>
                     </div>
+                  )}
+                </div>
+
+                {/* Tailscale Sub-block - only if detected */}
+                {status.lan.tailscale?.ip && (
+                  <div className="border border-border/50 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Globe className="h-3.5 w-3.5 text-indigo-400" />
+                      <span className="text-xs font-medium text-foreground">Tailscale</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="font-mono text-sm font-medium text-foreground">
+                        {status.lan.tailscale.ip}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowTailscaleQR(true)}
+                        className="h-7 text-xs"
+                      >
+                        <QrCode className="mr-1.5 h-3 w-3" />
+                        QR
+                      </Button>
+                    </div>
+                    {status.lan.tailscale.url && (
+                      <div className="flex items-center gap-2 bg-muted/30 px-2 py-1.5">
+                        <code className="flex-1 truncate font-mono text-xs text-muted-foreground">
+                          {status.lan.tailscale.url.replace(/\?pin=\d+/, "?pin=****")}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(status.lan!.tailscale!.url!);
+                            toast.success("URL copied to clipboard");
+                          }}
+                          className="h-5 w-5 shrink-0 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
                 <p className="text-xs text-muted-foreground">
-                  Scan the QR code or enter the PIN to connect from your mobile device on the same
-                  network.
+                  Scan the QR code or enter the PIN to connect from your mobile device.
                 </p>
               </div>
             ) : (
-              <div className="flex items-center gap-3 rounded border border-amber-500/30 bg-amber-500/5 p-3">
+              <div className="flex items-center gap-3 border border-amber-500/30 bg-amber-500/5 p-3">
                 <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
                 <p className="text-xs text-amber-400">
-                  Daemon is restarting to enable LAN access...
+                  Daemon is restarting to enable network access...
                 </p>
               </div>
             )
           ) : (
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground">
-                Enable LAN access to connect from other devices on your local network, such as your
-                phone or tablet.
+                Enable network access to connect from other devices on your local network or via
+                Tailscale.
               </p>
-              <div className="flex items-start gap-2 rounded border border-border bg-muted/30 p-3">
+              <div className="flex items-start gap-2 border border-border bg-muted/30 p-3">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
                   When enabled, the daemon will bind to 0.0.0.0 and generate a PIN for
@@ -652,72 +687,10 @@ export function Settings() {
           )}
         </SettingsCard>
 
-        {/* Tailscale Access - Only shown when Tailscale is detected */}
-        {status?.lan?.enabled && status?.lan?.tailscale?.ip && (
-          <SettingsCard
-            title="Tailscale Access"
-            description="Connect from anywhere via Tailscale VPN"
-            icon={Globe}
-            iconColor="text-indigo-400"
-            iconBg="bg-indigo-500/10"
-            iconBorder="border-indigo-500/30"
-            index={2}
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Tailscale IP
-                  </p>
-                  <p className="mt-1 font-mono text-lg font-semibold text-foreground">
-                    {status.lan.tailscale.ip}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowTailscaleQR(true)}
-                  className="h-8"
-                >
-                  <QrCode className="mr-2 h-3.5 w-3.5" />
-                  Show QR
-                </Button>
-              </div>
-
-              {status.lan.tailscale.url && (
-                <div className="rounded border border-border bg-muted/30 p-3">
-                  <p className="mb-1 text-xs text-muted-foreground">Connection URL</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 truncate font-mono text-sm text-foreground">
-                      {status.lan.tailscale.url.replace(/\?pin=\d+/, "?pin=****")}
-                    </code>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(status.lan!.tailscale!.url!);
-                        toast.success("URL copied to clipboard");
-                      }}
-                      className="h-6 w-6 shrink-0 p-0"
-                    >
-                      <Copy className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <p className="text-xs text-muted-foreground">
-                Access Night Shift from any device on your Tailscale network, even when away from
-                home.
-              </p>
-            </div>
-          </SettingsCard>
-        )}
-
         {/* General Configuration */}
         <SettingsCard
           title="Configuration"
-          description="Runtime settings"
+          description="Runtime and terminal settings"
           icon={SettingsIcon}
           iconColor="text-violet-400"
           iconBg="bg-violet-500/10"
@@ -761,55 +734,84 @@ export function Settings() {
             )
           }
         >
-          {isEditingConfig ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs text-muted-foreground">Task Timeout (hours)</label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={24}
-                  value={Math.round(formValues.taskTimeoutMs / 3600000)}
-                  onChange={(e) =>
-                    setFormValues({
-                      ...formValues,
-                      taskTimeoutMs: Number(e.target.value) * 3600000,
-                    })
-                  }
-                  className="h-8 w-24 text-right font-mono text-sm"
-                />
+          <div className="space-y-4">
+            {isEditingConfig ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4">
+                  <label className="text-xs text-muted-foreground">Task Timeout (hours)</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={Math.round(formValues.taskTimeoutMs / 3600000)}
+                    onChange={(e) =>
+                      setFormValues({
+                        ...formValues,
+                        taskTimeoutMs: Number(e.target.value) * 3600000,
+                      })
+                    }
+                    className="h-8 w-24 text-right font-mono text-sm"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-4">
+                  <label className="text-xs text-muted-foreground">Max Concurrent Tasks</label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={formValues.maxConcurrentTasks}
+                    onChange={(e) =>
+                      setFormValues({
+                        ...formValues,
+                        maxConcurrentTasks: Number(e.target.value),
+                      })
+                    }
+                    className="h-8 w-24 text-right font-mono text-sm"
+                  />
+                </div>
               </div>
-              <div className="flex items-center justify-between gap-4">
-                <label className="text-xs text-muted-foreground">Max Concurrent Tasks</label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={10}
-                  value={formValues.maxConcurrentTasks}
-                  onChange={(e) =>
-                    setFormValues({
-                      ...formValues,
-                      maxConcurrentTasks: Number(e.target.value),
-                    })
+            ) : (
+              <div className="divide-y divide-border/50">
+                <ConfigItem label="Port" value={config?.port || 3847} valueColor="font-mono" />
+                <ConfigItem
+                  label="Task Timeout"
+                  value={
+                    config?.taskTimeoutMs
+                      ? `${Math.round(config.taskTimeoutMs / 3600000)} hours`
+                      : "4 hours"
                   }
-                  className="h-8 w-24 text-right font-mono text-sm"
                 />
+                <ConfigItem label="Max Concurrent Tasks" value={config?.maxConcurrentTasks || 1} />
+              </div>
+            )}
+
+            {/* Terminal Shell */}
+            <div className="border-t border-border/50 pt-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <Terminal className="h-3.5 w-3.5 text-teal-400" />
+                  <span className="text-xs text-muted-foreground">Terminal Shell</span>
+                </div>
+                <Select
+                  value={config?.terminalShell || "auto"}
+                  onValueChange={handleShellChange}
+                  disabled={updateShellMutation.isPending}
+                >
+                  <SelectTrigger className="w-36">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto Detect</SelectItem>
+                    {availableShells?.map((shell) => (
+                      <SelectItem key={shell.id} value={shell.id}>
+                        {shell.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-          ) : (
-            <div className="divide-y divide-border/50">
-              <ConfigItem label="Port" value={config?.port || 3847} valueColor="font-mono" />
-              <ConfigItem
-                label="Task Timeout"
-                value={
-                  config?.taskTimeoutMs
-                    ? `${Math.round(config.taskTimeoutMs / 3600000)} hours`
-                    : "4 hours"
-                }
-              />
-              <ConfigItem label="Max Concurrent Tasks" value={config?.maxConcurrentTasks || 1} />
-            </div>
-          )}
+          </div>
         </SettingsCard>
 
         {/* System Information */}

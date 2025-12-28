@@ -12,6 +12,8 @@ A daemon-based task automation system for Claude Code. NightShift runs as a loca
 
 ## Installation
 
+### macOS / Linux
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sipherxyz/nightshift/main/packages/daemon/scripts/install.sh | bash
 ```
@@ -20,6 +22,23 @@ This installs the `nightshift` binary to `~/.nightshift/bin`. Add it to your PAT
 
 ```bash
 export PATH="$HOME/.nightshift/bin:$PATH"
+```
+
+### Windows
+
+```powershell
+irm https://raw.githubusercontent.com/sipherxyz/nightshift/main/packages/daemon/scripts/install.ps1 | iex
+```
+
+This installs `nightshift.exe` to `~\.nightshift\bin` and adds it to your PATH automatically.
+
+**Options:**
+```powershell
+# Install specific version
+.\install.ps1 -Version 0.2.0
+
+# Skip PATH update
+.\install.ps1 -NoPathUpdate
 ```
 
 **Requirements:** [Claude Code](https://claude.ai/code) CLI must be installed and authenticated.
@@ -46,6 +65,7 @@ nightshift stop
 | `nightshift stop` | Stop the daemon gracefully |
 | `nightshift restart` | Restart the daemon |
 | `nightshift status` | Show daemon status and active tasks |
+| `nightshift update` | Check and install latest update |
 | `nightshift repos list` | List configured repositories |
 | `nightshift repos add /path` | Add a repository |
 | `nightshift config` | Open settings in browser |

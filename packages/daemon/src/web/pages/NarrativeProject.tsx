@@ -7,7 +7,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -618,7 +618,6 @@ function DocumentPreviewPanel({
 }
 
 export function NarrativeProject() {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("pipeline");

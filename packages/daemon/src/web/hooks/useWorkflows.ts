@@ -101,11 +101,8 @@ export function useCreateWorkflow() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: {
-      name: string;
-      description: string;
-      definition: WorkflowDefinition;
-    }) => client.workflows.create(data),
+    mutationFn: (data: { name: string; description: string; definition: WorkflowDefinition }) =>
+      client.workflows.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workflows"] });
     },

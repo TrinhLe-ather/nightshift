@@ -93,9 +93,10 @@ export type {
   ExecutionModeConfig,
   PauseReason,
   ClaudeModel,
+  UpdateChannel,
 } from "./schemas";
 
-export { modelSchema } from "./schemas";
+export { modelSchema, updateChannelSchema } from "./schemas";
 
 // =============================================================================
 // TypeScript Types

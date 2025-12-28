@@ -51,8 +51,8 @@
 
 :root {
   --font-mono:
-    "JetBrains Mono", "Geist Mono", "Geist Mono Fallback", "Monaco",
-    "Inconsolata", "Fira Code", monospace;
+    "JetBrains Mono", "Geist Mono", "Geist Mono Fallback", "Monaco", "Inconsolata", "Fira Code",
+    monospace;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);

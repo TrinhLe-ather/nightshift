@@ -51,9 +51,14 @@ function NavMenuItem({ item }: { item: NavItem }) {
     <SidebarMenuButton
       isActive={isActive}
       tooltip={item.label}
-      render={<NavLink to={item.to} className="[&_svg]:size-5" />}
+      render={
+        <NavLink
+          to={item.to}
+          className="[&_svg]:size-5 h-10! group-data-[collapsible=icon]:size-10! text-center"
+        />
+      }
     >
-      <item.icon size={24} />
+      <item.icon />
       <span>{item.label}</span>
     </SidebarMenuButton>
   );

@@ -378,7 +378,12 @@ export function Repos() {
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">No matching repositories</p>
           <p className="mt-1 text-xs text-muted-foreground">Try adjusting your search query</p>
-          <Button variant="outline" className="mt-4 lg:mt-6" size="sm" onClick={() => setSearchQuery("")}>
+          <Button
+            variant="outline"
+            className="mt-4 lg:mt-6"
+            size="sm"
+            onClick={() => setSearchQuery("")}
+          >
             Clear search
           </Button>
         </div>
@@ -456,7 +461,7 @@ export function Repos() {
                 Default Branch
               </label>
               {branchesLoading ? (
-                <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Loading branches...
                 </div>
@@ -477,7 +482,7 @@ export function Repos() {
                           {branch === branchesData.currentBranch && (
                             <Badge
                               variant="outline"
-                              className="ml-1 rounded border-primary/30 bg-primary/10 px-1 text-[10px] text-primary"
+                              className="ml-1 border-primary/30 bg-primary/10 px-1 text-[10px] text-primary"
                             >
                               current
                             </Badge>

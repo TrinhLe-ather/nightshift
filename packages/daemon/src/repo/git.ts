@@ -79,7 +79,6 @@ export async function isRepoDirty(repoPath: string): Promise<boolean> {
   return status.length > 0;
 }
 
-
 /**
  * Check if this is a shallow clone
  */
@@ -286,4 +285,3 @@ export function isUnrealProject(repoPath: string): boolean {
     return false;
   }
 }
-

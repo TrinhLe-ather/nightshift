@@ -54,7 +54,10 @@ export const BIN_DIR = process.env.NIGHTSHIFT_INSTALL_DIR || join(NIGHTSHIFT_DIR
 /**
  * Installed binary path
  */
-export const BINARY_PATH = join(BIN_DIR, process.platform === "win32" ? "nightshift.exe" : "nightshift");
+export const BINARY_PATH = join(
+  BIN_DIR,
+  process.platform === "win32" ? "nightshift.exe" : "nightshift",
+);
 
 /**
  * PID file for daemon process tracking

@@ -1,11 +1,16 @@
 import type { ServerWebSocket } from "bun";
+import { spawn, type IPty } from "bun-pty";
+import { loadConfig } from "../config";
+import { resolveShell } from "./shells";
 
 export interface PtySession {
   id: string;
-  proc: ReturnType<typeof Bun.spawn>;
+  pty: IPty;
   cols: number;
   rows: number;
   createdAt: Date;
+  dataDisposer?: { dispose: () => void };
+  exitDisposer?: { dispose: () => void };
 }
 
 export interface TerminalWsData {
@@ -20,26 +25,18 @@ class PtySessionManager {
   createSession(ws: ServerWebSocket<TerminalWsData>, cols: number, rows: number): PtySession {
     const id = crypto.randomUUID();
 
-    // Detect shell based on platform
-    const isWindows = process.platform === "win32";
-    const shell = isWindows
-      ? process.env.COMSPEC || "cmd.exe"
-      : process.env.SHELL || "/bin/bash";
+    // Get configured shell
+    const config = loadConfig();
+    const shell = resolveShell(config.terminalShell);
 
     // Get home directory
+    const isWindows = process.platform === "win32";
     const homeDir = isWindows ? process.env.USERPROFILE : process.env.HOME;
 
-    const proc = Bun.spawn([shell], {
-      terminal: {
-        cols,
-        rows,
-        data(_terminal, data) {
-          // Send PTY output to WebSocket as binary
-          if (ws.readyState === WebSocket.OPEN) {
-            ws.send(data);
-          }
-        },
-      },
+    const pty = spawn(shell, [], {
+      name: "xterm-256color",
+      cols,
+      rows,
       cwd: homeDir,
       env: {
         ...process.env,
@@ -48,12 +45,29 @@ class PtySessionManager {
       },
     });
 
+    // Handle PTY output - send to WebSocket
+    const dataDisposer = pty.onData((data: string) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(data);
+      }
+    });
+
+    // Handle PTY exit - close WebSocket
+    const exitDisposer = pty.onExit(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+      this.sessions.delete(id);
+    });
+
     const session: PtySession = {
       id,
-      proc,
+      pty,
       cols,
       rows,
       createdAt: new Date(),
+      dataDisposer,
+      exitDisposer,
     };
 
     this.sessions.set(id, session);
@@ -64,8 +78,9 @@ class PtySessionManager {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    // Use proc.terminal.write() directly (Bun v1.3.5+)
-    session.proc.terminal?.write(data);
+    // bun-pty write accepts string
+    const str = typeof data === "string" ? data : new TextDecoder().decode(data);
+    session.pty.write(str);
   }
 
   resize(sessionId: string, cols: number, rows: number): void {
@@ -73,15 +88,18 @@ class PtySessionManager {
     if (session) {
       session.cols = cols;
       session.rows = rows;
-      // Use Bun's native PTY resize API (Bun v1.3.5+)
-      session.proc.terminal?.resize(cols, rows);
+      session.pty.resize(cols, rows);
     }
   }
 
   close(sessionId: string): void {
     const session = this.sessions.get(sessionId);
     if (session) {
-      session.proc.kill();
+      // Clean up event listeners
+      session.dataDisposer?.dispose();
+      session.exitDisposer?.dispose();
+      // Kill the PTY process
+      session.pty.kill();
       this.sessions.delete(sessionId);
     }
   }

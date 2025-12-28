@@ -25,10 +25,10 @@ streamEventBus.emitTyping("test_task_1", false);
 streamEventBus.emitComplete("test_task_1");
 
 console.log(`✓ Received ${events.length} events`);
-console.log(`✓ Event types: ${events.map(e => e.type).join(", ")}`);
+console.log(`✓ Event types: ${events.map((e) => e.type).join(", ")}`);
 
 // Test 2: Verify sequence numbers
-const sequences = events.map(e => e.seq);
+const sequences = events.map((e) => e.seq);
 console.log(`✓ Sequence numbers: ${sequences.join(", ")}`);
 
 if (sequences.length === 4 && sequences[0] === 0 && sequences[3] === 3) {

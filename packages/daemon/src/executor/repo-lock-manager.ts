@@ -43,7 +43,7 @@ export class RepoLockManager {
 
           console.log(
             `[RepoLockManager] Cannot acquire exclusive lock for task ${taskId}: ` +
-              `${existingLocks.length} existing lock(s) (${lockTypes}) held by: ${lockHolders.join(", ")}`
+              `${existingLocks.length} existing lock(s) (${lockTypes}) held by: ${lockHolders.join(", ")}`,
           );
 
           return {
@@ -67,7 +67,7 @@ export class RepoLockManager {
           .run();
 
         console.log(
-          `[RepoLockManager] Acquired exclusive lock ${lockId} for task ${taskId} on repo ${repoId}`
+          `[RepoLockManager] Acquired exclusive lock ${lockId} for task ${taskId} on repo ${repoId}`,
         );
         return { success: true, lockId };
       });
@@ -157,11 +157,7 @@ export class RepoLockManager {
   }> {
     const db = getDb();
 
-    const existingLocks = db
-      .select()
-      .from(repoLocks)
-      .where(eq(repoLocks.repoId, repoId))
-      .all();
+    const existingLocks = db.select().from(repoLocks).where(eq(repoLocks.repoId, repoId)).all();
 
     if (existingLocks.length > 0) {
       return {

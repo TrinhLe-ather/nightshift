@@ -46,6 +46,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          # Tags with "-" (e.g., v0.2.0-beta.1) are marked as prerelease
+          # These appear in "latest" channel but not "stable" channel
+          prerelease: ${{ contains(github.ref_name, '-') }}
           files: |
             packages/daemon/dist/nightshift-darwin-arm64
             packages/daemon/dist/nightshift-linux-x64

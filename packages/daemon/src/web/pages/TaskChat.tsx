@@ -67,6 +67,7 @@ function ContinueTaskInput({
   onSubmit,
   model,
   onModelChange,
+  disabled,
   isPending,
   isMobile,
 }: {
@@ -75,6 +76,7 @@ function ContinueTaskInput({
   onSubmit: (e: FormEvent) => void;
   model: string;
   onModelChange: (model: string) => void;
+  disabled: boolean;
   isPending: boolean;
   isMobile: boolean;
 }) {
@@ -86,18 +88,19 @@ function ContinueTaskInput({
       )}
     >
       <form onSubmit={onSubmit}>
-        <InputGroup className="bg-red-500">
+        <InputGroup>
           <InputGroupTextarea
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={
               isMobile ? "Continue this task..." : "Continue this task with a follow-up prompt..."
             }
-            className={cn(
-              isMobile ? "min-h-[50px] max-h-[120px] text-sm" : "min-h-[60px] max-h-[200px]",
-            )}
+            className={
+              isMobile ? "min-h-[50px] max-h-[120px] text-sm" : "min-h-[60px] max-h-[200px]"
+            }
+            disabled={disabled}
             onKeyDown={
-              isMobile
+              isMobile || disabled
                 ? undefined
                 : (e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -137,7 +140,7 @@ function ContinueTaskInput({
               type="submit"
               variant="default"
               size="icon-xs"
-              disabled={!value.trim() || isPending}
+              disabled={disabled || !value.trim() || isPending}
             >
               {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -449,12 +452,13 @@ export function TaskChat() {
   const [continuePrompt, setContinuePrompt] = useState("");
   const [continueModel, setContinueModel] = useState("");
   const continueTask = useContinueTask();
-  const canContinue = isTerminal && task?.sdkSessionId;
+  const showContinueInput = !!task?.sdkSessionId;
+  const canSubmitContinue = isTerminal && !continueTask.isPending;
 
   const handleContinueSubmit = useCallback(
     (e: FormEvent) => {
       e.preventDefault();
-      if (!taskId || !continuePrompt.trim() || continueTask.isPending) return;
+      if (!taskId || !continuePrompt.trim() || !canSubmitContinue) return;
 
       continueTask.mutate(
         {
@@ -470,7 +474,7 @@ export function TaskChat() {
         },
       );
     },
-    [taskId, continuePrompt, continueModel, continueTask],
+    [taskId, continuePrompt, continueModel, continueTask, canSubmitContinue],
   );
 
   // Mobile-specific state
@@ -569,13 +573,14 @@ export function TaskChat() {
         />
 
         {/* Continue Task Input - Mobile */}
-        {canContinue && (
+        {showContinueInput && (
           <ContinueTaskInput
             value={continuePrompt}
             onChange={setContinuePrompt}
             onSubmit={handleContinueSubmit}
             model={continueModel}
             onModelChange={setContinueModel}
+            disabled={!canSubmitContinue}
             isPending={continueTask.isPending}
             isMobile={true}
           />
@@ -682,13 +687,14 @@ export function TaskChat() {
             />
 
             {/* Continue Task Input */}
-            {canContinue && (
+            {showContinueInput && (
               <ContinueTaskInput
                 value={continuePrompt}
                 onChange={setContinuePrompt}
                 onSubmit={handleContinueSubmit}
                 model={continueModel}
                 onModelChange={setContinueModel}
+                disabled={!canSubmitContinue}
                 isPending={continueTask.isPending}
                 isMobile={false}
               />

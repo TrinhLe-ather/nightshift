@@ -40,6 +40,9 @@ export const modelSchema = z.enum(["haiku", "sonnet", "opus"]).optional();
 
 export type ClaudeModel = z.infer<typeof modelSchema>;
 
+export const updateChannelSchema = z.enum(["stable", "latest"]);
+export type UpdateChannel = z.infer<typeof updateChannelSchema>;
+
 // =============================================================================
 // Task Schema
 // =============================================================================
@@ -274,6 +277,10 @@ export const configSchema = z.object({
     .optional(),
   /** Maximum concurrent tasks per repo (default 1) */
   maxConcurrentTasks: z.number().int().min(1).max(10).default(1),
+  /** Terminal shell ID (auto = system default) */
+  terminalShell: z.string().default("auto"),
+  /** Update channel: stable (default) or latest (includes prereleases) */
+  updateChannel: updateChannelSchema.default("stable"),
 });
 
 export const updateConfigSchema = configSchema.partial();

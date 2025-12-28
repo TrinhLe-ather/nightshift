@@ -280,7 +280,9 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
             </p>
             <Select
               value={selectedModel || "_default"}
-              onValueChange={(value) => setSelectedModel(value === "_default" || !value ? "" : value)}
+              onValueChange={(value) =>
+                setSelectedModel(value === "_default" || !value ? "" : value)
+              }
             >
               <SelectTrigger id="model-select" className="mt-1 w-full">
                 <SelectValue>

@@ -38,18 +38,13 @@ export function LanQRDialog({
         <div className="flex flex-col items-center gap-4 py-6">
           {url ? (
             <>
-              <div className="rounded-lg bg-white p-4">
-                <QRCodeSVG
-                  value={url}
-                  size={200}
-                  level="M"
-                  includeMargin={false}
-                />
+              <div className="bg-white p-4">
+                <QRCodeSVG value={url} size={200} level="M" includeMargin={false} />
               </div>
               <p className="text-center text-xs text-muted-foreground">
                 Point your camera at the QR code or manually enter the URL below
               </p>
-              <code className="max-w-full break-all rounded border border-border bg-muted/50 px-3 py-2 text-center font-mono text-xs text-muted-foreground">
+              <code className="max-w-full break-all border border-border bg-muted/50 px-3 py-2 text-center font-mono text-xs text-muted-foreground">
                 {url}
               </code>
             </>

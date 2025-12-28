@@ -30,7 +30,7 @@ function parseCookies(cookieHeader: string | null): Record<string, string> {
     cookieHeader.split(";").map((c) => {
       const [key, ...val] = c.trim().split("=");
       return [key, val.join("=")];
-    })
+    }),
   );
 }
 
@@ -235,10 +235,7 @@ function renderPinPage(error?: string): string {
  * PIN authentication middleware
  * Returns null if authenticated, or a Response to send back
  */
-export function pinAuthMiddleware(
-  request: Request,
-  allowLan: boolean
-): Response | null {
+export function pinAuthMiddleware(request: Request, allowLan: boolean): Response | null {
   // If LAN mode disabled, no auth needed
   if (!allowLan) return null;
 
@@ -287,7 +284,7 @@ export function pinAuthMiddleware(
       {
         status: 401,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 

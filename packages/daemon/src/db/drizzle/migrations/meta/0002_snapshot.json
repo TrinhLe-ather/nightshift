@@ -70,23 +70,17 @@
       "indexes": {
         "idx_repo_locks_repoId": {
           "name": "idx_repo_locks_repoId",
-          "columns": [
-            "repoId"
-          ],
+          "columns": ["repoId"],
           "isUnique": false
         },
         "idx_repo_locks_taskId": {
           "name": "idx_repo_locks_taskId",
-          "columns": [
-            "taskId"
-          ],
+          "columns": ["taskId"],
           "isUnique": false
         },
         "idx_repo_locks_type": {
           "name": "idx_repo_locks_type",
-          "columns": [
-            "type"
-          ],
+          "columns": ["type"],
           "isUnique": false
         }
       },
@@ -95,12 +89,8 @@
           "name": "repo_locks_repoId_repos_id_fk",
           "tableFrom": "repo_locks",
           "tableTo": "repos",
-          "columnsFrom": [
-            "repoId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["repoId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -108,12 +98,8 @@
           "name": "repo_locks_taskId_tasks_id_fk",
           "tableFrom": "repo_locks",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "taskId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["taskId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -173,9 +159,7 @@
       "indexes": {
         "repos_path_unique": {
           "name": "repos_path_unique",
-          "columns": [
-            "path"
-          ],
+          "columns": ["path"],
           "isUnique": true
         }
       },
@@ -263,16 +247,12 @@
       "indexes": {
         "idx_sessions_taskId": {
           "name": "idx_sessions_taskId",
-          "columns": [
-            "taskId"
-          ],
+          "columns": ["taskId"],
           "isUnique": false
         },
         "idx_sessions_startedAt": {
           "name": "idx_sessions_startedAt",
-          "columns": [
-            "startedAt"
-          ],
+          "columns": ["startedAt"],
           "isUnique": false
         }
       },
@@ -281,12 +261,8 @@
           "name": "sessions_taskId_tasks_id_fk",
           "tableFrom": "sessions",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "taskId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["taskId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -514,37 +490,27 @@
       "indexes": {
         "idx_tasks_status": {
           "name": "idx_tasks_status",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "idx_tasks_repoId": {
           "name": "idx_tasks_repoId",
-          "columns": [
-            "repoId"
-          ],
+          "columns": ["repoId"],
           "isUnique": false
         },
         "idx_tasks_createdAt": {
           "name": "idx_tasks_createdAt",
-          "columns": [
-            "createdAt"
-          ],
+          "columns": ["createdAt"],
           "isUnique": false
         },
         "idx_tasks_priority": {
           "name": "idx_tasks_priority",
-          "columns": [
-            "priority"
-          ],
+          "columns": ["priority"],
           "isUnique": false
         },
         "idx_tasks_workflowId": {
           "name": "idx_tasks_workflowId",
-          "columns": [
-            "workflowId"
-          ],
+          "columns": ["workflowId"],
           "isUnique": false
         }
       },
@@ -596,16 +562,12 @@
       "indexes": {
         "idx_workflow_runs_taskId": {
           "name": "idx_workflow_runs_taskId",
-          "columns": [
-            "taskId"
-          ],
+          "columns": ["taskId"],
           "isUnique": false
         },
         "idx_workflow_runs_workflowId": {
           "name": "idx_workflow_runs_workflowId",
-          "columns": [
-            "workflowId"
-          ],
+          "columns": ["workflowId"],
           "isUnique": false
         }
       },
@@ -614,12 +576,8 @@
           "name": "workflow_runs_workflowId_workflows_id_fk",
           "tableFrom": "workflow_runs",
           "tableTo": "workflows",
-          "columnsFrom": [
-            "workflowId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workflowId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -627,12 +585,8 @@
           "name": "workflow_runs_taskId_tasks_id_fk",
           "tableFrom": "workflow_runs",
           "tableTo": "tasks",
-          "columnsFrom": [
-            "taskId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["taskId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

@@ -170,5 +170,4 @@ export class GitOperations {
       return { success: false, error: errorMessage };
     }
   }
-
 }

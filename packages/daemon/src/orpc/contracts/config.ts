@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { updateChannelSchema } from "@nightshift/shared";
 import { loadConfig, saveConfig } from "../../config";
+import { getAvailableShells } from "../../terminal/shells";
 import { scheduleRestart } from "../../update";
 import { orpc } from "../base";
 
@@ -13,6 +15,8 @@ const SafeConfigSchema = z.object({
   scheduleStart: z.string().nullable(),
   scheduleEnd: z.string().nullable(),
   allowLan: z.boolean(),
+  terminalShell: z.string(),
+  updateChannel: updateChannelSchema,
 });
 
 const configUpdateSchema = z.object({
@@ -31,6 +35,14 @@ const configUpdateSchema = z.object({
     .nullable()
     .optional(),
   allowLan: z.boolean().optional(),
+  terminalShell: z.string().optional(),
+  updateChannel: updateChannelSchema.optional(),
+});
+
+const ShellInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  path: z.string(),
 });
 
 // GET handler
@@ -47,7 +59,14 @@ const get = orpc.output(SafeConfigSchema).handler(async () => {
     scheduleStart: config.scheduleStart || null,
     scheduleEnd: config.scheduleEnd || null,
     allowLan: config.allowLan ?? false,
+    terminalShell: config.terminalShell ?? "auto",
+    updateChannel: config.updateChannel ?? "stable",
   };
+});
+
+// GET available shells
+const getShells = orpc.output(z.array(ShellInfoSchema)).handler(async () => {
+  return getAvailableShells();
 });
 
 // UPDATE handler with optional restart
@@ -92,6 +111,14 @@ const update = orpc
       updates.allowLan = input.allowLan;
     }
 
+    if (input.terminalShell !== undefined) {
+      updates.terminalShell = input.terminalShell;
+    }
+
+    if (input.updateChannel !== undefined) {
+      updates.updateChannel = input.updateChannel;
+    }
+
     if (Object.keys(updates).length === 0) {
       throw errors.BAD_REQUEST({ message: "No valid updates provided" });
     }
@@ -116,6 +143,8 @@ const update = orpc
       scheduleStart: newConfig.scheduleStart || null,
       scheduleEnd: newConfig.scheduleEnd || null,
       allowLan: newConfig.allowLan ?? false,
+      terminalShell: newConfig.terminalShell ?? "auto",
+      updateChannel: newConfig.updateChannel ?? "stable",
     };
   });
 
@@ -129,6 +158,7 @@ const restart = orpc.output(z.object({ restarting: z.boolean() })).handler(async
 
 export const configRouter = {
   get,
+  getShells,
   update,
   restart,
 };

@@ -16,7 +16,7 @@ export function Terminal() {
           <div className="flex items-center gap-2">
             <div
               className={cn(
-                "h-2.5 w-2.5 rounded-full transition-colors",
+                "h-2.5 w-2.5 transition-colors",
                 isConnected ? "bg-green-500" : "bg-red-500",
               )}
             />
@@ -36,7 +36,7 @@ export function Terminal() {
         <button
           type="button"
           onClick={reconnect}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 rounded-md transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
         >
           <RefreshCw className="h-4 w-4" />
           <span>Reconnect</span>

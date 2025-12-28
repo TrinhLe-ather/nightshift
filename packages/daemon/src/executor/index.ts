@@ -36,8 +36,4 @@ export {
   type TaskSetupOptions,
   type TaskSetupError,
 } from "./task-setup";
-export {
-  pauseTask,
-  resumeTask,
-  buildResumePrompt,
-} from "./task-lifecycle";
+export { pauseTask, resumeTask, buildResumePrompt } from "./task-lifecycle";

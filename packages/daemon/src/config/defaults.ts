@@ -35,4 +35,10 @@ export const DEFAULT_CONFIG: Config = {
 
   /** Maximum 1 concurrent task per repo */
   maxConcurrentTasks: 10,
+
+  /** Terminal shell: auto-detect system default */
+  terminalShell: "auto",
+
+  /** Update channel: stable (production) or latest (includes prereleases) */
+  updateChannel: "stable",
 };

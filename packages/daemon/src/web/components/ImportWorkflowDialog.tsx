@@ -161,7 +161,9 @@ export function ImportWorkflowDialog({ open, onOpenChange, onSuccess }: ImportWo
               onChange={handleFileChange}
               className="mt-1 cursor-pointer"
             />
-            <p className="mt-1 text-xs text-muted-foreground">Select a JSON workflow file to import</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Select a JSON workflow file to import
+            </p>
           </div>
 
           {/* Parse Error */}
@@ -181,7 +183,9 @@ export function ImportWorkflowDialog({ open, onOpenChange, onSuccess }: ImportWo
               <div className="flex items-start gap-2">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-foreground">{parsedWorkflow.definition.name}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {parsedWorkflow.definition.name}
+                  </p>
                   <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
                     {parsedWorkflow.definition.description}
                   </p>

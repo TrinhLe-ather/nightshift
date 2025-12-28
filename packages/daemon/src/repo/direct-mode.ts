@@ -1,3 +1,5 @@
+/* eslint-disable no-control-regex */
+
 /**
  * Direct Mode Manager
  *
@@ -115,10 +117,7 @@ export class DirectModeManager {
    *
    * Note: Dirty check is handled by PreflightChecker after setup completes
    */
-  async setup(
-    taskId: string,
-    repoPath: string,
-  ): Promise<DirectModeResult<DirectModeSetup>> {
+  async setup(taskId: string, repoPath: string): Promise<DirectModeResult<DirectModeSetup>> {
     // Step 1: Get current branch
     const originalBranch = await getCurrentBranch(repoPath);
 

@@ -167,6 +167,8 @@ export interface UpdateInfo {
   checksum: string;
   releaseNotes?: string;
   publishedAt: string;
+  /** Whether this is a prerelease (beta, rc, canary) */
+  isPrerelease?: boolean;
 }
 
 /** Repo lock info */

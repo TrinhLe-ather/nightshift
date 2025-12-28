@@ -468,9 +468,7 @@ function StepEditor({
               )}
               <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span>Use</span>
-                <code className="rounded bg-primary/10 px-1.5 py-0.5 text-primary">
-                  {"{{prompt}}"}
-                </code>
+                <code className="bg-primary/10 px-1.5 py-0.5 text-primary">{"{{prompt}}"}</code>
                 <span>to reference the task prompt.</span>
               </div>
             </div>
@@ -1084,7 +1082,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
             <div className="text-xs text-muted-foreground">
               {isDirty ? (
                 <span className="flex items-center gap-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                  <span className="h-1.5 w-1.5 bg-amber-400" />
                   Unsaved changes
                 </span>
               ) : (
