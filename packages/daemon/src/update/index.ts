@@ -7,6 +7,7 @@
 // Version checking
 export {
   checkForUpdates,
+  fetchRelease,
   getCachedUpdateInfo,
   isUpdateAvailable,
   isUpdateDismissed,
@@ -33,6 +34,8 @@ export {
   installUpdate,
   hasActiveTask,
   getCurrentBinaryPath,
+  getInstallPath,
+  isCompiledBinary,
   cleanupBackup,
   rollbackUpdate,
   scheduleRestart,

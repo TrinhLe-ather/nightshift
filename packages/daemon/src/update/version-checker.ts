@@ -249,9 +249,7 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
  * Fetch release info for a specific version (matches install.sh tag support)
  * @param target - Version string (e.g., "0.1.0", "v0.1.0", "latest", "stable")
  */
-export async function fetchRelease(
-  target: string = "latest",
-): Promise<UpdateInfo | null> {
+export async function fetchRelease(target: string = "latest"): Promise<UpdateInfo | null> {
   // Resolve release URL based on target (matches install.sh logic)
   let releaseUrl: string;
   if (target === "latest" || target === "stable" || !target) {

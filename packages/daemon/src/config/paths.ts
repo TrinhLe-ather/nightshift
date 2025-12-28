@@ -47,6 +47,16 @@ export const LOCKS_DIR = join(NIGHTSHIFT_DIR, "locks");
 export const WORKTREES_DIR = join(NIGHTSHIFT_DIR, "worktrees");
 
 /**
+ * Binary install directory (matches install.sh)
+ */
+export const BIN_DIR = process.env.NIGHTSHIFT_INSTALL_DIR || join(NIGHTSHIFT_DIR, "bin");
+
+/**
+ * Installed binary path
+ */
+export const BINARY_PATH = join(BIN_DIR, process.platform === "win32" ? "nightshift.exe" : "nightshift");
+
+/**
  * PID file for daemon process tracking
  */
 export const PID_FILE = join(NIGHTSHIFT_DIR, "daemon.pid");

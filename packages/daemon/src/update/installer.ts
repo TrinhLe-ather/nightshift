@@ -4,8 +4,9 @@
  * Safely replaces the current binary with an update.
  */
 
-import { chmodSync, copyFileSync, existsSync, renameSync, unlinkSync } from "fs";
+import { chmodSync, copyFileSync, existsSync, mkdirSync, renameSync, unlinkSync } from "fs";
 import { inArray } from "drizzle-orm";
+import { BIN_DIR, BINARY_PATH } from "../config/paths";
 
 /**
  * Installation result
@@ -17,12 +18,32 @@ export interface InstallResult {
 }
 
 /**
- * Get path to current binary
+ * Check if running as compiled binary (vs dev mode with bun)
+ */
+export function isCompiledBinary(): boolean {
+  // In compiled mode, execPath ends with 'nightshift' (or 'nightshift.exe' on Windows)
+  const execName = process.execPath.split("/").pop() || "";
+  return execName === "nightshift" || execName === "nightshift.exe";
+}
+
+/**
+ * Get path to installed binary (matches install.sh location)
+ * Always returns ~/.nightshift/bin/nightshift regardless of how we're running
+ */
+export function getInstallPath(): string {
+  return BINARY_PATH;
+}
+
+/**
+ * Get path to current running binary
+ * In dev mode, returns the standard install path (not bun)
  */
 export function getCurrentBinaryPath(): string {
-  // Bun.main gives us the entry point, process.execPath gives the bun binary
-  // For a compiled binary, process.execPath is our binary
-  return process.execPath;
+  if (isCompiledBinary()) {
+    return process.execPath;
+  }
+  // In dev mode, use standard install path
+  return BINARY_PATH;
 }
 
 /**
@@ -53,11 +74,12 @@ export async function hasActiveTask(): Promise<boolean> {
  *
  * Process:
  * 1. Check no active tasks
- * 2. Write new binary to temp location
- * 3. Rename current binary to .backup
- * 4. Move new binary to main location
- * 5. Set executable permissions
- * 6. Schedule restart
+ * 2. Ensure bin directory exists
+ * 3. Write new binary to temp location
+ * 4. Rename current binary to .backup (if exists)
+ * 5. Move new binary to main location
+ * 6. Set executable permissions
+ * 7. Schedule restart
  */
 export async function installUpdate(newBinaryPath: string): Promise<InstallResult> {
   // Check for active tasks
@@ -69,9 +91,10 @@ export async function installUpdate(newBinaryPath: string): Promise<InstallResul
     };
   }
 
-  const currentPath = getCurrentBinaryPath();
-  const backupPath = `${currentPath}.backup`;
-  const tempPath = `${currentPath}.new`;
+  // Always install to standard location (matches install.sh)
+  const installPath = getInstallPath();
+  const backupPath = `${installPath}.backup`;
+  const tempPath = `${installPath}.new`;
 
   try {
     // Validate new binary exists
@@ -83,7 +106,12 @@ export async function installUpdate(newBinaryPath: string): Promise<InstallResul
       };
     }
 
-    // Copy new binary to temp location next to current binary
+    // Ensure bin directory exists (matches install.sh: mkdir -p "$INSTALL_DIR")
+    if (!existsSync(BIN_DIR)) {
+      mkdirSync(BIN_DIR, { recursive: true });
+    }
+
+    // Copy new binary to temp location next to install path
     copyFileSync(newBinaryPath, tempPath);
 
     // Set executable permissions on Unix
@@ -100,15 +128,17 @@ export async function installUpdate(newBinaryPath: string): Promise<InstallResul
       }
     }
 
-    // Rename current binary to backup
-    renameSync(currentPath, backupPath);
+    // Rename current binary to backup (if it exists)
+    if (existsSync(installPath)) {
+      renameSync(installPath, backupPath);
+    }
 
-    // Move new binary to main location
-    renameSync(tempPath, currentPath);
+    // Move new binary to install location
+    renameSync(tempPath, installPath);
 
     // Set executable permissions again (in case rename changed them)
     if (process.platform !== "win32") {
-      chmodSync(currentPath, 0o755);
+      chmodSync(installPath, 0o755);
     }
 
     return {
@@ -118,8 +148,8 @@ export async function installUpdate(newBinaryPath: string): Promise<InstallResul
   } catch (error) {
     // Attempt to restore from backup
     try {
-      if (existsSync(backupPath) && !existsSync(currentPath)) {
-        renameSync(backupPath, currentPath);
+      if (existsSync(backupPath) && !existsSync(installPath)) {
+        renameSync(backupPath, installPath);
       }
       if (existsSync(tempPath)) {
         unlinkSync(tempPath);
@@ -140,8 +170,8 @@ export async function installUpdate(newBinaryPath: string): Promise<InstallResul
  * Clean up backup after successful update
  */
 export function cleanupBackup(): void {
-  const currentPath = getCurrentBinaryPath();
-  const backupPath = `${currentPath}.backup`;
+  const installPath = getInstallPath();
+  const backupPath = `${installPath}.backup`;
 
   if (existsSync(backupPath)) {
     try {
@@ -156,8 +186,8 @@ export function cleanupBackup(): void {
  * Restore from backup (rollback)
  */
 export function rollbackUpdate(): boolean {
-  const currentPath = getCurrentBinaryPath();
-  const backupPath = `${currentPath}.backup`;
+  const installPath = getInstallPath();
+  const backupPath = `${installPath}.backup`;
 
   if (!existsSync(backupPath)) {
     return false;
@@ -165,12 +195,12 @@ export function rollbackUpdate(): boolean {
 
   try {
     // Remove current (potentially broken) binary
-    if (existsSync(currentPath)) {
-      unlinkSync(currentPath);
+    if (existsSync(installPath)) {
+      unlinkSync(installPath);
     }
 
     // Restore from backup
-    renameSync(backupPath, currentPath);
+    renameSync(backupPath, installPath);
 
     return true;
   } catch {
@@ -183,7 +213,7 @@ export function rollbackUpdate(): boolean {
  * Uses exec to spawn new process and exit current one
  */
 export async function scheduleRestart(): Promise<void> {
-  const binaryPath = getCurrentBinaryPath();
+  const binaryPath = getInstallPath();
 
   console.log("Restarting Night Shift...");
 
