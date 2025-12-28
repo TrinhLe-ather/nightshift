@@ -17,17 +17,23 @@ interface LanQRDialogProps {
   open: boolean;
   onClose: () => void;
   url: string | null;
+  title?: string;
+  description?: string;
 }
 
-export function LanQRDialog({ open, onClose, url }: LanQRDialogProps) {
+export function LanQRDialog({
+  open,
+  onClose,
+  url,
+  title = "Scan to Connect",
+  description = "Scan this QR code with your mobile device to connect to Night Shift",
+}: LanQRDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Scan to Connect</DialogTitle>
-          <DialogDescription>
-            Scan this QR code with your mobile device to connect to Night Shift
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4 py-6">
           {url ? (

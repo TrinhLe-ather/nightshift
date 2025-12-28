@@ -4,7 +4,13 @@ import { VERSION } from "@nightshift/shared";
 import { getDb, getDbStats, repos, tasks } from "../../db/drizzle";
 import { loadConfig } from "../../config";
 import { orpc } from "../base";
-import { isLanModeActive, getLocalIpAddress, getLanUrlWithPin } from "../../lan";
+import {
+  isLanModeActive,
+  getLocalIpAddress,
+  getLanUrlWithPin,
+  getTailscaleIpAddress,
+  getTailscaleUrlWithPin,
+} from "../../lan";
 
 // Track daemon start time
 const startTime = Date.now();
@@ -33,6 +39,12 @@ const LanInfoSchema = z.object({
   enabled: z.boolean(),
   localIp: z.string().nullable(),
   url: z.string().nullable(),
+  tailscale: z
+    .object({
+      ip: z.string().nullable(),
+      url: z.string().nullable(),
+    })
+    .optional(),
 });
 
 const DaemonStatusSchema = z.object({
@@ -110,11 +122,18 @@ const getStatus = orpc.output(DaemonStatusSchema).handler(async () => {
 
   // Build LAN info if enabled
   const lanEnabled = isLanModeActive();
+  const tailscaleIp = getTailscaleIpAddress();
   const lan = lanEnabled
     ? {
         enabled: true,
         localIp: getLocalIpAddress(),
         url: getLanUrlWithPin(),
+        tailscale: tailscaleIp
+          ? {
+              ip: tailscaleIp,
+              url: getTailscaleUrlWithPin(),
+            }
+          : undefined,
       }
     : undefined;
 
