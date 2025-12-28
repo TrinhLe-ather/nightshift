@@ -10,7 +10,7 @@ import { NIGHTSHIFT_DIR, PID_FILE } from "../../config/paths";
 import { ensureNightShiftDirectories } from "../../config/paths";
 import { closeDb, getDbStats, initDb, runMigrations } from "../../db";
 import { loadConfig } from "../../config";
-import { serverOptions } from "../../orpc/options";
+import { createServerOptions } from "../../orpc/options";
 import { findAvailablePort } from "../../orpc/utils";
 import { type TaskExecutor, createExecutor } from "../../executor";
 import { checkForUpdates } from "../../update";
@@ -20,6 +20,7 @@ import {
   setTranscriptReader,
 } from "../../orpc/router";
 import { initWorkflows } from "../../workflows/loader";
+import { generatePin, getLocalIpAddress, setPort } from "../../lan";
 
 /**
  * Check if daemon is already running
@@ -195,16 +196,54 @@ export async function startCommand(): Promise<void> {
 
   process.env.PORT = actualPort.toString();
 
+  // Set port for LAN URL generation
+  setPort(actualPort);
+
+  // Generate PIN and display LAN access info if enabled
+  if (config.allowLan) {
+    const pin = generatePin();
+    const localIp = getLocalIpAddress();
+
+    console.log("");
+    console.log("╔══════════════════════════════════════════════════╗");
+    console.log("║              LAN ACCESS ENABLED                  ║");
+    console.log("╠══════════════════════════════════════════════════╣");
+    console.log(`║  PIN: ${pin}                                      ║`);
+    if (localIp) {
+      const lanUrl = `http://${localIp}:${actualPort}`;
+      console.log(`║  Local IP: ${localIp.padEnd(37)}║`);
+      console.log(`║  URL: ${lanUrl.padEnd(42)}║`);
+    } else {
+      console.log("║  Local IP: Not available                         ║");
+    }
+    console.log("╚══════════════════════════════════════════════════╝");
+
+    // Show Windows firewall hint
+    if (process.platform === "win32") {
+      console.log("");
+      console.log("Tip: If mobile devices can't connect, ensure Windows Firewall");
+      console.log(`     allows port ${actualPort}. Run 'nightshift doctor' to check.`);
+    }
+    console.log("");
+  }
+
+  // Create server options with LAN config
+  const serverOpts = createServerOptions(config.allowLan);
+
   // Start server with oRPC routes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const server = Bun.serve({
-    ...serverOptions,
+    ...serverOpts,
     port: actualPort,
     idleTimeout: 255,
-  });
+  } as any);
 
   const localUrl = `http://localhost:${actualPort}`;
   console.log(`Night Shift running at ${localUrl}`);
   console.log(`Version: ${getVersionDisplay()}`);
+  if (config.allowLan) {
+    console.log("LAN access: Enabled (see PIN above)");
+  }
 
   // Initialize and start task executor
   let executor: TaskExecutor | null = null;

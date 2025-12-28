@@ -28,8 +28,12 @@ import {
   Pencil,
   X,
   Check,
+  Wifi,
+  QrCode,
+  Copy,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
+import { LanQRDialog } from "@/components/LanQRDialog";
 
 interface SettingsCardProps {
   title: string;
@@ -124,6 +128,7 @@ export function Settings() {
   const queryClient = useQueryClient();
   const [isInstalling, setIsInstalling] = useState(false);
   const [isEditingConfig, setIsEditingConfig] = useState(false);
+  const [showLanQR, setShowLanQR] = useState(false);
   const [formValues, setFormValues] = useState({
     taskTimeoutMs: 14400000, // 4 hours default
     maxConcurrentTasks: 1,
@@ -488,6 +493,67 @@ export function Settings() {
           </div>
         </SettingsCard>
 
+        {/* LAN Access - Only shown when enabled */}
+        {status?.lan?.enabled && (
+          <SettingsCard
+            title="LAN Access"
+            description="Connect from devices on your local network"
+            icon={Wifi}
+            iconColor="text-cyan-400"
+            iconBg="bg-cyan-500/10"
+            iconBorder="border-cyan-500/30"
+            index={2}
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Local IP
+                  </p>
+                  <p className="mt-1 font-mono text-lg font-semibold text-foreground">
+                    {status.lan.localIp || "Not available"}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowLanQR(true)}
+                  className="h-8"
+                >
+                  <QrCode className="mr-2 h-3.5 w-3.5" />
+                  Show QR
+                </Button>
+              </div>
+
+              {status.lan.url && (
+                <div className="rounded border border-border bg-muted/30 p-3">
+                  <p className="mb-1 text-xs text-muted-foreground">Connection URL</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate font-mono text-sm text-foreground">
+                      {status.lan.url.replace(/\?pin=\d+/, "?pin=****")}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(status.lan!.url!);
+                        toast.success("URL copied to clipboard");
+                      }}
+                      className="h-6 w-6 shrink-0 p-0"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Scan the QR code or enter the PIN shown in the daemon console to connect from your mobile device.
+              </p>
+            </div>
+          </SettingsCard>
+        )}
+
         {/* General Configuration */}
         <SettingsCard
           title="Configuration"
@@ -613,6 +679,13 @@ export function Settings() {
           </div>
         </SettingsCard>
       </div>
+
+      {/* LAN QR Dialog */}
+      <LanQRDialog
+        open={showLanQR}
+        onClose={() => setShowLanQR(false)}
+        url={status?.lan?.url ?? null}
+      />
     </Container>
   );
 }

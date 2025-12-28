@@ -14,6 +14,9 @@ export const DEFAULT_CONFIG: Config = {
   /** Default port for local web UI */
   port: 3847,
 
+  /** LAN access disabled by default for security */
+  allowLan: false,
+
   /** Task timeout: 4 hours in milliseconds */
   taskTimeoutMs: 4 * 60 * 60 * 1000,
 
