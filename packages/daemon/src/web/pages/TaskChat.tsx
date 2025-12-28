@@ -37,22 +37,121 @@ import {
   FolderGit2,
   Activity,
   SidebarRight,
-  Send,
   ListTodo,
   FileCode,
   ChevronUp,
 } from "@/components/ui/icons";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@/components/ui/input-group";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Separator } from "@/components/ui/separator";
 import { MODEL_OPTIONS, getModelColor } from "@/web/lib/models";
+import { Kbd } from "../components/ui/kbd";
 
 const TASKCHAT_TASKLIST_SIZE_KEY = "taskchat_tasklist_size";
+
+/** Reusable continue task input component */
+function ContinueTaskInput({
+  value,
+  onChange,
+  onSubmit,
+  model,
+  onModelChange,
+  isPending,
+  isMobile,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (e: FormEvent) => void;
+  model: string;
+  onModelChange: (model: string) => void;
+  isPending: boolean;
+  isMobile: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "shrink-0 border-t border-border/50 bg-card",
+        isMobile ? "p-3 pb-[calc(0.75rem+56px)]" : "p-4",
+      )}
+    >
+      <form onSubmit={onSubmit}>
+        <InputGroup className="bg-red-500">
+          <InputGroupTextarea
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={
+              isMobile ? "Continue this task..." : "Continue this task with a follow-up prompt..."
+            }
+            className={cn(
+              isMobile ? "min-h-[50px] max-h-[120px] text-sm" : "min-h-[60px] max-h-[200px]",
+            )}
+            onKeyDown={
+              isMobile
+                ? undefined
+                : (e) => {
+                    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                      onSubmit(e);
+                    }
+                  }
+            }
+          />
+          <InputGroupAddon align="block-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <InputGroupButton variant="outline">
+                  <span className={model ? getModelColor(model) : ""}>
+                    {model ? MODEL_OPTIONS.find((m) => m.value === model)?.label : "Model"}
+                  </span>
+                </InputGroupButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="min-w-36">
+                {MODEL_OPTIONS.map((option) => (
+                  <DropdownMenuItem
+                    key={option.value || "_default"}
+                    onClick={() => onModelChange(option.value)}
+                  >
+                    <span className={option.color}>{option.label}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            {!isMobile && (
+              <InputGroupText className="ml-auto">
+                <Kbd className="px-1 py-0.5 bg-muted text-[10px]">⌘</Kbd>+
+                <Kbd className="px-1 py-0.5 bg-muted text-[10px]">Enter</Kbd>
+              </InputGroupText>
+            )}
+            <Separator orientation="vertical" className={cn("h-4", isMobile && "ml-auto")} />
+            <InputGroupButton
+              type="submit"
+              variant="default"
+              size="icon-xs"
+              disabled={!value.trim() || isPending}
+            >
+              {isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+              <span className="sr-only">Send</span>
+            </InputGroupButton>
+          </InputGroupAddon>
+        </InputGroup>
+      </form>
+    </div>
+  );
+}
 const TASKCHAT_TASKLIST_MIN = 15;
 const TASKCHAT_TASKLIST_MAX = 40;
 const TASKCHAT_TASKLIST_DEFAULT = 25;
@@ -471,50 +570,15 @@ export function TaskChat() {
 
         {/* Continue Task Input - Mobile */}
         {canContinue && (
-          <div className="shrink-0 border-t border-border/50 bg-card p-3 pb-[calc(0.75rem+56px)]">
-            <form onSubmit={handleContinueSubmit} className="flex flex-col gap-2">
-              <Textarea
-                value={continuePrompt}
-                onChange={(e) => setContinuePrompt(e.target.value)}
-                placeholder="Continue this task..."
-                className="min-h-[50px] max-h-[120px] resize-none w-full text-sm"
-              />
-              <div className="flex items-center justify-between gap-2">
-                <Select value={continueModel} onValueChange={(v) => setContinueModel(v ?? "")}>
-                  <SelectTrigger className="w-[120px] h-8 text-xs">
-                    <SelectValue>
-                      {continueModel ? (
-                        <span className={getModelColor(continueModel)}>
-                          {MODEL_OPTIONS.find((m) => m.value === continueModel)?.label}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">Model</span>
-                      )}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MODEL_OPTIONS.map((option) => (
-                      <SelectItem key={option.value || "_default"} value={option.value}>
-                        <span className={option.color}>{option.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={!continuePrompt.trim() || continueTask.isPending}
-                >
-                  {continueTask.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                  <span className="ml-1.5">Send</span>
-                </Button>
-              </div>
-            </form>
-          </div>
+          <ContinueTaskInput
+            value={continuePrompt}
+            onChange={setContinuePrompt}
+            onSubmit={handleContinueSubmit}
+            model={continueModel}
+            onModelChange={setContinueModel}
+            isPending={continueTask.isPending}
+            isMobile={true}
+          />
         )}
 
         {/* Changed Files FAB - only show when there are changes */}
@@ -619,64 +683,15 @@ export function TaskChat() {
 
             {/* Continue Task Input */}
             {canContinue && (
-              <div className="shrink-0 border-t border-border/50 bg-card p-4">
-                <form onSubmit={handleContinueSubmit} className="flex flex-col gap-2">
-                  <Textarea
-                    value={continuePrompt}
-                    onChange={(e) => setContinuePrompt(e.target.value)}
-                    placeholder="Continue this task with a follow-up prompt..."
-                    className="min-h-[60px] max-h-[200px] resize-none w-full"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                        handleContinueSubmit(e);
-                      }
-                    }}
-                  />
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Select
-                        value={continueModel}
-                        onValueChange={(v) => setContinueModel(v ?? "")}
-                      >
-                        <SelectTrigger className="w-[140px] h-8 text-xs">
-                          <SelectValue>
-                            {continueModel ? (
-                              <span className={getModelColor(continueModel)}>
-                                {MODEL_OPTIONS.find((m) => m.value === continueModel)?.label}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">Default model</span>
-                            )}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MODEL_OPTIONS.map((option) => (
-                            <SelectItem key={option.value || "_default"} value={option.value}>
-                              <span className={option.color}>{option.label}</span>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="text-xs text-muted-foreground">
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">⌘</kbd>+
-                        <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">Enter</kbd> to
-                        send
-                      </span>
-                    </div>
-                    <Button
-                      type="submit"
-                      disabled={!continuePrompt.trim() || continueTask.isPending}
-                    >
-                      {continueTask.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
-                      <span className="ml-2">Continue</span>
-                    </Button>
-                  </div>
-                </form>
-              </div>
+              <ContinueTaskInput
+                value={continuePrompt}
+                onChange={setContinuePrompt}
+                onSubmit={handleContinueSubmit}
+                model={continueModel}
+                onModelChange={setContinueModel}
+                isPending={continueTask.isPending}
+                isMobile={false}
+              />
             )}
           </div>
         </ResizablePanel>
