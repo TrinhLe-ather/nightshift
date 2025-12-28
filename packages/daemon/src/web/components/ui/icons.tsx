@@ -13,6 +13,7 @@ import {
   Tick02Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
+  Copy01Icon,
   DashboardSquare01Icon,
   Delete02Icon,
   Download01Icon,
@@ -32,6 +33,7 @@ import {
   PauseIcon,
   PlayIcon,
   PlusSignIcon,
+  QrCode01Icon,
   Refresh01Icon,
   Search01Icon,
   Sent02Icon,
@@ -39,6 +41,7 @@ import {
   ComputerTerminal01Icon,
   SidebarRightIcon,
   ViewIcon,
+  Wifi01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
@@ -104,6 +107,7 @@ export const SidebarRight = makeIcon("SidebarRight", SidebarRightIcon);
 // File icons
 export const File = makeIcon("File", File01Icon);
 export const FileEdit = makeIcon("FileEdit", FileEditIcon);
+export const FileCode = makeIcon("FileCode", FileEditIcon);
 export const FilePlus = makeIcon("FilePlus", FileAddIcon);
 export const FolderSearch = makeIcon("FolderSearch", FolderSearchIcon);
 export const Globe = makeIcon("Globe", Globe02Icon);
@@ -111,3 +115,8 @@ export const Eye = makeIcon("Eye", ViewIcon);
 
 // Edit icons
 export const Pencil = makeIcon("Pencil", FileEditIcon);
+
+// LAN/Network icons
+export const Wifi = makeIcon("Wifi", Wifi01Icon);
+export const QrCode = makeIcon("QrCode", QrCode01Icon);
+export const Copy = makeIcon("Copy", Copy01Icon);

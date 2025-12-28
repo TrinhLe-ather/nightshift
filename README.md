@@ -66,6 +66,28 @@ The web dashboard is available at `http://localhost:3847` when the daemon is run
 
 <img width="1174" height="857" alt="image" src="https://github.com/user-attachments/assets/f520bd61-4686-4084-aa37-65d264e5c6da" />
 
+### LAN Access (Mobile)
+
+Connect to NightShift from your mobile device on the same Wi-Fi network.
+
+**Enable LAN access:**
+
+1. Add `"allowLan": true` to your config file (`~/.nightshift/config.json`)
+2. Restart the daemon
+3. The CLI will display a PIN and local IP address
+4. On your mobile device, navigate to the URL or scan the QR code from Settings
+5. Enter the 4-digit PIN to authenticate
+
+**Windows Firewall Setup:**
+
+On Windows, you need to allow incoming connections on port 3847. Run this command in an **Administrator PowerShell**:
+
+```powershell
+netsh advfirewall firewall add rule name="NightShift LAN Access" dir=in action=allow protocol=tcp localport=3847
+```
+
+You can verify the setup with `nightshift doctor`.
+
 ---
 
 ## Development

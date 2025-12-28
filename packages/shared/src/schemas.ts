@@ -255,6 +255,8 @@ export const sessionEventEnvelopeSchema = z.object({
 export const configSchema = z.object({
   /** Port for local web UI */
   port: z.number().int().min(1024).max(65535).default(3847),
+  /** Enable LAN access (bind to 0.0.0.0 for mobile device connections) */
+  allowLan: z.boolean().default(false),
   /** Task timeout in milliseconds */
   taskTimeoutMs: z
     .number()

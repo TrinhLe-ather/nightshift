@@ -8,6 +8,7 @@
 import { existsSync } from "fs";
 import { checkDbHealth, getDbStats } from "../../db";
 import { NIGHTSHIFT_DIR } from "../../config/paths";
+import { loadConfig } from "../../config";
 
 /**
  * Check result for a single validation
@@ -177,6 +178,63 @@ function checkDatabase(): CheckResult {
 }
 
 /**
+ * Check if Windows firewall allows NightShift LAN access (Windows only)
+ */
+async function checkWindowsFirewall(port: number): Promise<CheckResult | null> {
+  // Only check on Windows
+  if (process.platform !== "win32") {
+    return null;
+  }
+
+  try {
+    // Check if firewall rule exists for NightShift
+    const result = await runCommand("netsh", [
+      "advfirewall",
+      "firewall",
+      "show",
+      "rule",
+      "name=NightShift LAN Access",
+    ]);
+
+    if (result.success && result.output.includes("NightShift LAN Access")) {
+      return {
+        success: true,
+        message: "Windows Firewall rule for LAN access exists",
+      };
+    }
+
+    // Also check if port is open via any rule
+    const portResult = await runCommand("netsh", [
+      "advfirewall",
+      "firewall",
+      "show",
+      "rule",
+      "name=all",
+      "dir=in",
+    ]);
+
+    if (portResult.success && portResult.output.includes(`${port}`)) {
+      return {
+        success: true,
+        message: `Windows Firewall allows port ${port} (via existing rule)`,
+      };
+    }
+
+    return {
+      success: false,
+      message: "Windows Firewall may block LAN connections",
+      suggestion: `Run as Admin: netsh advfirewall firewall add rule name="NightShift LAN Access" dir=in action=allow protocol=tcp localport=${port}`,
+    };
+  } catch {
+    return {
+      success: false,
+      message: "Could not check Windows Firewall status",
+      suggestion: "Manually verify firewall allows incoming connections on port " + port,
+    };
+  }
+}
+
+/**
  * Print check result with appropriate symbol
  */
 function printCheckResult(result: CheckResult): void {
@@ -205,7 +263,23 @@ export async function doctorCommand(): Promise<void> {
   checks.push(checkNightShiftDirectory());
   checks.push(checkDatabase());
 
+  // Check firewall if LAN mode is enabled
+  try {
+    const config = loadConfig();
+    if (config.allowLan) {
+      console.log("\nChecking LAN access...\n");
+      const firewallCheck = await checkWindowsFirewall(config.port);
+      if (firewallCheck) {
+        checks.push(firewallCheck);
+        printCheckResult(firewallCheck);
+      }
+    }
+  } catch {
+    // Config not loaded yet, skip LAN checks
+  }
+
   // Print results
+  console.log("\nResults:\n");
   for (const check of checks) {
     printCheckResult(check);
   }

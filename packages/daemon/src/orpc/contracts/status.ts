@@ -4,6 +4,7 @@ import { VERSION } from "@nightshift/shared";
 import { getDb, getDbStats, repos, tasks } from "../../db/drizzle";
 import { loadConfig } from "../../config";
 import { orpc } from "../base";
+import { isLanModeActive, getLocalIpAddress, getLanUrlWithPin } from "../../lan";
 
 // Track daemon start time
 const startTime = Date.now();
@@ -28,6 +29,12 @@ const StatsSchema = z.object({
   repoCount: z.number(),
 });
 
+const LanInfoSchema = z.object({
+  enabled: z.boolean(),
+  localIp: z.string().nullable(),
+  url: z.string().nullable(),
+});
+
 const DaemonStatusSchema = z.object({
   running: z.boolean(),
   version: z.string(),
@@ -42,6 +49,7 @@ const DaemonStatusSchema = z.object({
   }),
   activeTask: ActiveTaskSchema,
   stats: StatsSchema,
+  lan: LanInfoSchema.optional(),
 });
 
 // Handler
@@ -100,6 +108,16 @@ const getStatus = orpc.output(DaemonStatusSchema).handler(async () => {
       : "connected"
     : "standalone";
 
+  // Build LAN info if enabled
+  const lanEnabled = isLanModeActive();
+  const lan = lanEnabled
+    ? {
+        enabled: true,
+        localIp: getLocalIpAddress(),
+        url: getLanUrlWithPin(),
+      }
+    : undefined;
+
   return {
     running: true,
     version: VERSION,
@@ -121,6 +139,7 @@ const getStatus = orpc.output(DaemonStatusSchema).handler(async () => {
       failed: statsRow?.failed ?? 0,
       repoCount: repoCountRow?.count ?? 0,
     },
+    lan,
   };
 });
 

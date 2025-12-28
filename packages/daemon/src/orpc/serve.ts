@@ -16,10 +16,11 @@ export const serve = async () => {
     process.exit(1);
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const server = Bun.serve({
     port: actualPort,
     ...serverOptions,
-  });
+  } as any);
 
   console.log(`Night Shift running at http://localhost:${server.port}`);
 };
