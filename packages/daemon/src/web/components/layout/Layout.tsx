@@ -37,7 +37,7 @@ export function Layout() {
       }}
     >
       <SidebarProvider
-        className="overflow-hidden"
+        className="overflow-hidden h-svh"
         style={{ "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}
       >
         <AppSidebar />

@@ -93,6 +93,7 @@ export class StreamingWorkflowRunner {
   private stepResults: Map<string, WorkflowStepResult> = new Map();
   private stepCompletionResolver: (() => void) | null = null;
   private currentStepMessages: SdkMessage[] = [];
+  private currentStepStartTime: string | null = null;
   private options: StreamingWorkflowOptions | null = null;
   private workflowTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private stepTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -260,6 +261,7 @@ export class StreamingWorkflowRunner {
       const step = steps[i]!;
       this.currentStepIndex = i;
       this.currentStepMessages = [];
+      this.currentStepStartTime = new Date().toISOString();
       this.currentStepTimedOut = false;
 
       // Skip Smart Commit step if working directory is clean
@@ -397,7 +399,7 @@ followed by a brief summary of what was accomplished.`;
       stepName: step.name,
       output,
       success: true,
-      startedAt: this.currentStepMessages[0]?.timestamp || new Date().toISOString(),
+      startedAt: this.currentStepStartTime || new Date().toISOString(),
       completedAt: new Date().toISOString(),
     };
 
@@ -418,7 +420,7 @@ followed by a brief summary of what was accomplished.`;
       output: "",
       success: false,
       error,
-      startedAt: this.currentStepMessages[0]?.timestamp || new Date().toISOString(),
+      startedAt: this.currentStepStartTime || new Date().toISOString(),
       completedAt: new Date().toISOString(),
     };
 

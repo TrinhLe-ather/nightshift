@@ -21,10 +21,32 @@ export {
 } from "./client";
 
 // Schema tables
-export { tasks, repos, sessions, config, workflows, workflowRuns, repoLocks } from "./schema/schema";
+export {
+  tasks,
+  repos,
+  sessions,
+  config,
+  syncQueue,
+  workflows,
+  workflowRuns,
+  repoLocks,
+  narrativeProjects,
+  narrativeDocuments,
+  narrativeDocumentVersions,
+} from "./schema/schema";
 
 // Relations
-export { tasksRelations, reposRelations, sessionsRelations, workflowsRelations, workflowRunsRelations, repoLocksRelations } from "./schema/schema";
+export {
+  tasksRelations,
+  reposRelations,
+  sessionsRelations,
+  workflowsRelations,
+  workflowRunsRelations,
+  repoLocksRelations,
+  narrativeProjectsRelations,
+  narrativeDocumentsRelations,
+  narrativeDocumentVersionsRelations,
+} from "./schema/schema";
 
 // Types (inferred from schema)
 export type {
@@ -42,6 +64,12 @@ export type {
   NewWorkflowRun,
   RepoLock,
   NewRepoLock,
+  NarrativeProject,
+  NewNarrativeProject,
+  NarrativeDocument,
+  NewNarrativeDocument,
+  NarrativeDocumentVersion,
+  NewNarrativeDocumentVersion,
 } from "./schema/schema";
 
 // Enums
@@ -51,9 +79,21 @@ export {
   executionModeEnum,
   executionModeConfigEnum,
   pauseReasonEnum,
+  entityTypeEnum,
+  syncActionEnum,
+  projectStatusEnum,
+  projectPhaseEnum,
+  documentTypeEnum,
+  documentStatusEnum,
   type Priority,
   type TaskStatus,
   type ExecutionMode,
   type ExecutionModeConfig,
   type PauseReason,
+  type EntityType,
+  type SyncAction,
+  type ProjectStatus,
+  type ProjectPhase,
+  type DocumentType,
+  type DocumentStatus,
 } from "./schema/schema";

@@ -283,7 +283,7 @@ export function Repos() {
   };
 
   return (
-    <Container className="py-6 lg:py-8">
+    <Container className="py-6 lg:py-8 flex-1 overflow-auto">
       {/* Header with technical aesthetic */}
       <div className="mb-8">
         <div className="flex items-start justify-between">
@@ -296,7 +296,7 @@ export function Repos() {
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">
                   Repositories
                 </h1>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground hidden md:block">
                   Configure repositories for task execution
                 </p>
               </div>

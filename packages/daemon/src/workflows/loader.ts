@@ -10,13 +10,39 @@ import { getDb, workflows as workflowsTable } from "../db/drizzle";
 import type { Workflow, NewWorkflow } from "../db/drizzle";
 
 // Import built-in workflows directly (Bun will bundle them)
-import quickTaskYaml from "../../workflows/quick-task.yml";
-import investigateAndFixYaml from "../../workflows/investigate-and-fix.yml";
-import qualityRefactorYaml from "../../workflows/quality-refactor.yml";
+// Core workflows
+import quickTaskYaml from "../../workflows/core/quick-task.yml";
+import investigateAndFixYaml from "../../workflows/core/investigate-and-fix.yml";
+import qualityRefactorYaml from "../../workflows/core/quality-refactor.yml";
+
+// Development workflows
+import featureImplementationYaml from "../../workflows/development/feature-implementation.yml";
+import testGenerationYaml from "../../workflows/development/test-generation.yml";
+import codeReviewYaml from "../../workflows/development/code-review.yml";
+import documentationGeneratorYaml from "../../workflows/development/documentation-generator.yml";
+import securityAuditYaml from "../../workflows/development/security-audit.yml";
+import performanceOptimizationYaml from "../../workflows/development/performance-optimization.yml";
+import dependencyUpgradeYaml from "../../workflows/development/dependency-upgrade.yml";
+import apiIntegrationYaml from "../../workflows/development/api-integration.yml";
+
+// Narrative workflows (Game Story Development)
+import storyArchitectYaml from "../../workflows/narrative/story-architect.yml";
+import worldBuilderYaml from "../../workflows/narrative/world-builder.yml";
+import characterArchitectYaml from "../../workflows/narrative/character-architect.yml";
+import plotDesignerYaml from "../../workflows/narrative/plot-designer.yml";
+import cinematicScreenwriterYaml from "../../workflows/narrative/cinematic-screenwriter.yml";
+import dialogueSpecialistYaml from "../../workflows/narrative/dialogue-specialist.yml";
+import cinematicDirectorYaml from "../../workflows/narrative/cinematic-director.yml";
+import storyEditorYaml from "../../workflows/narrative/story-editor.yml";
 
 // ============================================================================
 // Type Definitions
 // ============================================================================
+
+/**
+ * Workflow categories for UI grouping
+ */
+export type WorkflowCategory = "core" | "development" | "narrative" | "custom";
 
 /**
  * Complete workflow definition parsed from YAML
@@ -25,6 +51,7 @@ export interface WorkflowDefinition {
   name: string;
   description: string;
   version: string;
+  category?: WorkflowCategory;
   model?: string;
   steps: WorkflowStep[];
 }
@@ -93,6 +120,7 @@ export interface WorkflowSummary {
   id: string;
   name: string;
   description: string;
+  category: WorkflowCategory;
   isBuiltin: boolean;
   stepCount: number;
   model?: string;
@@ -103,13 +131,44 @@ export interface WorkflowSummary {
 // ============================================================================
 
 /**
- * All built-in workflows with their IDs
+ * All built-in workflows with their IDs and categories
  * These are imported directly and bundled by Bun
  */
-const BUILTIN_WORKFLOWS = [
-  { id: "quick-task", definition: quickTaskYaml as WorkflowDefinition },
-  { id: "investigate-and-fix", definition: investigateAndFixYaml as WorkflowDefinition },
-  { id: "quality-refactor", definition: qualityRefactorYaml as WorkflowDefinition },
+const BUILTIN_WORKFLOWS: Array<{
+  id: string;
+  category: WorkflowCategory;
+  definition: WorkflowDefinition;
+}> = [
+  // ============================================================================
+  // Core Workflows - Essential task execution
+  // ============================================================================
+  { id: "quick-task", category: "core", definition: quickTaskYaml as WorkflowDefinition },
+  { id: "investigate-and-fix", category: "core", definition: investigateAndFixYaml as WorkflowDefinition },
+  { id: "quality-refactor", category: "core", definition: qualityRefactorYaml as WorkflowDefinition },
+
+  // ============================================================================
+  // Development Workflows - Software engineering tasks
+  // ============================================================================
+  { id: "feature-implementation", category: "development", definition: featureImplementationYaml as WorkflowDefinition },
+  { id: "test-generation", category: "development", definition: testGenerationYaml as WorkflowDefinition },
+  { id: "code-review", category: "development", definition: codeReviewYaml as WorkflowDefinition },
+  { id: "documentation-generator", category: "development", definition: documentationGeneratorYaml as WorkflowDefinition },
+  { id: "security-audit", category: "development", definition: securityAuditYaml as WorkflowDefinition },
+  { id: "performance-optimization", category: "development", definition: performanceOptimizationYaml as WorkflowDefinition },
+  { id: "dependency-upgrade", category: "development", definition: dependencyUpgradeYaml as WorkflowDefinition },
+  { id: "api-integration", category: "development", definition: apiIntegrationYaml as WorkflowDefinition },
+
+  // ============================================================================
+  // Narrative Workflows - Game story and cinematic development
+  // ============================================================================
+  { id: "story-architect", category: "narrative", definition: storyArchitectYaml as WorkflowDefinition },
+  { id: "world-builder", category: "narrative", definition: worldBuilderYaml as WorkflowDefinition },
+  { id: "character-architect", category: "narrative", definition: characterArchitectYaml as WorkflowDefinition },
+  { id: "plot-designer", category: "narrative", definition: plotDesignerYaml as WorkflowDefinition },
+  { id: "cinematic-screenwriter", category: "narrative", definition: cinematicScreenwriterYaml as WorkflowDefinition },
+  { id: "dialogue-specialist", category: "narrative", definition: dialogueSpecialistYaml as WorkflowDefinition },
+  { id: "cinematic-director", category: "narrative", definition: cinematicDirectorYaml as WorkflowDefinition },
+  { id: "story-editor", category: "narrative", definition: storyEditorYaml as WorkflowDefinition },
 ];
 
 // ============================================================================
@@ -128,7 +187,7 @@ export async function loadBuiltinWorkflows(): Promise<number> {
   const db = getDb();
   let loadedCount = 0;
 
-  for (const { id, definition } of BUILTIN_WORKFLOWS) {
+  for (const { id, category, definition } of BUILTIN_WORKFLOWS) {
     try {
       // Validate basic structure
       if (!definition.name || !definition.version || !Array.isArray(definition.steps)) {
@@ -143,12 +202,18 @@ export async function loadBuiltinWorkflows(): Promise<number> {
         .where(eq(workflowsTable.id, id))
         .get();
 
+      // Ensure category is set in the definition
+      const definitionWithCategory = {
+        ...definition,
+        category: definition.category || category,
+      };
+
       const now = new Date().toISOString();
       const workflowData: NewWorkflow = {
         id,
         name: definition.name,
         description: definition.description || "",
-        definition: JSON.stringify(definition),
+        definition: JSON.stringify(definitionWithCategory),
         model: definition.model || null,
         isBuiltin: true,
         createdAt: existing?.createdAt || now,
@@ -227,13 +292,15 @@ export async function listWorkflows(): Promise<WorkflowSummary[]> {
     const workflows = await db.select().from(workflowsTable).all();
 
     return workflows.map((w) => {
-      // Parse definition to get step count
+      // Parse definition to get step count and category
       let stepCount = 0;
       let model: string | undefined;
+      let category: WorkflowCategory = "custom";
       try {
         const def = JSON.parse(w.definition) as WorkflowDefinition;
         stepCount = def.steps?.length ?? 0;
         model = def.model;
+        category = def.category || (w.isBuiltin ? "core" : "custom");
       } catch {
         // Ignore parse errors
       }
@@ -242,6 +309,7 @@ export async function listWorkflows(): Promise<WorkflowSummary[]> {
         id: w.id,
         name: w.name,
         description: w.description || "",
+        category,
         isBuiltin: w.isBuiltin ?? false,
         stepCount,
         model,

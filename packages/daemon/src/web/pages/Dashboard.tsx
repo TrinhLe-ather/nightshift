@@ -194,7 +194,7 @@ export function Dashboard() {
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">
                   Command Center
                 </h1>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground hidden md:block">
                   Night Shift task orchestration dashboard
                 </p>
               </div>

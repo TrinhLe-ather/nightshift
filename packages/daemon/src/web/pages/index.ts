@@ -7,3 +7,5 @@ export { Workflows } from "./Workflows";
 export { WorkflowDetail } from "./WorkflowDetail";
 export { WorkflowForm } from "./WorkflowForm";
 export { Terminal } from "./Terminal";
+export { NarrativeStudio } from "./NarrativeStudio";
+export { NarrativeProject } from "./NarrativeProject";

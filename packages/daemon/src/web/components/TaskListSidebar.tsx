@@ -28,6 +28,8 @@ type TaskStatus =
 interface TaskListSidebarProps {
   selectedTaskId?: string;
   className?: string;
+  /** Callback when a task is selected (for mobile bottom sheet) */
+  onTaskSelect?: () => void;
 }
 
 const statusFilters = [
@@ -72,7 +74,7 @@ function truncatePrompt(prompt: string, maxLen = 50): string {
   return firstLine.substring(0, maxLen) + "...";
 }
 
-export function TaskListSidebar({ selectedTaskId, className }: TaskListSidebarProps) {
+export function TaskListSidebar({ selectedTaskId, className, onTaskSelect }: TaskListSidebarProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterValue>("all");
   const [search, setSearch] = useState("");
@@ -98,6 +100,7 @@ export function TaskListSidebar({ selectedTaskId, className }: TaskListSidebarPr
 
   const handleTaskClick = (taskId: string) => {
     navigate(`/tasks/${taskId}`);
+    onTaskSelect?.();
   };
 
   const handleDeleteClick = (

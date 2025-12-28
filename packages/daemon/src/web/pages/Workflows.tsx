@@ -243,7 +243,7 @@ export function Workflows() {
   };
 
   return (
-    <Container className="py-6 lg:py-8">
+    <Container className="py-6 lg:py-8 flex-1 overflow-auto">
       {/* Header with technical aesthetic */}
       <div className="mb-8">
         <div className="flex items-start justify-between">
@@ -254,13 +254,13 @@ export function Workflows() {
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">Workflows</h1>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-muted-foreground hidden md:block">
                   Task execution templates with multi-step orchestration
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col md:flex-row items-end md:items-center gap-2">
             <Button
               variant="outline"
               size="sm"

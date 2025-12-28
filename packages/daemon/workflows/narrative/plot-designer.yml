@@ -1,0 +1,464 @@
+name: Plot Designer
+category: narrative
+description: Breaks down the story into executable narrative beats - scene-by-scene structure, pacing rhythm, and branching path architecture. Creates the blueprint that screenwriters follow.
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Beat Analysis
+    model: opus
+    prompt: |
+      You are a **Master Plot Designer** - a story architect who specializes in breaking complex narratives into precise, emotionally calibrated beats. You've structured narratives for studios like Naughty Dog, Rockstar, and CD Projekt Red.
+
+      A plot design task has been submitted:
+
+      {{prompt}}
+
+      ## Your Task
+      Analyze the narrative material and identify/create the beat structure.
+
+      ## Scope Detection
+      Determine the scope of this request:
+      - **GRANULAR MODE**: If focusing on a single mission, chapter, or act
+      - **HOLISTIC MODE**: If structuring the complete game narrative
+
+      Explicitly state which mode you're operating in.
+
+      ## Input Analysis
+      Identify what you've been given:
+      - Treatment (prose narrative)
+      - Outline (structured summary)
+      - Story document (from Story Architect)
+      - Logline and synopsis
+      - Partial beat sheet to expand
+
+      ## Beat Sheet Framework
+
+      ### What Is A Beat?
+      A beat is a single unit of story change:
+      - Something CHANGES (status, emotion, knowledge, relationship)
+      - It's dramatic (has conflict, tension, or revelation)
+      - It moves the story forward
+
+      ### Beat Categories
+
+      #### STORY BEATS
+      - Plot progression events
+      - Revelations and reversals
+      - Decisions and consequences
+
+      #### CHARACTER BEATS
+      - Arc progression moments
+      - Relationship changes
+      - Internal realizations
+
+      #### EMOTIONAL BEATS
+      - Tone shifts
+      - Audience emotion targets
+      - Tension/release moments
+
+      #### THEMATIC BEATS
+      - Theme statement moments
+      - Theme challenge moments
+      - Theme proof/disproof moments
+
+      ### Beat Sheet Structure
+
+      For each beat:
+      ```
+      BEAT #[number]: [TITLE]
+      Type: [Story/Character/Emotional/Thematic]
+      Act: [I, IIa, IIb, III]
+      Location: [Where]
+      Characters: [Who's present]
+
+      WHAT HAPPENS:
+      [2-3 sentence description]
+
+      CHANGE:
+      Before: [state before beat]
+      After: [state after beat]
+
+      EMOTIONAL TARGET:
+      [What should the player feel?]
+
+      BRANCHING RELEVANCE:
+      [Does this beat vary by path? How?]
+      ```
+
+      ## Output
+      Initial beat analysis with beat sheet framework established.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Branching Architecture
+    model: opus
+    prompt: |
+      Beat framework established. Now design the branching architecture.
+
+      ## Branching Narrative Structure
+
+      Your game has **TWO ENDINGS** with player choices affecting the path.
+
+      ### Branch Point Mapping
+
+      #### MAJOR BRANCH POINTS
+      Moments where player choice significantly affects the narrative:
+
+      For each major branch point:
+      ```
+      BRANCH POINT: [NAME]
+      Location in Story: [Act/Beat]
+
+      THE CHOICE:
+      [What decision does the player face?]
+
+      OPTION A: [Choice description]
+      - Immediate consequence: [What happens right away]
+      - Long-term effect: [How this affects later story]
+      - Pushes toward: [Ending A or B]
+
+      OPTION B: [Choice description]
+      - Immediate consequence: [What happens right away]
+      - Long-term effect: [How this affects later story]
+      - Pushes toward: [Ending A or B]
+
+      NARRATIVE JUSTIFICATION:
+      [Why this choice matters thematically]
+      ```
+
+      #### MINOR VARIATIONS
+      Smaller choices that add texture without major divergence:
+      - Dialogue options that affect relationships
+      - Optional scenes that add depth
+      - Cosmetic choices that acknowledge player agency
+
+      ### Path Architecture
+
+      #### THE TRUNK
+      Story beats that remain constant regardless of choices:
+      - Core plot points
+      - Essential character moments
+      - Fixed set pieces
+
+      #### THE BRANCHES
+      Story beats that vary by path:
+      - Scenes unique to Path A
+      - Scenes unique to Path B
+      - Scenes with significant variations
+
+      #### CONVERGENCE POINTS
+      Where divergent paths come back together:
+      - What brings the paths together?
+      - How is the variation acknowledged?
+      - What's the new shared path?
+
+      ### Ending Architecture
+
+      #### ENDING A: [TITLE]
+      - Thematic meaning
+      - Final sequence description
+      - Character fates
+      - Emotional tone
+      - Final image
+
+      #### ENDING B: [TITLE]
+      - Thematic meaning
+      - Final sequence description
+      - Character fates
+      - Emotional tone
+      - Final image
+
+      #### DIVERGENCE MECHANICS
+      - How is the ending determined? (Accumulated choices? Final decision? Both?)
+      - Point of no return: When is the ending locked in?
+      - Is one ending "better"? (Be careful here - both should feel valid)
+
+      ### Branch Content Inventory
+
+      Create a table:
+      | Beat # | Trunk | Path A Only | Path B Only | Variation Type |
+      |--------|-------|-------------|-------------|----------------|
+
+      ## Output
+      Complete Branching Architecture Document.
+    maxRetries: 2
+
+  - name: Scene Breakdown
+    model: opus
+    prompt: |
+      Branching designed. Now break down into scenes.
+
+      ## Scene Breakdown
+
+      ### Scene vs. Beat
+      - A **beat** is a unit of change
+      - A **scene** is a unit of time/place
+      - One scene may contain multiple beats
+      - One beat may span multiple scenes
+
+      ### Scene Structure Template
+
+      For each scene:
+      ```
+      SCENE [#]: [TITLE]
+
+      HEADER:
+      Location: [Where]
+      Time: [When - time of day, relation to other scenes]
+      Duration: [Estimated screen time]
+      Characters: [Who's present]
+      Mood: [Atmospheric tone]
+
+      SCENE TYPE:
+      [ ] Cinematic (non-interactive cutscene)
+      [ ] Interactive Dialogue (player choices during conversation)
+      [ ] Gameplay with Story (narrative during active gameplay)
+      [ ] Environmental (story told through environment)
+      [ ] Hybrid (combination)
+
+      PURPOSE:
+      - Story function: [What plot purpose?]
+      - Character function: [What character development?]
+      - Emotional function: [What should player feel?]
+      - Gameplay function: [What gameplay does it set up/resolve?]
+
+      BEATS CONTAINED:
+      [List beat numbers this scene contains]
+
+      SCENE SUMMARY:
+      [3-5 sentence description of what happens]
+
+      KEY MOMENTS:
+      - [Moment 1]
+      - [Moment 2]
+      - [Moment 3]
+
+      ENTERS FROM:
+      [Previous scene/gameplay]
+
+      EXITS TO:
+      [Next scene/gameplay]
+
+      BRANCHING NOTES:
+      [How does this scene vary by path? Or is it trunk?]
+      ```
+
+      ### Scene Inventory by Category
+
+      #### CINEMATICS
+      Full non-interactive cutscenes:
+      - Number of scenes
+      - Total estimated runtime
+      - Distribution across acts
+
+      #### INTERACTIVE DIALOGUE
+      Conversations with player choice:
+      - Number of scenes
+      - Key choice moments
+      - Relationship impact
+
+      #### GAMEPLAY INTEGRATION
+      Story during gameplay:
+      - Radio chatter / comms
+      - Environmental storytelling
+      - NPC barks with story content
+
+      ### Act-by-Act Scene Count
+
+      | Act | Cinematics | Interactive | Gameplay Story | Total |
+      |-----|------------|-------------|----------------|-------|
+      | I   |            |             |                |       |
+      | IIa |            |             |                |       |
+      | IIb |            |             |                |       |
+      | III |            |             |                |       |
+
+      ### Runtime Estimation
+
+      - Total cinematic runtime: [X minutes]
+      - Total interactive dialogue: [X minutes]
+      - Target: 90+ minutes of cinematics
+
+      ## Output
+      Complete Scene Breakdown Document.
+    maxRetries: 2
+
+  - name: Pacing Map
+    model: opus
+    prompt: |
+      Scene breakdown complete. Now design the pacing.
+
+      ## Pacing Architecture
+
+      ### Emotional Intensity Graph
+
+      Create a textual representation of emotional intensity across the runtime:
+
+      ```
+      ACT I
+      |-----------------------|
+      Low █▁▁▂▃▄▅▆▇▇▅▃▂▁▂▃▅▆▇█ High
+          [Opening] [Inciting] [Break]
+
+      ACT IIA
+      |----------------------------------------|
+      Low █▁▂▃▄▅▆▇█▇▆▅▄▃▂▁▂▃▄▅▆▇▇█▇▆▅▄▃▂▃▄▅▆▇█▇ High
+          [B-Story] [Fun&Games] [Midpoint]
+      ```
+
+      Map intensity for:
+      - Action/tension
+      - Emotional investment
+      - Mystery/intrigue
+      - Character intimacy
+
+      ### Pacing Principles
+
+      #### THE RHYTHM RULE
+      - Every high needs a low after it
+      - Recovery time before next escalation
+      - Quieter moments earn louder moments
+
+      #### THE ESCALATION PATTERN
+      - Each act's peak higher than the last
+      - Stakes grow progressively
+      - "Topping" the previous peak
+
+      #### BREATHING ROOM
+      Identify "rest" scenes:
+      - Character moments without danger
+      - Humor beats
+      - Exploration time
+      - Player processing time
+
+      ### Sequence Structure
+
+      Break the game into SEQUENCES (groups of related scenes):
+
+      #### SEQUENCE TEMPLATE
+      ```
+      SEQUENCE: [NAME]
+      Acts: [Which portion]
+      Scenes: [#-#]
+      Duration: [Estimated time]
+
+      SEQUENCE GOAL:
+      [What is accomplished in this sequence?]
+
+      OPENING IMAGE:
+      [How does this sequence begin?]
+
+      CLOSING IMAGE:
+      [How does this sequence end?]
+
+      EMOTIONAL ARC:
+      [From what emotion to what emotion?]
+
+      PEAK MOMENT:
+      [The most intense scene in this sequence]
+      ```
+
+      ### Tension-Release Mapping
+
+      For each major tension peak:
+      - What creates the tension?
+      - How long is tension sustained?
+      - What releases it?
+      - How does the release feel? (Triumph? Relief? Dread?)
+
+      ### Pacing by Path
+
+      Do the two paths have different pacing?
+      - Path A pacing characteristics
+      - Path B pacing characteristics
+      - How to keep both satisfying
+
+      ## Output
+      Complete Pacing Map with intensity graphs and sequence breakdown.
+    maxRetries: 2
+
+  - name: Plot Document Assembly
+    model: opus
+    prompt: |
+      Now assemble the complete **Plot Structure Document** - the blueprint for all scene-level writing.
+
+      ## Plot Structure Document
+
+      ### COVER PAGE
+      - Project Title
+      - "Plot Structure Document"
+      - Version & Date
+      - Total scene count
+      - Estimated runtime
+
+      ### SECTION 1: EXECUTIVE SUMMARY
+      - One-page plot overview
+      - Key turning points
+      - Branching overview
+      - Scene count by category
+
+      ### SECTION 2: BEAT SHEET
+      Complete beat-by-beat breakdown:
+      - All beats in sequence
+      - Categorized by type
+      - Mapped to acts
+      - Branching relevance noted
+
+      ### SECTION 3: BRANCHING ARCHITECTURE
+      - Visual branch diagram (text-based)
+      - Major branch points detailed
+      - Minor variations listed
+      - Convergence points mapped
+      - Ending architecture
+
+      ### SECTION 4: SCENE BREAKDOWN
+      Complete scene inventory:
+      - Scenes organized by sequence
+      - Full details per scene
+      - Trunk vs. branch designation
+      - Runtime estimates
+
+      ### SECTION 5: PACING MAP
+      - Emotional intensity graphs
+      - Sequence breakdown
+      - Tension-release mapping
+      - Breathing room identification
+
+      ### SECTION 6: SCENE INDEX
+      Quick reference tables:
+      - Scenes by location
+      - Scenes by character appearance
+      - Scenes by type (cinematic/interactive/etc.)
+      - Scenes by branch
+
+      ### SECTION 7: RUNTIME BREAKDOWN
+      - Total runtime estimate
+      - Runtime by act
+      - Runtime by scene type
+      - Path A vs. Path B runtime
+
+      ### SECTION 8: INTEGRATION NOTES
+      For gameplay team:
+      - Scenes requiring specific gameplay setup
+      - Transitions between gameplay and story
+      - Story dependencies on gameplay mechanics
+      - Flexible scenes that can adjust to pacing
+
+      ### SECTION 9: OPEN QUESTIONS
+      - Plot points still in development
+      - Scenes requiring location/character decisions
+      - Pacing concerns to address
+
+      ## Quality Verification
+
+      Before finalizing:
+      - Do the beats create escalating tension?
+      - Is the branching manageable (not too complex)?
+      - Does the pacing have variety?
+      - Are both paths roughly equal in quality/length?
+      - Can screenwriters work from this document?
+
+      ## Output
+      The complete Plot Structure Document in markdown format, ready for screenwriters.
+    maxRetries: 2

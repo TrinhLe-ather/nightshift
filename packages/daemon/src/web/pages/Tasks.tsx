@@ -117,7 +117,7 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
       {/* Left status indicator */}
       <div className={cn("absolute left-0 top-0 h-full w-0.5", statusStyle.bgColor)} />
 
-      <div className="flex items-center justify-between gap-3 p-3">
+      <div className="flex items-center justify-between gap-2 lg:gap-3 p-2 lg:p-3">
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-medium text-foreground group-hover:text-primary transition-colors">
             {truncate(task.prompt, 100)}
@@ -294,28 +294,26 @@ export function Tasks() {
   }
 
   return (
-    <Container className="py-6 lg:py-8">
+    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
       {/* Header with technical aesthetic */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
-                <ListTodo className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-xl font-semibold tracking-tight text-foreground">Task Queue</h1>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  Manage and monitor task execution pipeline
-                </p>
-              </div>
+      <div className="">
+        <div className="flex items-center lg:items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10 hidden md:flex">
+              <ListTodo className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight text-foreground">Task Queue</h1>
+              <p className="mt-0.5 text-xs text-muted-foreground hidden lg:block">
+                Manage and monitor task execution pipeline
+              </p>
             </div>
           </div>
           <NewTaskButton />
         </div>
 
         {/* Stats + Search/Filter row */}
-        <div className="mt-4 flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-4 border-b border-border/50 py-3">
+        <div className="mt-4 flex flex-col lg:flex-row flex-wrap items-start lg:items-center justify-between gap-4 border-b border-border/50">
           {/* Stats - left side */}
           <div className="flex flex-wrap items-center gap-4 text-xs">
             <div className="flex items-center gap-2">
@@ -455,7 +453,7 @@ export function Tasks() {
 
       {/* Active filter chips */}
       {activeFilters.length > 0 && (
-        <div className="mb-6 flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {activeFilters.map((filter) => (
             <Badge
               key={filter.key}
@@ -506,11 +504,11 @@ export function Tasks() {
           </div>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-4 lg:space-y-6">
           {/* Today's tasks */}
           {buckets.today.length > 0 && (
-            <section>
-              <div className="mb-4 flex items-center gap-3">
+            <section className="space-y-2">
+              <div className="flex items-center gap-3">
                 <h2 className="text-sm font-medium uppercase tracking-wider text-primary">Today</h2>
                 <div className="h-px flex-1 bg-primary/20" />
                 <span className="text-xs text-primary">{buckets.today.length}</span>
@@ -532,8 +530,8 @@ export function Tasks() {
 
           {/* Yesterday's tasks */}
           {buckets.yesterday.length > 0 && (
-            <section>
-              <div className="mb-4 flex items-center gap-3">
+            <section className="space-y-2">
+              <div className="flex items-center gap-3">
                 <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                   Yesterday
                 </h2>
@@ -557,8 +555,8 @@ export function Tasks() {
 
           {/* Earlier tasks */}
           {buckets.remaining.length > 0 && (
-            <section>
-              <div className="mb-4 flex items-center gap-3">
+            <section className="space-y-2">
+              <div className="flex items-center gap-3">
                 <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
                   Earlier
                 </h2>

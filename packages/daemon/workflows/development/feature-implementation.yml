@@ -1,0 +1,194 @@
+name: Feature Implementation
+description: Implement new features from specifications, tickets, or natural language descriptions with full test coverage
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Requirements Analysis
+    model: opus
+    prompt: |
+      You are a Senior Software Architect. A new feature has been requested:
+
+      {{prompt}}
+
+      Your task is to fully understand the requirements and design the implementation approach.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to parallelize discovery:
+      - Use `subagent_type: Explore` to find related code, similar features, and architectural patterns
+      - Launch multiple Explore agents: (1) find similar implementations, (2) find affected areas, (3) find test patterns
+      - Use `subagent_type: Plan` if this is a significant architectural addition
+
+      ## Analysis Checklist
+      1. REQUIREMENTS - Extract explicit and implicit requirements from the prompt
+      2. SCOPE - Define boundaries (what IS and ISN'T included)
+      3. DEPENDENCIES - Identify what existing code this touches
+      4. PATTERNS - Find similar features to follow as reference
+      5. RISKS - Identify potential challenges or blockers
+
+      ## Design Deliverables
+      - Feature Requirements (bullet list of what must be built)
+      - Scope Definition (explicit boundaries)
+      - Technical Approach (high-level design)
+      - Files to Create/Modify (list with purpose)
+      - Integration Points (where this connects to existing code)
+      - Test Strategy (what tests will verify the feature)
+
+      ## Constraints
+      - DO NOT write any code yet. This is analysis only.
+      - If requirements are ambiguous, state assumptions clearly
+      - If scope is too large (>10 files), recommend splitting into phases
+
+      ## Pass Forward
+      - List all files to be created or modified
+      - State the core implementation approach in 2-3 sentences
+      - Identify the most critical/risky part of the implementation
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Interface Design
+    model: sonnet
+    prompt: |
+      Good analysis. Before implementing, let's design the public interfaces.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find existing interface patterns in the codebase
+      - Study similar features for consistency
+      - Find type definitions and schemas to follow
+
+      ## Interface Design Goals
+      Based on the requirements, design:
+      1. Public APIs (functions, methods, endpoints)
+      2. Data structures (types, schemas, models)
+      3. Configuration options (if any)
+      4. Event/callback interfaces (if async/reactive)
+
+      ## Design Principles
+      - Follow existing patterns in the codebase
+      - Keep interfaces minimal and focused
+      - Design for testability (easy to mock/stub)
+      - Consider backward compatibility if extending existing interfaces
+
+      ## Deliverables
+      Write the interface definitions (types, function signatures) but NOT the implementations:
+      - Type definitions / interfaces
+      - Function signatures with JSDoc comments
+      - Schema definitions (if applicable)
+      - API endpoint signatures (if applicable)
+
+      ## Verification
+      - Interfaces follow existing codebase conventions
+      - All requirements are addressable through these interfaces
+      - No unnecessary complexity or over-engineering
+    maxRetries: 2
+
+  - name: Implementation
+    model: opus
+    prompt: |
+      Interfaces are designed. Now implement the feature.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to reference implementation patterns
+      - Use `subagent_type: general-purpose` for complex logic that needs focused attention
+      - Check similar implementations for consistency
+
+      ## Implementation Order
+      Execute in this order for safety:
+      1. Data layer (models, schemas, database)
+      2. Core logic (business logic, utilities)
+      3. Integration layer (connecting to existing code)
+      4. Entry points (APIs, UI, CLI)
+
+      ## Implementation Standards
+      - Follow existing code patterns EXACTLY
+      - Write clean, readable code (future you will thank you)
+      - Add comments only for non-obvious logic
+      - Handle errors gracefully with meaningful messages
+      - Validate inputs at boundaries
+
+      ## Quality Gates
+      After each major component:
+      - Code compiles without errors
+      - No linting warnings introduced
+      - Existing tests still pass
+
+      ## Constraints
+      - Stay within defined scope (no feature creep)
+      - If blocked, document the blocker and continue with other parts
+      - If implementation differs from design, update interfaces accordingly
+    maxRetries: 3
+
+  - name: Test Implementation
+    model: sonnet
+    prompt: |
+      Feature is implemented. Now write comprehensive tests.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find test patterns and utilities
+      - Study existing tests for conventions
+      - Find testing helpers and fixtures
+
+      ## Test Coverage Requirements
+      Write tests covering:
+      1. Happy path (normal usage scenarios)
+      2. Edge cases (boundary conditions, empty inputs)
+      3. Error cases (invalid inputs, failure scenarios)
+      4. Integration tests (feature works with existing code)
+
+      ## Test Standards
+      - Clear test names describing expected behavior
+      - Arrange-Act-Assert structure
+      - One assertion per test (or closely related assertions)
+      - Independent tests (no shared mutable state)
+      - Fast execution (mock external dependencies)
+
+      ## Test Deliverables
+      - Unit tests for all new functions/methods
+      - Integration tests for feature entry points
+      - Edge case tests for boundary conditions
+      - Error handling tests
+
+      ## Verification
+      Run the full test suite:
+      - All new tests must pass
+      - All existing tests must still pass
+      - Show test output as proof
+    maxRetries: 2
+
+  - name: Final Verification
+    model: opus
+    prompt: |
+      Implementation and tests complete. Final verification before handoff.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to verify all requirements are met
+      - Use `subagent_type: general-purpose` for comprehensive testing
+      - Check integration points work correctly
+
+      ## Verification Checklist
+      1. REQUIREMENTS - All requirements from analysis are implemented
+      2. TESTS - Full test suite passes
+      3. TYPES - No type errors (run type checker)
+      4. LINT - No linting warnings
+      5. INTEGRATION - Feature works with existing code
+      6. SCOPE - No unplanned changes or feature creep
+
+      ## Quality Checks
+      - Code follows repository conventions
+      - No debugging code left behind (console.logs, comments)
+      - Error messages are user-friendly
+      - Performance is acceptable
+
+      ## Deliverable
+      Feature summary with:
+      - What was built (list of capabilities)
+      - Files created/modified (with brief descriptions)
+      - Test coverage summary
+      - Usage examples (how to use the new feature)
+      - Any known limitations or future improvements
+
+      If any requirements weren't met, clearly document what's missing and why.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

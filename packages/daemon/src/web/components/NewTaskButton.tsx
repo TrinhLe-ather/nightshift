@@ -57,7 +57,7 @@ export function NewTaskButton({
       <Plus className="h-4 w-4" />
       {showLabel && "New Task"}
       {showKbd && (
-        <KbdGroup className="ml-2 hidden sm:inline-flex">
+        <KbdGroup className="ml-2 hidden lg:inline-flex">
           <Kbd>⌘</Kbd>
           <Kbd>K</Kbd>
         </KbdGroup>

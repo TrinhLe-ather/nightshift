@@ -1,0 +1,376 @@
+name: World Builder
+category: narrative
+description: Constructs the universe where the story takes place - setting, history, factions, rules, and lore. Creates an immersive world that feels lived-in and supports the narrative.
+version: 1.0.0
+model: opus
+
+steps:
+  - name: World Foundation
+    model: opus
+    prompt: |
+      You are a **Master World Builder** with deep expertise in creating immersive game universes. You've built worlds for franchises like Mass Effect, The Witcher, Elder Scrolls, and Horizon.
+
+      A world-building task has been submitted:
+
+      {{prompt}}
+
+      ## Your Task
+      Establish the foundational elements of this game world.
+
+      ## Scope Detection
+      Determine the scope of this request:
+      - **GRANULAR MODE**: If focusing on a single location, faction, or lore element
+      - **HOLISTIC MODE**: If building the complete world framework
+
+      Explicitly state which mode you're operating in.
+
+      ## World Foundation Elements
+
+      ### 1. Setting Parameters
+      - **Time Period**: When does this take place? (era, year, epoch)
+      - **Reality Type**: Our world, alternate history, pure fantasy, sci-fi, hybrid
+      - **Geographic Scope**: Global, continental, regional, city-scale
+      - **Technology Level**: What's possible? What's common? What's rare?
+
+      ### 2. The Rules of Reality
+      Define what makes this world different:
+      - **Physics**: Any alterations to natural law?
+      - **Magic/Technology System**: If present, what are the LIMITS? (limits create drama)
+      - **Death & Mortality**: How does death work? Consequences?
+      - **Information Flow**: How do people communicate? What's secret?
+
+      ### 3. World State at Story Start
+      - **The Status Quo**: What's "normal" when the story begins?
+      - **Tensions Simmering**: What conflicts exist under the surface?
+      - **Recent History**: What happened in the last 5-10 years that matters?
+      - **Imminent Threats**: What's about to break the status quo?
+
+      ### 4. Atmosphere & Tone Anchors
+      - **Visual Identity**: Key visual motifs (colors, architecture, nature)
+      - **Soundscape**: What does this world sound like?
+      - **Emotional Baseline**: How do inhabitants feel day-to-day?
+      - **Hope vs. Despair Ratio**: Is this a dying world or rising one?
+
+      ## World-Building Principles
+      - Every rule must have story implications
+      - Avoid "kitchen sink" fantasy - be focused and coherent
+      - The world should feel lived-in, not created for the player
+      - Constraint breeds creativity - strong limits make interesting worlds
+
+      ## Output
+      A World Foundation Document establishing the core parameters.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: History & Lore
+    model: opus
+    prompt: |
+      World foundation established. Now build the history and lore.
+
+      ## Historical Framework
+
+      ### Timeline Construction
+      Build a layered timeline:
+
+      #### MYTHIC AGE (if applicable)
+      - Creation myths (what people BELIEVE happened)
+      - Ancient powers and their fates
+      - Why this matters to the present story
+
+      #### HISTORICAL AGE
+      - **500+ years ago**: Ancient history that shaped the world
+      - **100-500 years ago**: Events that created current power structures
+      - **20-100 years ago**: Living memory of elders, formative events
+      - **5-20 years ago**: Direct causes of current situation
+      - **Last 5 years**: Immediate lead-up to story events
+
+      For each era, identify:
+      - Key events
+      - Major figures (heroes, villains, rulers)
+      - Wars, treaties, discoveries
+      - How this era is REMEMBERED vs. what actually happened
+
+      ### Lore Categories
+
+      #### COMMON KNOWLEDGE
+      What every inhabitant knows:
+      - Basic world facts
+      - Major historical events
+      - Cultural touchstones
+
+      #### EDUCATED KNOWLEDGE
+      What scholars and informed people know:
+      - Deeper historical context
+      - How systems work
+      - Connections between events
+
+      #### SECRET KNOWLEDGE
+      Hidden truths that drive the plot:
+      - Conspiracies and cover-ups
+      - True history vs. propaganda
+      - Knowledge that would change everything
+
+      #### LOST KNOWLEDGE
+      Things no one alive knows:
+      - Ancient secrets
+      - Forgotten technologies/magic
+      - Mysteries to be uncovered
+
+      ### Historical Parallels
+      Identify real-world historical parallels that inform your world:
+      - What periods/cultures inspire this?
+      - What historical dynamics are you exploring?
+      - How does understanding history help players connect?
+
+      ## Lore Integration Rules
+      - Every piece of lore must serve the story or player experience
+      - Lore should be discoverable, not exposition-dumped
+      - Contradictions and unreliable history are okay - they create mystery
+      - The best lore raises questions while answering others
+
+      ## Output
+      A comprehensive History & Lore Document with timeline and categorized knowledge.
+    maxRetries: 2
+
+  - name: Factions & Power
+    model: opus
+    prompt: |
+      History established. Now design the factions and power structures.
+
+      ## Faction Architecture
+
+      For each major faction, develop:
+
+      ### FACTION PROFILE TEMPLATE
+
+      #### Identity
+      - **Name**: What they call themselves AND what others call them
+      - **Symbol/Colors**: Visual identity
+      - **Motto/Creed**: What they believe in one line
+      - **Public Perception**: How the world sees them
+
+      #### Power Base
+      - **Resources**: What do they control? (territory, wealth, technology, people)
+      - **Military Strength**: How do they fight?
+      - **Political Influence**: Who do they control or influence?
+      - **Secrets**: Hidden advantages
+
+      #### Motivation
+      - **Goal**: What do they want?
+      - **Methods**: How do they pursue it?
+      - **Justification**: Why they believe they're right
+      - **Blind Spot**: What they refuse to see
+
+      #### Internal Dynamics
+      - **Leadership Structure**: Who's in charge and how?
+      - **Internal Tensions**: Factions within the faction
+      - **Moderates vs. Extremists**: Range of belief
+      - **Rising Stars**: Who's gaining power?
+
+      #### Relationships
+      - **Allies**: Who do they work with and why?
+      - **Enemies**: Who do they oppose and why?
+      - **Complicated**: Relationships with tension and history
+
+      ## Power Dynamics Map
+
+      Create a relationship web showing:
+      - Who's in conflict with whom
+      - Who's allied
+      - Who's secretly working together
+      - Who's being manipulated
+      - Where the protagonist fits in
+
+      ## Faction Relevance to Branching
+
+      For your TWO-ENDING structure:
+      - Which factions push toward Ending A?
+      - Which factions push toward Ending B?
+      - How do player choices affect faction relationships?
+      - Which faction conflicts are central to the branching?
+
+      ## Society & Culture
+
+      ### Daily Life
+      - How do ordinary people live?
+      - What do they eat, wear, celebrate?
+      - What are their fears and hopes?
+      - How does class/status work?
+
+      ### Belief Systems
+      - Religions or philosophies
+      - Taboos and sacred things
+      - How death is handled
+      - Moral frameworks
+
+      ## Output
+      Complete Faction & Power Structure Document with relationship mapping.
+    maxRetries: 2
+
+  - name: Geography & Locations
+    model: opus
+    prompt: |
+      Factions defined. Now build the physical world.
+
+      ## World Geography
+
+      ### Macro Geography
+      The big picture of your world:
+      - **Continents/Regions**: Major landmasses and their character
+      - **Climate Zones**: How weather affects life and story
+      - **Natural Resources**: What's valuable and where
+      - **Natural Barriers**: Mountains, oceans, deserts that divide peoples
+
+      ### Key Locations
+
+      For each major location in the story, develop:
+
+      #### LOCATION PROFILE TEMPLATE
+
+      **[LOCATION NAME]**
+
+      ##### Physical Description
+      - Size and scale
+      - Dominant architecture or natural features
+      - Sensory details (sights, sounds, smells)
+      - Time of day that's most characteristic
+      - Weather patterns
+
+      ##### Narrative Function
+      - What story purpose does this location serve?
+      - What emotions should players feel here?
+      - What genre does this location evoke? (horror, adventure, mystery)
+      - Key scenes that happen here
+
+      ##### Inhabitants
+      - Who lives/works here?
+      - Social dynamics within
+      - How outsiders are treated
+      - Hidden populations
+
+      ##### History
+      - What happened here that matters?
+      - Scars of the past visible in the present
+      - Secrets buried here
+
+      ##### Gameplay Considerations
+      - How will players traverse this space?
+      - Verticality and exploration opportunities
+      - Combat arenas vs. safe spaces
+      - Environmental storytelling opportunities
+
+      ## Location Ecosystem
+
+      ### The Hub
+      Where does the protagonist return to?
+      - Sense of home/base
+      - Characters who anchor it
+      - How it changes through the story
+
+      ### Journey Locations
+      Places visited along the way:
+      - Logical travel progression
+      - Variety in environments
+      - How each location escalates the story
+
+      ### Climax Location
+      Where the finale takes place:
+      - Why this location for the ending?
+      - How does it reflect the story's themes?
+      - Does Ending A and Ending B happen in the same place?
+
+      ## Environmental Storytelling Opportunities
+      List specific moments where the environment tells story:
+      - Ruins that show what happened
+      - Objects that imply lives
+      - Details that reward attention
+      - Worldbuilding without dialogue
+
+      ## Output
+      Complete Geography & Locations Document with detailed location profiles.
+    maxRetries: 2
+
+  - name: World Bible Assembly
+    model: opus
+    prompt: |
+      Now assemble the complete **World Bible** - the canonical reference for all world-related creative decisions.
+
+      ## World Bible Structure
+
+      Create a production-ready document with these sections:
+
+      ### COVER PAGE
+      - World/Project Name
+      - One-line world description
+      - Document Version & Date
+      - Confidentiality notice
+
+      ### SECTION 1: WORLD AT A GLANCE
+      - One-page executive summary
+      - Key facts everyone should know
+      - Visual reference touchstones
+
+      ### SECTION 2: RULES OF THE WORLD
+      - Reality parameters
+      - Technology/magic systems with limits
+      - What's possible and what's not
+      - Consequences and costs
+
+      ### SECTION 3: TIMELINE
+      - Visual timeline of major events
+      - Era-by-era breakdown
+      - How history connects to current story
+
+      ### SECTION 4: FACTIONS
+      - Quick reference table of all factions
+      - Detailed profiles for major factions
+      - Relationship/conflict map
+      - Faction relevance to story branches
+
+      ### SECTION 5: LOCATIONS
+      - World map description (or regional overview)
+      - Key location profiles
+      - Location ecosystem for story
+      - Environmental storytelling notes
+
+      ### SECTION 6: CULTURE & SOCIETY
+      - Daily life details
+      - Social structures
+      - Belief systems
+      - Customs and taboos
+
+      ### SECTION 7: LORE LAYERS
+      - Common knowledge
+      - Educated knowledge
+      - Secret knowledge
+      - Lost knowledge
+
+      ### SECTION 8: WORLD-STORY INTEGRATION
+      - How the world serves the narrative
+      - Thematic resonance in worldbuilding
+      - Branching narrative world impacts
+      - World state changes through the story
+
+      ### SECTION 9: REFERENCE MATERIALS
+      - Visual inspirations (describe, don't link)
+      - Audio/music references
+      - Literary touchstones
+      - Game references
+
+      ### SECTION 10: OPEN QUESTIONS & DEPENDENCIES
+      - Unresolved world questions
+      - Areas needing development team input
+      - Flexibility zones for gameplay needs
+
+      ## Quality Verification
+      Before finalizing:
+      - Is the world internally consistent?
+      - Does every element serve story or immersion?
+      - Can art/audio teams create from this?
+      - Are there accidental real-world insensitivities?
+      - Does the world support both endings equally?
+
+      ## Output
+      The complete World Bible in markdown format, ready for production use.
+    maxRetries: 2

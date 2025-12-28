@@ -1,0 +1,209 @@
+name: Dependency Upgrade
+description: Safely upgrade dependencies with compatibility checks, breaking change analysis, and incremental migration
+version: 1.0.0
+model: sonnet
+
+steps:
+  - name: Dependency Analysis
+    model: opus
+    prompt: |
+      You are a Dependency Management Expert. An upgrade has been requested:
+
+      {{prompt}}
+
+      Your task is to analyze the current dependency state and plan the upgrade.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to analyze dependencies:
+      - Use `subagent_type: Explore` to find dependency files and usage patterns
+      - Launch multiple Explore agents: (1) find package.json/requirements/etc, (2) find import statements, (3) find related tests
+      - Map how the dependency is used throughout the codebase
+
+      ## Analysis Checklist
+      1. CURRENT STATE - Document current versions
+         - Direct dependencies to upgrade
+         - Transitive dependency impacts
+         - Current version constraints
+      2. TARGET STATE - Identify target versions
+         - Latest stable versions
+         - Breaking changes in changelogs
+         - Deprecation warnings
+      3. USAGE ANALYSIS - How is the dependency used
+         - Files that import the dependency
+         - Features being used
+         - API surface area
+      4. RISK ASSESSMENT - What could break
+         - Breaking API changes
+         - Behavior changes
+         - Peer dependency conflicts
+
+      ## Deliverables
+      Upgrade analysis:
+      - Current versions (dependency tree)
+      - Target versions (what to upgrade to)
+      - Breaking Changes (from changelogs/release notes)
+      - Usage Map (files affected)
+      - Risk Level (low/medium/high)
+      - Upgrade Order (if multiple dependencies)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Breaking Change Review
+    model: opus
+    prompt: |
+      Analysis complete. Now review breaking changes in detail.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find all usages of deprecated/changed APIs
+      - Check changelogs and migration guides
+      - Find replacement patterns
+
+      ## Breaking Change Investigation
+      For each breaking change:
+      1. IDENTIFY - What changed
+         - Removed APIs
+         - Changed function signatures
+         - New required parameters
+         - Behavior changes
+      2. LOCATE - Find affected code
+         - Search for deprecated API usage
+         - Find all call sites
+         - Check test files too
+      3. PLAN - Determine fix approach
+         - Direct replacement (if straightforward)
+         - Migration pattern (if complex)
+         - Workaround (if no direct replacement)
+
+      ## Migration Guide Review
+      - Official migration guides
+      - Community migration patterns
+      - Codemods (if available)
+
+      ## Deliverables
+      Breaking change report:
+      - Change Description (what changed)
+      - Affected Files (list with line numbers)
+      - Migration Approach (how to fix)
+      - Effort Estimate (trivial/moderate/significant)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Pre-Upgrade Tests
+    model: sonnet
+    prompt: |
+      Breaking changes identified. Now ensure test coverage before upgrading.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find tests for affected code
+      - Verify test coverage of dependency usage
+      - Add tests for uncovered areas
+
+      ## Test Verification
+      1. Run full test suite to establish baseline
+      2. Verify tests exist for areas using the dependency
+      3. Add tests for any uncovered usage patterns
+      4. Document current behavior for comparison
+
+      ## Test Requirements
+      - All existing tests pass (baseline)
+      - Critical dependency usage is covered
+      - Edge cases are tested
+      - Integration points are verified
+
+      ## Baseline Documentation
+      - Test count and pass rate
+      - Specific tests for dependency features
+      - Behavior snapshots (if applicable)
+
+      ## If Coverage is Low
+      - Add tests for critical paths first
+      - Focus on areas with breaking changes
+      - Document untested areas as risk
+    maxRetries: 2
+
+  - name: Incremental Upgrade
+    model: sonnet
+    prompt: |
+      Tests in place. Now perform the upgrade incrementally.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to verify each migration step
+      - Apply changes incrementally
+      - Test after each change
+
+      ## Upgrade Process
+      1. Update dependency version
+         - Update version in package.json/requirements/etc
+         - Run install/update command
+         - Check for peer dependency issues
+      2. Fix breaking changes
+         - Apply migrations one at a time
+         - Follow the breaking change report
+         - Run tests after each fix
+      3. Update related code
+         - Fix deprecation warnings
+         - Update types/definitions
+         - Update imports if needed
+
+      ## Upgrade Order (if multiple)
+      - Upgrade dependencies in order (least to most complex)
+      - Handle peer dependencies correctly
+      - Don't proceed if tests fail
+
+      ## Quality Gates
+      After each change:
+      - Tests pass
+      - No new type errors
+      - No new linting errors
+      - Application runs correctly
+
+      ## Rollback Trigger
+      If stuck on a breaking change:
+      - Document the blocker
+      - Consider partial upgrade
+      - Revert if necessary
+    maxRetries: 3
+
+  - name: Upgrade Verification
+    model: opus
+    prompt: |
+      Upgrade complete. Now verify everything works correctly.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to verify all usages work
+      - Run comprehensive tests
+      - Check for runtime issues
+
+      ## Verification Checklist
+      1. TESTS - Full test suite passes
+      2. TYPES - No type errors
+      3. LINT - No new warnings
+      4. BUILD - Application builds successfully
+      5. RUNTIME - Application runs correctly
+      6. DEPRECATIONS - No new deprecation warnings
+
+      ## Comparison with Baseline
+      - Test pass rate (same or better)
+      - Build time (not significantly slower)
+      - Bundle size (not significantly larger)
+      - Performance (not degraded)
+
+      ## Smoke Tests
+      - Application starts
+      - Key features work
+      - No console errors
+      - No runtime exceptions
+
+      ## Deliverables
+      Upgrade report:
+      - Dependencies Upgraded (from version → to version)
+      - Breaking Changes Fixed (list with details)
+      - Code Changes Made (files modified)
+      - Test Results (before/after comparison)
+      - Known Issues (if any)
+      - Rollback Instructions (how to undo if needed)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

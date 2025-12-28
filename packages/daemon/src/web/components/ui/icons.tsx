@@ -6,6 +6,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ArrowUp01Icon,
+  Book02Icon,
   BubbleChatIcon,
   Cancel01Icon,
   CancelCircleIcon,
@@ -13,6 +14,7 @@ import {
   Tick02Icon,
   CheckmarkCircle02Icon,
   Clock01Icon,
+  Copy01Icon,
   DashboardSquare01Icon,
   Delete02Icon,
   Download01Icon,
@@ -32,13 +34,16 @@ import {
   PauseIcon,
   PlayIcon,
   PlusSignIcon,
+  QrCode01Icon,
   Refresh01Icon,
   Search01Icon,
   Sent02Icon,
   Settings01Icon,
   ComputerTerminal01Icon,
   SidebarRightIcon,
+  TextIcon,
   ViewIcon,
+  Wifi01Icon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 
@@ -81,6 +86,7 @@ export const Settings = makeIcon("Settings", Settings01Icon);
 
 export const AlertCircle = makeIcon("AlertCircle", AlertCircleIcon);
 export const Check = makeIcon("Check", Tick02Icon);
+export const CheckCircle = makeIcon("CheckCircle", CheckmarkCircle02Icon);
 export const CheckCircle2 = makeIcon("CheckCircle2", CheckmarkCircle02Icon);
 export const Download = makeIcon("Download", Download01Icon);
 export const RefreshCw = makeIcon("RefreshCw", Refresh01Icon);
@@ -104,6 +110,7 @@ export const SidebarRight = makeIcon("SidebarRight", SidebarRightIcon);
 // File icons
 export const File = makeIcon("File", File01Icon);
 export const FileEdit = makeIcon("FileEdit", FileEditIcon);
+export const FileCode = makeIcon("FileCode", FileEditIcon);
 export const FilePlus = makeIcon("FilePlus", FileAddIcon);
 export const FolderSearch = makeIcon("FolderSearch", FolderSearchIcon);
 export const Globe = makeIcon("Globe", Globe02Icon);
@@ -111,3 +118,13 @@ export const Eye = makeIcon("Eye", ViewIcon);
 
 // Edit icons
 export const Pencil = makeIcon("Pencil", FileEditIcon);
+
+// LAN/Network icons
+export const Wifi = makeIcon("Wifi", Wifi01Icon);
+export const QrCode = makeIcon("QrCode", QrCode01Icon);
+export const Copy = makeIcon("Copy", Copy01Icon);
+
+// Narrative Studio icons
+export const Film = makeIcon("Film", PlayIcon);
+export const FileText = makeIcon("FileText", TextIcon);
+export const BookOpen = makeIcon("BookOpen", Book02Icon);
