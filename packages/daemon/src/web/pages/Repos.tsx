@@ -363,7 +363,7 @@ export function Repos() {
           <p className="mt-1 text-xs text-muted-foreground">
             Add a repository to start executing tasks
           </p>
-          <Button className="mt-6" size="sm" onClick={() => setAddDialogOpen(true)}>
+          <Button className="mt-4 lg:mt-6" size="sm" onClick={() => setAddDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Your First Repository
           </Button>
@@ -378,7 +378,7 @@ export function Repos() {
           </div>
           <p className="mt-4 text-sm font-medium text-foreground">No matching repositories</p>
           <p className="mt-1 text-xs text-muted-foreground">Try adjusting your search query</p>
-          <Button variant="outline" className="mt-6" size="sm" onClick={() => setSearchQuery("")}>
+          <Button variant="outline" className="mt-4 lg:mt-6" size="sm" onClick={() => setSearchQuery("")}>
             Clear search
           </Button>
         </div>

@@ -352,7 +352,7 @@ export function WorkflowDetail() {
 
   if (isLoading) {
     return (
-      <Container className="py-6 lg:py-8">
+      <Container className="py-4 lg:py-6">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
             <div className="h-12 w-12 border-2 border-border" />
@@ -366,7 +366,7 @@ export function WorkflowDetail() {
 
   if (error || !workflow) {
     return (
-      <Container className="py-6 lg:py-8">
+      <Container className="py-4 lg:py-6">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Workflow className="h-8 w-8 text-muted-foreground" />
@@ -375,7 +375,7 @@ export function WorkflowDetail() {
           <p className="mt-1 text-xs text-muted-foreground">
             The workflow you're looking for doesn't exist or has been deleted.
           </p>
-          <Button variant="outline" size="sm" className="mt-6" onClick={handleBack}>
+          <Button variant="outline" size="sm" className="mt-4 lg:mt-6" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Workflows
           </Button>
@@ -388,20 +388,20 @@ export function WorkflowDetail() {
   const usedModels = new Set(workflow.definition.steps.map((s) => s.model).filter(Boolean));
 
   return (
-    <Container className="py-6 lg:py-8">
+    <Container className="py-4 lg:py-6">
       {/* Navigation */}
       <Button
         variant="ghost"
         size="sm"
         onClick={handleBack}
-        className="mb-6 -ml-2 h-8 text-muted-foreground hover:text-foreground"
+        className="mb-4 -ml-2 h-8 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Workflows
       </Button>
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4 lg:mb-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
@@ -464,7 +464,7 @@ export function WorkflowDetail() {
         </div>
 
         {/* Metadata bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-y border-border/50 py-3">
+        <div className="mt-4 lg:mt-6 flex flex-wrap items-center gap-x-4 lg:gap-x-6 gap-y-2 border-y border-border/50 py-3">
           <div className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">Version:</span>
             <span className="font-medium text-foreground">{workflow.definition.version}</span>
@@ -520,8 +520,8 @@ export function WorkflowDetail() {
       </div>
 
       {/* Steps section */}
-      <div className="mb-8">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 lg:mb-6">
+        <div className="mb-3 lg:mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
               Workflow Steps
@@ -539,7 +539,7 @@ export function WorkflowDetail() {
         </div>
 
         {/* Visual flow indicator */}
-        <div className="mb-6 flex items-center gap-2 border border-border/50 bg-muted/20 p-3">
+        <div className="mb-4 lg:mb-6 flex items-center gap-2 border border-border/50 bg-muted/20 p-3">
           <div className="flex items-center gap-1">
             <Play className="h-4 w-4 text-emerald-400" />
             <span className="text-xs text-muted-foreground">Start</span>

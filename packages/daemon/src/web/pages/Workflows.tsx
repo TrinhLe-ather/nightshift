@@ -366,7 +366,7 @@ export function Workflows() {
               : "Create a workflow to get started"}
           </p>
           {!searchQuery && filterCategory === "all" && (
-            <Button className="mt-6" size="sm" onClick={() => navigate("/workflows/new")}>
+            <Button className="mt-4 lg:mt-6" size="sm" onClick={() => navigate("/workflows/new")}>
               <Plus className="mr-2 h-4 w-4" />
               Create Your First Workflow
             </Button>
@@ -376,7 +376,7 @@ export function Workflows() {
 
       {/* Workflows Grid */}
       {!isLoading && filteredWorkflows.length > 0 && (
-        <div className="space-y-10">
+        <div className="space-y-6 lg:space-y-8">
           {/* Built-in Workflows Section */}
           {builtinWorkflows.length > 0 && (
             <section>

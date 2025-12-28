@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
   AlertCircle,
   CheckCircle2,
@@ -129,6 +130,7 @@ export function Settings() {
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const [showLanQR, setShowLanQR] = useState(false);
   const [showTailscaleQR, setShowTailscaleQR] = useState(false);
+  const [isTogglingLan, setIsTogglingLan] = useState(false);
   const [formValues, setFormValues] = useState({
     taskTimeoutMs: 14400000, // 4 hours default
     maxConcurrentTasks: 1,
@@ -191,6 +193,36 @@ export function Settings() {
       });
     }
     setIsEditingConfig(false);
+  };
+
+  // Toggle LAN access mutation
+  const toggleLanMutation = useMutation({
+    mutationFn: (enabled: boolean) => client.config.update({ allowLan: enabled, restart: true }),
+    onMutate: () => {
+      setIsTogglingLan(true);
+    },
+    onSuccess: (_, enabled) => {
+      toast.success(enabled ? "LAN access enabled" : "LAN access disabled", {
+        description: "Daemon is restarting to apply changes...",
+        duration: 5000,
+      });
+      // Give the daemon time to restart before refreshing
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["config"] });
+        queryClient.invalidateQueries({ queryKey: ["status"] });
+        setIsTogglingLan(false);
+      }, 2000);
+    },
+    onError: (error) => {
+      setIsTogglingLan(false);
+      toast.error("Failed to toggle LAN access", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    },
+  });
+
+  const handleToggleLan = (enabled: boolean) => {
+    toggleLanMutation.mutate(enabled);
   };
 
   // Check for updates mutation
@@ -296,7 +328,7 @@ export function Settings() {
         </div>
 
         {/* Status bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-6 border-y border-border/50 py-3">
+        <div className="mt-4 lg:mt-6 flex flex-wrap items-center gap-4 lg:gap-6 border-y border-border/50 py-3">
           <div className="flex items-center gap-2">
             <div
               className={cn(
@@ -496,67 +528,129 @@ export function Settings() {
           </div>
         </SettingsCard>
 
-        {/* LAN Access - Only shown when enabled */}
-        {status?.lan?.enabled && (
-          <SettingsCard
-            title="LAN Access"
-            description="Connect from devices on your local WiFi"
-            icon={Wifi}
-            iconColor="text-cyan-400"
-            iconBg="bg-cyan-500/10"
-            iconBorder="border-cyan-500/30"
-            index={2}
-          >
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                    Local IP
-                  </p>
-                  <p className="mt-1 font-mono text-lg font-semibold text-foreground">
-                    {status.lan.localIp || "Not available"}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowLanQR(true)}
-                  className="h-8"
-                >
-                  <QrCode className="mr-2 h-3.5 w-3.5" />
-                  Show QR
-                </Button>
-              </div>
-
-              {status.lan.url && (
-                <div className="rounded border border-border bg-muted/30 p-3">
-                  <p className="mb-1 text-xs text-muted-foreground">Connection URL</p>
-                  <div className="flex items-center gap-2">
-                    <code className="flex-1 truncate font-mono text-sm text-foreground">
-                      {status.lan.url.replace(/\?pin=\d+/, "?pin=****")}
-                    </code>
+        {/* LAN Access - Always shown with toggle */}
+        <SettingsCard
+          title="LAN Access"
+          description="Connect from devices on your local network"
+          icon={Wifi}
+          iconColor={status?.lan?.enabled ? "text-cyan-400" : "text-muted-foreground"}
+          iconBg={status?.lan?.enabled ? "bg-cyan-500/10" : "bg-muted/50"}
+          iconBorder={status?.lan?.enabled ? "border-cyan-500/30" : "border-border"}
+          index={2}
+          headerAction={
+            <div className="flex items-center gap-2">
+              {isTogglingLan && (
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+              )}
+              <Switch
+                checked={config?.allowLan ?? false}
+                onCheckedChange={handleToggleLan}
+                disabled={isTogglingLan}
+              />
+            </div>
+          }
+        >
+          {config?.allowLan ? (
+            status?.lan?.enabled ? (
+              <div className="space-y-4">
+                {/* PIN Display */}
+                {status.lan.pin && (
+                  <div className="flex items-center justify-between rounded border border-cyan-500/30 bg-cyan-500/5 p-3">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Access PIN
+                      </p>
+                      <p className="mt-1 font-mono text-2xl font-bold tracking-widest text-cyan-400">
+                        ****
+                      </p>
+                    </div>
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(status.lan!.url!);
-                        toast.success("URL copied to clipboard");
+                        navigator.clipboard.writeText(status.lan!.pin!);
+                        toast.success("PIN copied to clipboard");
                       }}
-                      className="h-6 w-6 shrink-0 p-0"
+                      className="h-8"
                     >
-                      <Copy className="h-3.5 w-3.5" />
+                      <Copy className="mr-2 h-3.5 w-3.5" />
+                      Copy
                     </Button>
                   </div>
-                </div>
-              )}
+                )}
 
-              <p className="text-xs text-muted-foreground">
-                Scan the QR code or enter the PIN shown in the daemon console to connect from your
-                mobile device.
+                {/* Local IP */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Local IP
+                    </p>
+                    <p className="mt-1 font-mono text-lg font-semibold text-foreground">
+                      {status.lan.localIp || "Not available"}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowLanQR(true)}
+                    className="h-8"
+                  >
+                    <QrCode className="mr-2 h-3.5 w-3.5" />
+                    Show QR
+                  </Button>
+                </div>
+
+                {status.lan.url && (
+                  <div className="rounded border border-border bg-muted/30 p-3">
+                    <p className="mb-1 text-xs text-muted-foreground">Connection URL</p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 truncate font-mono text-sm text-foreground">
+                        {status.lan.url.replace(/\?pin=\d+/, "?pin=****")}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(status.lan!.url!);
+                          toast.success("URL copied to clipboard");
+                        }}
+                        className="h-6 w-6 shrink-0 p-0"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  Scan the QR code or enter the PIN to connect from your mobile device on the same
+                  network.
+                </p>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 rounded border border-amber-500/30 bg-amber-500/5 p-3">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-400" />
+                <p className="text-xs text-amber-400">
+                  Daemon is restarting to enable LAN access...
+                </p>
+              </div>
+            )
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Enable LAN access to connect from other devices on your local network, such as your
+                phone or tablet.
               </p>
+              <div className="flex items-start gap-2 rounded border border-border bg-muted/30 p-3">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <p className="text-xs text-muted-foreground">
+                  When enabled, the daemon will bind to 0.0.0.0 and generate a PIN for
+                  authentication. The daemon will restart to apply this change.
+                </p>
+              </div>
             </div>
-          </SettingsCard>
-        )}
+          )}
+        </SettingsCard>
 
         {/* Tailscale Access - Only shown when Tailscale is detected */}
         {status?.lan?.enabled && status?.lan?.tailscale?.ip && (

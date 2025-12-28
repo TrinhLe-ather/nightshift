@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
-  Film,
+  // Film,
   FolderGit2,
   LayoutDashboard,
   ListTodo,
@@ -33,11 +33,11 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { to: "/repos", icon: FolderGit2, label: "Repos" },
   { to: "/tasks", icon: ListTodo, label: "Tasks" },
   { to: "/workflows", icon: Workflow, label: "Workflows" },
-  { to: "/narrative-studio", icon: Film, label: "Narrative" },
-  { to: "/repos", icon: FolderGit2, label: "Repos" },
   { to: "/terminal", icon: Terminal, label: "Terminal" },
+  // { to: "/narrative-studio", icon: Film, label: "Narrative" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];
 

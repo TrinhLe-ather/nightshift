@@ -653,7 +653,7 @@ export function NarrativeProject() {
 
   if (isLoading) {
     return (
-      <Container className="flex items-center justify-center py-20">
+      <Container className="py-4 lg:py-6 flex items-center justify-center">
         <div className="relative">
           <div className="h-12 w-12 border-2 border-border" />
           <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-amber-400 border-t-transparent" />
@@ -666,14 +666,14 @@ export function NarrativeProject() {
     <div className="flex h-full">
       {/* Main Content */}
       <div className={cn("flex-1 overflow-auto", selectedAgent && "lg:pr-[400px]")}>
-        <Container className="py-6 lg:py-8">
+        <Container className="py-4 lg:py-6">
           {/* Back Button + Header */}
-          <div className="mb-6">
+          <div className="mb-4 lg:mb-6">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate("/narrative-studio")}
-              className="mb-4 -ml-2 gap-2 text-muted-foreground hover:text-foreground"
+              className="mb-3 lg:mb-4 -ml-2 gap-2 text-muted-foreground hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to Projects
@@ -716,7 +716,7 @@ export function NarrativeProject() {
             </div>
 
             {/* Progress bar */}
-            <div className="mt-6 border border-border/50 bg-card/50 p-4">
+            <div className="mt-4 lg:mt-6 border border-border/50 bg-card/50 p-3 lg:p-4">
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <span className={cn("font-medium", phaseColors.text)}>
@@ -759,8 +759,8 @@ export function NarrativeProject() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="pipeline" className="mt-6">
-              <div className="space-y-8">
+            <TabsContent value="pipeline" className="mt-4 lg:mt-6">
+              <div className="space-y-4 lg:space-y-6">
                 {agentsByPhase.map(({ phase, agents }) => (
                   <PhaseSection
                     key={phase}
@@ -774,7 +774,7 @@ export function NarrativeProject() {
               </div>
             </TabsContent>
 
-            <TabsContent value="documents" className="mt-6">
+            <TabsContent value="documents" className="mt-4 lg:mt-6">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {documents.map((doc) => {
                   const agent = NARRATIVE_AGENTS.find((a) => a.id === doc.agentId);
@@ -819,13 +819,13 @@ export function NarrativeProject() {
               </div>
             </TabsContent>
 
-            <TabsContent value="settings" className="mt-6">
-              <div className="border border-border bg-card p-6">
+            <TabsContent value="settings" className="mt-4 lg:mt-6">
+              <div className="border border-border bg-card p-4 lg:p-6">
                 <h3 className="text-base font-medium">Project Settings</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Configure project details, linked repository, and output preferences.
                 </p>
-                <div className="mt-6 text-sm text-muted-foreground">
+                <div className="mt-4 lg:mt-6 text-sm text-muted-foreground">
                   Settings panel coming soon...
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { loadConfig, saveConfig } from "../../config";
+import { scheduleRestart } from "../../update";
 import { orpc } from "../base";
 
 // Zod schemas
@@ -11,9 +12,10 @@ const SafeConfigSchema = z.object({
   maxConcurrentTasks: z.number(),
   scheduleStart: z.string().nullable(),
   scheduleEnd: z.string().nullable(),
+  allowLan: z.boolean(),
 });
 
-const ConfigUpdateSchema = z.object({
+const configUpdateSchema = z.object({
   port: z.number().int().min(1024).max(65535).optional(),
   taskTimeoutMs: z.number().int().min(60000).optional(),
   localQueueEnabled: z.boolean().optional(),
@@ -28,6 +30,7 @@ const ConfigUpdateSchema = z.object({
     .regex(/^\d{2}:\d{2}$/)
     .nullable()
     .optional(),
+  allowLan: z.boolean().optional(),
 });
 
 // GET handler
@@ -43,12 +46,17 @@ const get = orpc.output(SafeConfigSchema).handler(async () => {
     maxConcurrentTasks: config.maxConcurrentTasks,
     scheduleStart: config.scheduleStart || null,
     scheduleEnd: config.scheduleEnd || null,
+    allowLan: config.allowLan ?? false,
   };
 });
 
-// UPDATE handler
+// UPDATE handler with optional restart
+const configUpdateWithRestartSchema = configUpdateSchema.extend({
+  restart: z.boolean().optional(),
+});
+
 const update = orpc
-  .input(ConfigUpdateSchema)
+  .input(configUpdateWithRestartSchema)
   .output(SafeConfigSchema)
   .handler(async ({ input, errors }) => {
     const currentConfig = loadConfig();
@@ -80,12 +88,23 @@ const update = orpc
       updates.scheduleEnd = input.scheduleEnd === null ? undefined : input.scheduleEnd;
     }
 
+    if (input.allowLan !== undefined) {
+      updates.allowLan = input.allowLan;
+    }
+
     if (Object.keys(updates).length === 0) {
       throw errors.BAD_REQUEST({ message: "No valid updates provided" });
     }
 
     const newConfig = { ...currentConfig, ...updates };
     saveConfig(newConfig);
+
+    // Schedule restart if requested
+    if (input.restart) {
+      setTimeout(async () => {
+        await scheduleRestart();
+      }, 500);
+    }
 
     // Return safe config
     return {
@@ -96,10 +115,20 @@ const update = orpc
       maxConcurrentTasks: newConfig.maxConcurrentTasks,
       scheduleStart: newConfig.scheduleStart || null,
       scheduleEnd: newConfig.scheduleEnd || null,
+      allowLan: newConfig.allowLan ?? false,
     };
   });
+
+// Restart daemon endpoint
+const restart = orpc.output(z.object({ restarting: z.boolean() })).handler(async () => {
+  setTimeout(async () => {
+    await scheduleRestart();
+  }, 500);
+  return { restarting: true };
+});
 
 export const configRouter = {
   get,
   update,
+  restart,
 };

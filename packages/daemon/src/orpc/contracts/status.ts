@@ -10,6 +10,7 @@ import {
   getLanUrlWithPin,
   getTailscaleIpAddress,
   getTailscaleUrlWithPin,
+  getCurrentPin,
 } from "../../lan";
 
 // Track daemon start time
@@ -39,6 +40,7 @@ const LanInfoSchema = z.object({
   enabled: z.boolean(),
   localIp: z.string().nullable(),
   url: z.string().nullable(),
+  pin: z.string().nullable(),
   tailscale: z
     .object({
       ip: z.string().nullable(),
@@ -61,7 +63,7 @@ const DaemonStatusSchema = z.object({
   }),
   activeTask: ActiveTaskSchema,
   stats: StatsSchema,
-  lan: LanInfoSchema.optional(),
+  lan: LanInfoSchema,
 });
 
 // Handler
@@ -120,22 +122,21 @@ const getStatus = orpc.output(DaemonStatusSchema).handler(async () => {
       : "connected"
     : "standalone";
 
-  // Build LAN info if enabled
+  // Build LAN info (always return, with enabled flag)
   const lanEnabled = isLanModeActive();
   const tailscaleIp = getTailscaleIpAddress();
-  const lan = lanEnabled
-    ? {
-        enabled: true,
-        localIp: getLocalIpAddress(),
-        url: getLanUrlWithPin(),
-        tailscale: tailscaleIp
-          ? {
-              ip: tailscaleIp,
-              url: getTailscaleUrlWithPin(),
-            }
-          : undefined,
-      }
-    : undefined;
+  const lan = {
+    enabled: lanEnabled,
+    localIp: getLocalIpAddress(),
+    url: lanEnabled ? getLanUrlWithPin() : null,
+    pin: lanEnabled ? getCurrentPin() : null,
+    tailscale: tailscaleIp
+      ? {
+          ip: tailscaleIp,
+          url: lanEnabled ? getTailscaleUrlWithPin() : null,
+        }
+      : undefined,
+  };
 
   return {
     running: true,

@@ -800,7 +800,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
   // Check if we're trying to edit a built-in workflow
   if (isEdit && existingWorkflow?.isBuiltin) {
     return (
-      <Container className="py-6 lg:py-8">
+      <Container className="py-4 lg:py-6">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
             <Workflow className="h-8 w-8 text-muted-foreground" />
@@ -809,7 +809,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
           <p className="mt-1 text-xs text-muted-foreground">
             Clone this workflow to create an editable copy
           </p>
-          <Button variant="outline" size="sm" className="mt-6" onClick={handleBack}>
+          <Button variant="outline" size="sm" className="mt-4 lg:mt-6" onClick={handleBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
@@ -820,7 +820,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
 
   if (isEdit && isLoadingWorkflow) {
     return (
-      <Container className="py-6 lg:py-8">
+      <Container className="py-4 lg:py-6">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
             <div className="h-12 w-12 border-2 border-border" />
@@ -833,7 +833,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
   }
 
   return (
-    <Container className="py-6 lg:py-8">
+    <Container className="py-4 lg:py-6">
       <form onSubmit={handleSubmit(onSubmit)}>
         {/* Navigation */}
         <Button
@@ -841,14 +841,14 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
           variant="ghost"
           size="sm"
           onClick={handleBack}
-          className="mb-6 -ml-2 h-8 text-muted-foreground hover:text-foreground"
+          className="mb-4 -ml-2 h-8 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           {isEdit ? "Back to Workflow" : "Back to Workflows"}
         </Button>
 
         {/* Header */}
-        <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="mb-4 lg:mb-6 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-primary/30 bg-primary/10">
               <Workflow className="h-6 w-6 text-primary" />
@@ -885,10 +885,10 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
         </div>
 
         {/* Two-column layout */}
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-3">
           {/* Left column - Basic info */}
           <div className="lg:col-span-1">
-            <div className="sticky top-6 space-y-6">
+            <div className="sticky top-4 lg:top-6 space-y-4 lg:space-y-6">
               {/* Basic info card */}
               <div className="border border-border/50 bg-card p-4">
                 <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -1079,7 +1079,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
         </div>
 
         {/* Sticky footer */}
-        <div className="sticky bottom-0 mt-8 -mx-4 border-t border-border bg-background/95 px-4 py-4 backdrop-blur-sm xl:-mx-6 xl:px-6">
+        <div className="sticky bottom-0 mt-4 lg:mt-6 -mx-4 border-t border-border bg-background/95 px-4 py-3 lg:py-4 backdrop-blur-sm xl:-mx-6 xl:px-6">
           <div className="flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
               {isDirty ? (

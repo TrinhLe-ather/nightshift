@@ -271,7 +271,7 @@ export function Tasks() {
 
   if (isLoading) {
     return (
-      <Container className="py-6 lg:py-8">
+      <Container className="py-4 lg:py-6">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
             <div className="h-12 w-12 border-2 border-border" />
@@ -486,7 +486,7 @@ export function Tasks() {
               ? "Try adjusting your filters or create a new task"
               : "Create a task for Claude to pick up next"}
           </p>
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-4 lg:mt-6 flex items-center gap-3">
             <NewTaskButton />
             {activeFilters.length > 0 && (
               <Button

@@ -309,7 +309,7 @@ export function NarrativeStudio() {
         </div>
 
         {/* Stats Bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-6 border border-border/50 bg-card/50 px-4 py-3">
+        <div className="mt-4 lg:mt-6 flex flex-wrap items-center gap-4 lg:gap-6 border border-border/50 bg-card/50 px-4 py-3">
           <div className="flex items-center gap-2">
             <Film className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm font-medium">{stats.totalProjects}</span>
@@ -416,7 +416,7 @@ export function NarrativeStudio() {
           </p>
           {!searchQuery && filterPhase === "all" && (
             <Button
-              className="mt-6 bg-amber-500 hover:bg-amber-600"
+              className="mt-4 lg:mt-6 bg-amber-500 hover:bg-amber-600"
               size="sm"
               onClick={() => setCreateDialogOpen(true)}
             >

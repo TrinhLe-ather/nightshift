@@ -159,7 +159,7 @@ export function Dashboard() {
 
   if (isLoading) {
     return (
-      <Container className="py-6 lg:py-8">
+      <Container className="py-4 lg:py-6">
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
             <div className="h-12 w-12 border-2 border-border" />
@@ -204,7 +204,7 @@ export function Dashboard() {
         </div>
 
         {/* Daemon Status Bar */}
-        <div className="mt-6 flex flex-wrap items-center gap-6 border-y border-border/50 py-3">
+        <div className="mt-4 lg:mt-6 flex flex-wrap items-center gap-4 lg:gap-6 border-y border-border/50 py-3">
           <div className="flex items-center gap-2">
             <div
               className={cn(
@@ -309,7 +309,7 @@ export function Dashboard() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   Add a repository to enable task execution
                 </p>
-                <div className="mt-6 flex items-center gap-3">
+                <div className="mt-4 lg:mt-6 flex items-center gap-3">
                   <Button onClick={() => setAddRepoOpen(true)} size="sm">
                     <Plus className="mr-2 h-4 w-4" />
                     Add Repository
@@ -363,7 +363,7 @@ export function Dashboard() {
             <p className="mt-1 text-xs text-muted-foreground">
               Create your first task for Claude to execute
             </p>
-            <div className="mt-6">
+            <div className="mt-4 lg:mt-6">
               <NewTaskButton />
             </div>
           </div>
