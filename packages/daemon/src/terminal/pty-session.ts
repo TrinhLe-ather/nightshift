@@ -1,12 +1,8 @@
 import type { ServerWebSocket } from "bun";
 
-type TerminalWriter = { write: (data: string | Uint8Array) => void };
-
 export interface PtySession {
   id: string;
   proc: ReturnType<typeof Bun.spawn>;
-  terminalRef: TerminalWriter | null;
-  pendingWrites: (string | Uint8Array)[];
   cols: number;
   rows: number;
   createdAt: Date;
@@ -27,43 +23,18 @@ class PtySessionManager {
     // Detect shell based on platform
     const isWindows = process.platform === "win32";
     const shell = isWindows
-      ? process.env.COMSPEC || "cmd.exe" // Windows: use COMSPEC or default to cmd.exe
-      : process.env.SHELL || "/bin/bash"; // Unix: use SHELL or default to bash
+      ? process.env.COMSPEC || "cmd.exe"
+      : process.env.SHELL || "/bin/bash";
 
-    // Create session object first so we can reference it in the callback
-    const session: PtySession = {
-      id,
-      proc: null as unknown as ReturnType<typeof Bun.spawn>,
-      terminalRef: null,
-      pendingWrites: [],
-      cols,
-      rows,
-      createdAt: new Date(),
-    };
-
-    // Store session before spawning so it's available in callback
-    this.sessions.set(id, session);
-
-    // Get home directory (different env var on Windows)
+    // Get home directory
     const homeDir = isWindows ? process.env.USERPROFILE : process.env.HOME;
 
     const proc = Bun.spawn([shell], {
       terminal: {
         cols,
         rows,
-        data(terminal, data) {
-          // Store terminal reference on first callback
-          if (!session.terminalRef) {
-            session.terminalRef = terminal;
-
-            // Flush any pending writes
-            for (const pendingData of session.pendingWrites) {
-              terminal.write(pendingData);
-            }
-            session.pendingWrites = [];
-          }
-
-          // Send PTY output to WebSocket
+        data(_terminal, data) {
+          // Send PTY output to WebSocket as binary
           if (ws.readyState === WebSocket.OPEN) {
             ws.send(data);
           }
@@ -77,7 +48,15 @@ class PtySessionManager {
       },
     });
 
-    session.proc = proc;
+    const session: PtySession = {
+      id,
+      proc,
+      cols,
+      rows,
+      createdAt: new Date(),
+    };
+
+    this.sessions.set(id, session);
     return session;
   }
 
@@ -85,11 +64,8 @@ class PtySessionManager {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    if (session.terminalRef) {
-      session.terminalRef.write(data);
-    } else {
-      session.pendingWrites.push(data);
-    }
+    // Use proc.terminal.write() directly (Bun v1.3.5+)
+    session.proc.terminal?.write(data);
   }
 
   resize(sessionId: string, cols: number, rows: number): void {
@@ -97,6 +73,8 @@ class PtySessionManager {
     if (session) {
       session.cols = cols;
       session.rows = rows;
+      // Use Bun's native PTY resize API (Bun v1.3.5+)
+      session.proc.terminal?.resize(cols, rows);
     }
   }
 

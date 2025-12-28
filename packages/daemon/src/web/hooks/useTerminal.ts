@@ -112,6 +112,7 @@ export function useTerminal(options: UseTerminalOptions = {}): UseTerminalReturn
         const wsUrl = `${protocol}//${window.location.host}/ws/terminal?cols=${term.cols}&rows=${term.rows}`;
 
         ws = new WebSocket(wsUrl);
+        ws.binaryType = "arraybuffer"; // Avoid async Blob conversion for proper message ordering
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -123,10 +124,8 @@ export function useTerminal(options: UseTerminalOptions = {}): UseTerminalReturn
         ws.onmessage = (e) => {
           if (typeof e.data === "string") {
             term?.write(e.data);
-          } else if (e.data instanceof Blob) {
-            e.data.arrayBuffer().then((buf) => {
-              term?.write(new Uint8Array(buf));
-            });
+          } else if (e.data instanceof ArrayBuffer) {
+            term?.write(new Uint8Array(e.data));
           }
         };
 
