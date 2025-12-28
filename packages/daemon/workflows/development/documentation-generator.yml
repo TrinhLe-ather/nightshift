@@ -1,0 +1,236 @@
+name: Documentation Generator
+description: Generate and update comprehensive documentation from code including API docs, usage guides, and architecture docs
+version: 1.0.0
+model: sonnet
+
+steps:
+  - name: Documentation Audit
+    model: opus
+    prompt: |
+      You are a Technical Documentation Expert. Documentation has been requested:
+
+      {{prompt}}
+
+      Your task is to audit existing documentation and identify gaps.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to survey the codebase:
+      - Use `subagent_type: Explore` to find existing documentation
+      - Launch multiple Explore agents: (1) find README files, (2) find code comments, (3) find API docs
+      - Map the overall documentation landscape
+
+      ## Audit Checklist
+      1. EXISTING DOCS - Find all existing documentation
+         - README files
+         - API documentation
+         - Code comments (JSDoc, docstrings, etc.)
+         - Architecture docs
+         - Usage guides
+      2. CODE STRUCTURE - Map the code organization
+         - Main modules and their purposes
+         - Public APIs and interfaces
+         - Key classes and functions
+      3. GAPS - Identify missing documentation
+         - Undocumented public APIs
+         - Missing README files
+         - Outdated documentation
+         - Complex logic without explanation
+
+      ## Documentation Assessment
+      For each area, rate:
+      - Coverage (none, partial, complete)
+      - Quality (poor, adequate, good)
+      - Currency (outdated, current)
+
+      ## Deliverables
+      Documentation audit report:
+      - Existing Documentation (inventory)
+      - Coverage Gaps (prioritized list)
+      - Quality Issues (what needs improvement)
+      - Documentation Plan (what to create/update)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: API Documentation
+    model: sonnet
+    prompt: |
+      Audit complete. Now generate/update API documentation.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find all public APIs
+      - Study existing documentation patterns
+      - Find type definitions for accurate docs
+
+      ## API Documentation Requirements
+
+      ### For Each Public Function/Method
+      - Purpose (what it does)
+      - Parameters (name, type, description, required/optional)
+      - Return value (type and description)
+      - Throws/Errors (what can go wrong)
+      - Example usage (working code example)
+
+      ### For Each Class/Module
+      - Overview (purpose and responsibility)
+      - Public methods (with full documentation)
+      - Properties (if public)
+      - Usage example (complete working example)
+
+      ### For Each API Endpoint (if applicable)
+      - HTTP method and path
+      - Request parameters (query, body, headers)
+      - Response format (with examples)
+      - Error responses
+      - Authentication requirements
+
+      ## Documentation Style
+      - Follow existing documentation patterns in the codebase
+      - Use JSDoc, docstrings, or appropriate format for the language
+      - Write for developers who are new to the codebase
+      - Include practical examples, not just theory
+
+      ## Deliverables
+      - API documentation added to code (inline or separate files)
+      - Documentation follows codebase conventions
+      - All public APIs are documented
+    maxRetries: 2
+
+  - name: Usage Guides
+    model: sonnet
+    prompt: |
+      API docs complete. Now create/update usage guides and READMEs.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to understand common use cases
+      - Find existing guides and READMEs
+      - Study how the code is actually used
+
+      ## README Requirements
+
+      ### Main README (if updating)
+      - Project overview (one paragraph)
+      - Quick start (get running in <5 minutes)
+      - Installation instructions
+      - Basic usage examples
+      - Configuration options
+      - Contributing guidelines
+      - License information
+
+      ### Module/Package READMEs
+      - Purpose of the module
+      - How it fits in the larger system
+      - API quick reference
+      - Usage examples
+      - Gotchas or common mistakes
+
+      ## Guide Requirements
+
+      ### Getting Started Guide
+      - Prerequisites
+      - Step-by-step setup
+      - First working example
+      - Next steps
+
+      ### How-To Guides
+      - Task-focused (solve specific problems)
+      - Complete examples
+      - Troubleshooting tips
+
+      ## Writing Style
+      - Clear and concise
+      - Active voice
+      - Second person ("you can...")
+      - Tested code examples (they must work!)
+    maxRetries: 2
+
+  - name: Architecture Documentation
+    model: opus
+    prompt: |
+      Guides complete. Now document architecture and design decisions.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to map system architecture
+      - Trace data flows through the system
+      - Find existing architecture documentation
+
+      ## Architecture Documentation
+
+      ### System Overview
+      - High-level architecture diagram (describe in text or use ASCII)
+      - Key components and their responsibilities
+      - How components interact
+
+      ### Data Flow
+      - How data moves through the system
+      - Key data transformations
+      - Storage and persistence
+
+      ### Key Design Decisions
+      - Major architectural choices
+      - Why they were made (trade-offs)
+      - Alternatives considered
+
+      ### Module Breakdown
+      For each major module:
+      - Purpose and responsibility
+      - Dependencies (what it uses)
+      - Dependents (what uses it)
+      - Key patterns used
+
+      ## Documentation Format
+      - Use diagrams where helpful (Mermaid, ASCII, or description)
+      - Keep it high-level (not every function)
+      - Focus on "why" not just "what"
+      - Include enough detail for new developers
+
+      ## Deliverables
+      - Architecture overview document
+      - Module documentation
+      - Design decisions documented
+    maxRetries: 2
+
+  - name: Documentation Review
+    model: opus
+    prompt: |
+      All documentation written. Now review and finalize.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to verify documentation accuracy
+      - Check that examples actually work
+      - Cross-reference with code
+
+      ## Review Checklist
+
+      ### Accuracy
+      - [ ] Code examples work as documented
+      - [ ] API signatures match actual code
+      - [ ] Descriptions are accurate
+      - [ ] No references to non-existent features
+
+      ### Completeness
+      - [ ] All public APIs documented
+      - [ ] Key concepts explained
+      - [ ] Getting started guide exists
+      - [ ] Common use cases covered
+
+      ### Quality
+      - [ ] Clear and well-written
+      - [ ] Consistent formatting
+      - [ ] Good organization
+      - [ ] Appropriate for target audience
+
+      ### Maintenance
+      - [ ] Easy to update with code changes
+      - [ ] Not overly coupled to implementation details
+      - [ ] Dates and versions noted where relevant
+
+      ## Final Deliverables
+      Documentation summary:
+      - Files created/updated (list with descriptions)
+      - Coverage achieved (what's documented now)
+      - Remaining gaps (if any)
+      - Maintenance recommendations
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1

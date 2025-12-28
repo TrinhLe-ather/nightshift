@@ -6,3 +6,5 @@ export { Settings } from "./Settings";
 export { Workflows } from "./Workflows";
 export { WorkflowDetail } from "./WorkflowDetail";
 export { WorkflowForm } from "./WorkflowForm";
+export { NarrativeStudio } from "./NarrativeStudio";
+export { NarrativeProject } from "./NarrativeProject";

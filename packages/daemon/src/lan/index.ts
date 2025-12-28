@@ -58,16 +58,32 @@ function isPreferredLocalIp(ip: string): boolean {
   const parts = ip.split(".").map(Number);
   if (parts.length !== 4) return false;
 
+  const [p0, p1] = parts as [number, number, number, number];
+
   // 192.168.x.x - most common home/office network
-  if (parts[0] === 192 && parts[1] === 168) return true;
+  if (p0 === 192 && p1 === 168) return true;
 
   // 10.x.x.x - private network
-  if (parts[0] === 10) return true;
+  if (p0 === 10) return true;
 
   // 172.16.x.x - 172.31.x.x - private network
-  if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
+  if (p0 === 172 && p1 >= 16 && p1 <= 31) return true;
 
   return false;
+}
+
+/**
+ * Check if an IP is a Tailscale address (100.64.0.0/10 range)
+ * Tailscale uses CGNAT range: 100.64.0.0 - 100.127.255.255
+ */
+function isTailscaleIp(ip: string): boolean {
+  const parts = ip.split(".").map(Number);
+  if (parts.length !== 4) return false;
+
+  const [p0, p1] = parts as [number, number, number, number];
+
+  // Tailscale uses 100.64.0.0/10 (100.64.x.x - 100.127.x.x)
+  return p0 === 100 && p1 >= 64 && p1 <= 127;
 }
 
 /**
@@ -108,6 +124,41 @@ export function getAllLocalIpAddresses(): string[] {
     }
   }
   return addresses;
+}
+
+/**
+ * Get the Tailscale IP address if available
+ */
+export function getTailscaleIpAddress(): string | null {
+  const nets = networkInterfaces();
+
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name] || []) {
+      if (!net.internal && net.family === "IPv4" && isTailscaleIp(net.address)) {
+        return net.address;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Generate Tailscale URL (without PIN for display)
+ */
+export function getTailscaleUrl(): string | null {
+  const ip = getTailscaleIpAddress();
+  if (!ip || currentPort === null) return null;
+  return `http://${ip}:${currentPort}`;
+}
+
+/**
+ * Generate Tailscale URL with PIN for QR code
+ */
+export function getTailscaleUrlWithPin(): string | null {
+  const ip = getTailscaleIpAddress();
+  if (!ip || !currentPin || currentPort === null) return null;
+  return `http://${ip}:${currentPort}?pin=${currentPin}`;
 }
 
 /**

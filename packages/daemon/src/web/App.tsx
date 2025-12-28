@@ -4,6 +4,8 @@ import { Layout } from "@/components/layout";
 import { KeyboardShortcutsDialog } from "@/web/components";
 import {
   Dashboard,
+  NarrativeProject,
+  NarrativeStudio,
   Repos,
   Settings,
   TaskChat,
@@ -48,6 +50,8 @@ function App() {
           <Route path="/workflows/new" element={<WorkflowForm mode="create" />} />
           <Route path="/workflows/:id" element={<WorkflowDetail />} />
           <Route path="/workflows/:id/edit" element={<WorkflowForm mode="edit" />} />
+          <Route path="/narrative-studio" element={<NarrativeStudio />} />
+          <Route path="/narrative-studio/:id" element={<NarrativeProject />} />
           <Route path="/repos" element={<Repos />} />
           <Route path="/settings" element={<Settings />} />
         </Route>

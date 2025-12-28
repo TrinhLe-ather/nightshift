@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { FolderGit2, LayoutDashboard, ListTodo, Moon, Settings, Workflow } from "@/components/ui/icons";
+import { Film, FolderGit2, LayoutDashboard, ListTodo, Moon, Settings, Workflow } from "@/components/ui/icons";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +26,7 @@ const navItems: NavItem[] = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/tasks", icon: ListTodo, label: "Tasks" },
   { to: "/workflows", icon: Workflow, label: "Workflows" },
+  { to: "/narrative-studio", icon: Film, label: "Narrative" },
   { to: "/repos", icon: FolderGit2, label: "Repos" },
   { to: "/settings", icon: Settings, label: "Settings" },
 ];

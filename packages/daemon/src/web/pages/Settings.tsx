@@ -31,6 +31,7 @@ import {
   Wifi,
   QrCode,
   Copy,
+  Globe,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { LanQRDialog } from "@/components/LanQRDialog";
@@ -129,6 +130,7 @@ export function Settings() {
   const [isInstalling, setIsInstalling] = useState(false);
   const [isEditingConfig, setIsEditingConfig] = useState(false);
   const [showLanQR, setShowLanQR] = useState(false);
+  const [showTailscaleQR, setShowTailscaleQR] = useState(false);
   const [formValues, setFormValues] = useState({
     taskTimeoutMs: 14400000, // 4 hours default
     maxConcurrentTasks: 1,
@@ -497,7 +499,7 @@ export function Settings() {
         {status?.lan?.enabled && (
           <SettingsCard
             title="LAN Access"
-            description="Connect from devices on your local network"
+            description="Connect from devices on your local WiFi"
             icon={Wifi}
             iconColor="text-cyan-400"
             iconBg="bg-cyan-500/10"
@@ -549,6 +551,67 @@ export function Settings() {
 
               <p className="text-xs text-muted-foreground">
                 Scan the QR code or enter the PIN shown in the daemon console to connect from your mobile device.
+              </p>
+            </div>
+          </SettingsCard>
+        )}
+
+        {/* Tailscale Access - Only shown when Tailscale is detected */}
+        {status?.lan?.enabled && status?.lan?.tailscale?.ip && (
+          <SettingsCard
+            title="Tailscale Access"
+            description="Connect from anywhere via Tailscale VPN"
+            icon={Globe}
+            iconColor="text-indigo-400"
+            iconBg="bg-indigo-500/10"
+            iconBorder="border-indigo-500/30"
+            index={2}
+          >
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Tailscale IP
+                  </p>
+                  <p className="mt-1 font-mono text-lg font-semibold text-foreground">
+                    {status.lan.tailscale.ip}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowTailscaleQR(true)}
+                  className="h-8"
+                >
+                  <QrCode className="mr-2 h-3.5 w-3.5" />
+                  Show QR
+                </Button>
+              </div>
+
+              {status.lan.tailscale.url && (
+                <div className="rounded border border-border bg-muted/30 p-3">
+                  <p className="mb-1 text-xs text-muted-foreground">Connection URL</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate font-mono text-sm text-foreground">
+                      {status.lan.tailscale.url.replace(/\?pin=\d+/, "?pin=****")}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(status.lan!.tailscale!.url!);
+                        toast.success("URL copied to clipboard");
+                      }}
+                      className="h-6 w-6 shrink-0 p-0"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Access Night Shift from any device on your Tailscale network, even when away from home.
               </p>
             </div>
           </SettingsCard>
@@ -685,6 +748,17 @@ export function Settings() {
         open={showLanQR}
         onClose={() => setShowLanQR(false)}
         url={status?.lan?.url ?? null}
+        title="LAN Access"
+        description="Scan with your phone on the same WiFi network"
+      />
+
+      {/* Tailscale QR Dialog */}
+      <LanQRDialog
+        open={showTailscaleQR}
+        onClose={() => setShowTailscaleQR(false)}
+        url={status?.lan?.tailscale?.url ?? null}
+        title="Tailscale Access"
+        description="Scan with any device on your Tailscale network"
       />
     </Container>
   );

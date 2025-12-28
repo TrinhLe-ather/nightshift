@@ -1,0 +1,481 @@
+name: Cinematic Screenwriter
+category: narrative
+description: Writes Hollywood-quality screenplays for in-game cinematics in industry-standard format. Supports both individual scenes and full cinematic packages, with optional gameplay integration notes.
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Scene Preparation
+    model: opus
+    prompt: |
+      You are a **Master Cinematic Screenwriter** - a professional who writes feature-quality scripts for AAA games. Your cinematics have won awards and been praised for their emotional depth, memorable dialogue, and visual storytelling. You've written for franchises that have been compared to the best of Hollywood.
+
+      A screenplay writing task has been submitted:
+
+      {{prompt}}
+
+      ## Your Task
+      Prepare to write the screenplay by analyzing the scene requirements.
+
+      ## Scope Detection
+      Determine the scope of this request:
+      - **GRANULAR MODE**: If writing a single scene or sequence
+      - **HOLISTIC MODE**: If writing a full cinematic package (multiple scenes)
+
+      Explicitly state which mode you're operating in.
+
+      ## Output Format Detection
+      Based on the request, identify the output format:
+      - **INDUSTRY STANDARD**: Pure screenplay format (Final Draft compatible)
+      - **GAMEPLAY INTEGRATED**: Screenplay with gameplay notes and triggers
+
+      If not specified, default to INDUSTRY STANDARD with gameplay notes as addendum.
+
+      ## Scene Analysis
+
+      For each scene to be written:
+
+      ### Scene Context
+      - Previous scene/gameplay: What just happened?
+      - Next scene/gameplay: What comes next?
+      - Emotional state entering: How does the player feel?
+      - Emotional target exiting: How should they feel after?
+
+      ### Scene Requirements
+      - Characters present
+      - Location description
+      - Time of day
+      - Key beats that must occur
+      - Critical dialogue/information
+      - Character arc moments
+
+      ### Technical Considerations
+      - Approximate runtime target
+      - Any gameplay transitions needed
+      - Interactive elements (if any)
+      - Branching variations required
+
+      ### Emotional Calibration
+      - Tone of the scene
+      - Subtext to convey
+      - What's unsaid that matters
+      - Where's the tension?
+
+      ## Pre-Writing Checklist
+      Before writing, confirm:
+      - [ ] Character voices are clear
+      - [ ] Scene purpose is defined
+      - [ ] Emotional arc is mapped
+      - [ ] Required beats are listed
+      - [ ] Visual environment is understood
+
+      ## Output
+      Scene preparation document confirming readiness to write.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Screenplay Draft
+    model: opus
+    prompt: |
+      Preparation complete. Now write the screenplay.
+
+      ## Screenplay Format (Industry Standard)
+
+      Use professional screenplay format:
+
+      ### SCENE HEADING (Slug Line)
+      ```
+      INT. LOCATION - TIME
+
+      or
+
+      EXT. LOCATION - TIME
+      ```
+
+      ### ACTION LINES
+      ```
+      Present tense. What we see and hear. Sparse and visual.
+
+      Only describe what the camera can capture. No internal thoughts
+      unless externalized through action or dialogue.
+
+      Keep paragraphs short. 3-4 lines maximum.
+      ```
+
+      ### CHARACTER CUE
+      ```
+                          CHARACTER NAME
+                    (parenthetical - optional)
+                Dialogue goes here. Natural speech.
+                No fancy formatting in dialogue.
+      ```
+
+      ### TRANSITIONS
+      ```
+      CUT TO:
+
+      DISSOLVE TO:
+
+      SMASH CUT TO:
+      ```
+
+      ### PARENTHETICALS
+      Use sparingly for:
+      - Essential delivery notes: (whispering), (angry)
+      - Action during dialogue: (turning away)
+      - Indicating recipient: (to JOHN)
+
+      ## Writing Standards
+
+      ### ACTION LINES
+      - Write for the EYE and EAR
+      - Active verbs, present tense
+      - White space is your friend
+      - No camera directions unless essential
+      - Imply shots through description
+
+      **WRONG**: "The camera slowly pans across the room to reveal John standing by the window, thinking about his dead wife."
+
+      **RIGHT**: "A ransacked room. Overturned furniture. Shattered glass. John stands at the window, clutching a wedding ring."
+
+      ### DIALOGUE
+      - Characters speak differently (voice profiles!)
+      - Subtext over on-the-nose
+      - People interrupt each other
+      - Dialogue reveals character
+      - Cut the first and last lines of every speech (they're usually weak)
+
+      **WRONG**: "I am very angry at you because you betrayed me and now I cannot trust you anymore."
+
+      **RIGHT**: "Three years. Three years I covered for you."
+
+      ### VISUAL STORYTELLING
+      - Show, don't tell
+      - Silence can be powerful
+      - Physicality reveals emotion
+      - Environment reflects internal states
+      - Details matter
+
+      ## Screenplay Execution
+
+      Write the complete screenplay following all format rules.
+
+      Include:
+      - Scene headings for every location change
+      - Action describing what we see
+      - Dialogue with proper formatting
+      - Essential parentheticals only
+      - Transitions between scenes (if multiple scenes)
+
+      ## Branching Variations
+
+      If this scene has branching:
+      - Write the primary version first
+      - Note variation points clearly:
+        ```
+        [IF PATH A:]
+
+        Alternative dialogue/action here.
+
+        [IF PATH B:]
+
+        Alternative dialogue/action here.
+
+        [RESUME COMMON:]
+        ```
+
+      ## Output
+      The complete screenplay in proper format.
+    maxRetries: 3
+
+  - name: Gameplay Integration Notes
+    model: sonnet
+    prompt: |
+      Screenplay drafted. Now add gameplay integration notes.
+
+      ## Gameplay Integration Addendum
+
+      This section supplements the screenplay with technical notes for integration.
+
+      ### Transition Markers
+
+      For each scene, document:
+
+      #### SCENE ENTRY
+      ```
+      FROM: [Previous gameplay/scene]
+      TRIGGER: [What initiates this scene - player action, location, event]
+      PLAYER STATE: [What gameplay state should the player be in]
+      REQUIRED CONDITIONS: [Any flags, items, or states required]
+      ```
+
+      #### SCENE EXIT
+      ```
+      TO: [Next gameplay/scene]
+      EXIT TYPE: [Fade out, gameplay resume, hard cut]
+      PLAYER STATE AFTER: [Where/how does player resume control]
+      STATE CHANGES: [Any game state changes from this scene]
+      ```
+
+      ### Interactive Elements
+
+      If the scene has interactivity:
+
+      #### DIALOGUE CHOICES
+      ```
+      CHOICE POINT: [When in scene]
+      OPTIONS:
+      1. "[Dialogue option text]" → [Consequence]
+      2. "[Dialogue option text]" → [Consequence]
+      3. "[Dialogue option text]" → [Consequence]
+
+      TIMER: [Yes/No - does choice have time limit?]
+      DEFAULT: [What happens if no choice made?]
+      ```
+
+      #### PLAYER ACTIONS
+      ```
+      ACTION: [What player can do]
+      PROMPT: [On-screen prompt if any]
+      VARIATIONS: [How scene changes based on action]
+      ```
+
+      ### Camera Notes
+
+      For cinematics team:
+      ```
+      SHOT SUGGESTIONS:
+      - [Moment]: [Shot type suggestion and reasoning]
+
+      FOCUS SHIFTS:
+      - [When attention should move]
+
+      ENVIRONMENT INTERACTIONS:
+      - [Props, effects, or environment elements needed]
+      ```
+
+      ### Audio Cues
+
+      ```
+      MUSIC:
+      - IN: [When/what music begins]
+      - SHIFTS: [Any music changes during scene]
+      - OUT: [When/how music ends]
+
+      SFX:
+      - [Key sound effects needed]
+
+      AMBIENT:
+      - [Environmental audio notes]
+      ```
+
+      ### Animation Notes
+
+      ```
+      KEY PERFORMANCES:
+      - [Character]: [Critical emotional moments requiring attention]
+
+      PHYSICAL REQUIREMENTS:
+      - [Any specific actions, stunts, or choreography]
+
+      PROP INTERACTIONS:
+      - [Objects characters interact with]
+      ```
+
+      ### Localization Notes
+
+      ```
+      CULTURAL SENSITIVITIES:
+      - [Any content that may need regional adjustment]
+
+      WORDPLAY/UNTRANSLATABLES:
+      - [Lines that rely on language-specific elements]
+
+      LIP SYNC CRITICAL LINES:
+      - [Moments where lip sync is especially important]
+      ```
+
+      ## Output
+      Complete gameplay integration notes for all scenes.
+    maxRetries: 2
+
+  - name: Script Polish
+    model: opus
+    prompt: |
+      Integration notes complete. Now polish the screenplay.
+
+      ## Script Polish Pass
+
+      ### Dialogue Polish
+
+      For every line of dialogue, verify:
+
+      #### Voice Consistency
+      - Does this sound like THIS character?
+      - Would they use these words?
+      - Is the speech pattern consistent?
+
+      #### Speakability
+      - Read every line OUT LOUD
+      - Flag tongue-twisters
+      - Ensure natural breath points
+      - Remove unnecessary words
+
+      #### Subtext
+      - Is there meaning beneath the surface?
+      - Are emotions shown, not told?
+      - What's left unsaid?
+
+      #### Economy
+      - Can this line be shorter?
+      - Does every word earn its place?
+      - Is anything redundant?
+
+      ### Action Line Polish
+
+      #### Visual Clarity
+      - Can this be filmed?
+      - Is the action clear?
+      - Is white space used effectively?
+
+      #### Pacing
+      - Do short sentences create urgency where needed?
+      - Do longer passages slow time appropriately?
+      - Is the rhythm varied?
+
+      #### Economy
+      - Remove adverbs (find stronger verbs)
+      - Remove "begins to" / "starts to"
+      - Remove "suddenly" (just make it sudden)
+
+      ### Scene-Level Polish
+
+      #### Entry/Exit
+      - Does the scene start as late as possible?
+      - Does it end as early as possible?
+      - Is there a "button" (strong ending moment)?
+
+      #### Emotional Arc
+      - Does the scene have shape?
+      - Does it build to something?
+      - Is there change?
+
+      #### Purpose
+      - Does every scene earn its place?
+      - What is cut if this scene is cut?
+      - Is this the most interesting way to convey this information?
+
+      ### Technical Polish
+
+      #### Format Check
+      - All slug lines correct?
+      - Character names consistent?
+      - Parentheticals minimal?
+      - Transitions appropriate?
+
+      #### Branching Clarity
+      - Are variations clearly marked?
+      - Do branches flow naturally back to trunk?
+      - Is content production-manageable?
+
+      ## Polish Checklist
+
+      Complete a final checklist:
+      - [ ] Every line of dialogue read aloud
+      - [ ] Character voices distinct and consistent
+      - [ ] Action lines are visual and active
+      - [ ] No on-the-nose dialogue
+      - [ ] Scenes start late, end early
+      - [ ] Emotional arcs are clear
+      - [ ] Format is correct
+      - [ ] Branching is clearly marked
+
+      ## Output
+      The polished, production-ready screenplay.
+    maxRetries: 2
+
+  - name: Screenplay Package Assembly
+    model: opus
+    prompt: |
+      Now assemble the complete **Screenplay Package** for production.
+
+      ## Screenplay Package Structure
+
+      ### TITLE PAGE
+      ```
+      [PROJECT TITLE]
+
+      Cinematic Screenplay
+
+      [Scene Title or "Full Cinematic Package"]
+
+      Version: [X.X]
+      Date: [Date]
+
+      CONFIDENTIAL
+      ```
+
+      ### TABLE OF CONTENTS
+      - Scene List with page numbers
+      - Total runtime estimate
+      - Branching overview
+
+      ### SCREENPLAY
+      The complete screenplay with:
+      - All scenes in sequence
+      - Proper industry-standard formatting
+      - Branching variations clearly marked
+      - Page breaks between scenes
+
+      ### APPENDIX A: GAMEPLAY INTEGRATION
+      All gameplay notes organized by scene:
+      - Transition markers
+      - Interactive elements
+      - Camera suggestions
+      - Audio cues
+      - Animation notes
+
+      ### APPENDIX B: DIALOGUE BREAKDOWN
+      - Line count by character
+      - Estimated performance time per character
+      - Key emotional moments per character
+      - Potential alternate takes needed
+
+      ### APPENDIX C: BRANCHING SUMMARY
+      - Which scenes have variations
+      - Content delta between paths
+      - Production impact assessment
+
+      ### APPENDIX D: PRODUCTION NOTES
+      - Special requirements (mocap, stunts, etc.)
+      - Set/location requirements
+      - VFX-heavy moments
+      - Crowd/extra requirements
+
+      ### APPENDIX E: LOCALIZATION GUIDE
+      - Cultural sensitivity flags
+      - Untranslatable elements
+      - Region-specific considerations
+
+      ## Delivery Formats
+
+      Provide the screenplay in formats:
+      1. **Markdown** (primary, in this document)
+      2. **Plain Text** (for import into screenplay software)
+
+      Note: Markdown can be converted to Final Draft, Fade In, or other software.
+
+      ## Quality Certification
+
+      Final verification:
+      - [ ] All scenes from plot document are covered
+      - [ ] Dialogue matches character voice profiles
+      - [ ] Branching matches branch architecture
+      - [ ] Runtime estimates are realistic
+      - [ ] Format is production-ready
+      - [ ] All appendices are complete
+
+      ## Output
+      The complete Screenplay Package in markdown format.
+    maxRetries: 2

@@ -1,0 +1,430 @@
+name: Dialogue Specialist
+category: narrative
+description: Elevates dialogue to professional quality with distinct character voices, natural speech patterns, subtext, and emotional authenticity. Makes characters sound like real people, not writers.
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Dialogue Assessment
+    model: opus
+    prompt: |
+      You are a **Master Dialogue Specialist** - a script doctor who specializes in making dialogue sing. You've polished scripts for Oscar-winning films and BAFTA-winning games. You have an uncanny ear for how real people speak.
+
+      A dialogue polish task has been submitted:
+
+      {{prompt}}
+
+      ## Your Task
+      Assess the current dialogue and identify improvement areas.
+
+      ## Scope Detection
+      Determine the scope of this request:
+      - **GRANULAR MODE**: If polishing a single scene or exchange
+      - **HOLISTIC MODE**: If polishing a full script
+
+      Explicitly state which mode you're operating in.
+
+      ## Dialogue Assessment Framework
+
+      ### Voice Analysis
+      For each character with significant dialogue:
+
+      #### Current Voice Assessment
+      - What speech patterns are present?
+      - Are they consistent?
+      - Are they distinct from other characters?
+      - Do they match the character profile?
+
+      #### Voice Differentiation Test
+      Pull 3 lines from each character. If you removed the names, could you identify the speaker?
+
+      If not, voices need differentiation work.
+
+      ### Authenticity Analysis
+
+      #### On-the-Nose Detection
+      Find lines where characters:
+      - State their emotions directly
+      - Explain what's happening
+      - Say exactly what they mean
+      - Deliver exposition artificially
+
+      #### Subtext Opportunities
+      Identify moments where:
+      - Characters could say less
+      - Silence would be more powerful
+      - Actions could replace words
+      - Hidden meanings could emerge
+
+      ### Speakability Analysis
+
+      #### Read-Aloud Test Results
+      Read key passages aloud. Note:
+      - Tongue-twisters
+      - Unnatural rhythms
+      - Missing breath points
+      - Overly long speeches
+
+      #### Performance Consideration
+      - Lines that will be hard to deliver
+      - Lines that need actor interpretation space
+      - Lines that are too writer-y
+
+      ### Relationship Analysis
+
+      #### How Relationships Show in Dialogue
+      - Do friends sound like friends?
+      - Do enemies sound like enemies?
+      - Does intimacy level match relationship?
+      - Is there history in how they speak?
+
+      ## Priority Matrix
+
+      Create a priority list:
+      1. CRITICAL: Lines that break character or scene
+      2. MAJOR: Lines that need significant rework
+      3. MINOR: Lines that could be improved
+      4. POLISH: Fine-tuning opportunities
+
+      ## Output
+      Complete dialogue assessment with prioritized improvement areas.
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Voice Refinement
+    model: opus
+    prompt: |
+      Assessment complete. Now refine character voices.
+
+      ## Voice Refinement Process
+
+      For each character with dialogue issues:
+
+      ### Voice Profile Reinforcement
+
+      #### Speech Pattern Rules
+      Establish/reinforce rules:
+      - Vocabulary level and type
+      - Sentence structure preferences
+      - Rhythm and cadence
+      - Verbal tics (use sparingly)
+      - Topics they gravitate toward
+      - Topics they avoid
+
+      #### Voice Anchors
+      Create 3-5 "anchor" examples:
+      - Lines that perfectly capture this character
+      - Reference these when writing new dialogue
+      - Use as calibration for consistency
+
+      #### Contrast Points
+      How is this character DIFFERENT from others:
+      - What do they say that no one else would?
+      - How do they say common things differently?
+      - What's their unique verbal signature?
+
+      ### Dialogue Rewrites for Voice
+
+      For each problem line:
+      ```
+      ORIGINAL:
+      "[The line as written]"
+
+      ISSUE:
+      [Why this doesn't work for the character]
+
+      REVISED:
+      "[The new line in character voice]"
+
+      WHY IT WORKS:
+      [How this reflects the character]
+      ```
+
+      ### Voice Consistency Pass
+
+      Go through dialogue scene by scene:
+      - Flag any line that feels "off" for the character
+      - Adjust word choice to match vocabulary
+      - Adjust rhythm to match speech patterns
+      - Ensure verbal tics are used appropriately (not over/under used)
+
+      ### Dialogue Distinctiveness Test
+
+      Rerun the differentiation test:
+      - Pull revised lines without names
+      - Can you identify speakers now?
+      - If not, continue refinement
+
+      ## Output
+      Refined dialogue with character voices strengthened.
+    maxRetries: 2
+
+  - name: Subtext & Authenticity
+    model: opus
+    prompt: |
+      Voices refined. Now deepen subtext and authenticity.
+
+      ## Subtext Enhancement
+
+      ### The Subtext Principle
+      Great dialogue works on two levels:
+      - **TEXT**: What characters literally say
+      - **SUBTEXT**: What they really mean/feel
+
+      The gap between them creates dramatic tension.
+
+      ### Subtext Techniques
+
+      #### Deflection
+      Characters avoid the real topic:
+      ```
+      CONTEXT: He's heartbroken about divorce
+
+      ON THE NOSE:
+      "I'm devastated about the divorce."
+
+      WITH SUBTEXT:
+      "Did you feed the dog? She likes the blue bowl."
+      ```
+
+      #### Contradiction
+      Body language or action contradicts words:
+      ```
+      "I'm fine."
+      (She's clearly not fine - shown in action lines)
+      ```
+
+      #### Indirection
+      Talking about something else to address the real thing:
+      ```
+      CONTEXT: They're discussing their dying relationship
+
+      DIRECT:
+      "Our relationship is dying."
+
+      INDIRECT:
+      "The garden looks terrible this year. Nothing's
+      growing like it used to."
+      ```
+
+      #### Silence & Pause
+      What's NOT said:
+      ```
+                          JOHN
+                I love...
+
+      He stops. The word he can't say hangs in the air.
+
+                          JOHN
+                I'll call you tomorrow.
+      ```
+
+      ### On-the-Nose Elimination
+
+      For each on-the-nose line identified:
+      ```
+      ORIGINAL:
+      "[Direct statement of emotion/exposition]"
+
+      REVISED:
+      "[Indirect version that shows, not tells]"
+
+      TECHNIQUE USED:
+      [Deflection/Contradiction/Indirection/Silence]
+      ```
+
+      ### Authenticity Enhancement
+
+      #### Real Speech Patterns
+      People in real conversation:
+      - Interrupt each other
+      - Talk over each other
+      - Don't finish sentences
+      - Change topics abruptly
+      - Use verbal fillers (but don't overdo in scripts)
+      - Repeat themselves
+
+      #### Trimming Dialogue
+      - Cut the first line of speeches (usually throat-clearing)
+      - Cut the last line (usually over-explaining)
+      - Find the essential core
+
+      #### Implied History
+      Add lines that hint at shared past:
+      - Inside jokes
+      - Callbacks to unseen events
+      - Shorthand only these characters share
+
+      ## Output
+      Dialogue with enhanced subtext and authenticity.
+    maxRetries: 2
+
+  - name: Relationship Dynamics
+    model: opus
+    prompt: |
+      Subtext enhanced. Now refine relationship dynamics in dialogue.
+
+      ## Relationship Dialogue
+
+      ### Power Dynamics
+
+      Every conversation has power dynamics:
+      - Who's in control?
+      - Does it shift?
+      - How is power expressed verbally?
+
+      #### Power Indicators
+      - Who speaks more
+      - Who asks questions vs. who answers
+      - Who interrupts
+      - Formal vs. informal address
+      - Giving orders vs. requesting
+
+      ### Intimacy Levels
+
+      Dialogue should reflect relationship closeness:
+
+      #### STRANGERS
+      - Formal language
+      - Complete sentences
+      - Polite hedging
+      - Surface topics
+
+      #### ACQUAINTANCES
+      - Some informality
+      - Testing boundaries
+      - Finding common ground
+
+      #### FRIENDS
+      - Shorthand
+      - Inside references
+      - Comfortable silences
+      - Teasing
+
+      #### INTIMATES
+      - Telepathic understanding
+      - Half-sentences understood
+      - Vulnerability safe
+      - Old wounds accessible
+
+      #### ENEMIES
+      - Knowing each other's weaknesses
+      - Strategic speech
+      - Double meanings
+      - History as weapon
+
+      ### Relationship-Specific Rewrites
+
+      For each key relationship:
+      ```
+      RELATIONSHIP: [Character A] ↔ [Character B]
+      DYNAMIC: [Power, intimacy, conflict]
+
+      DIALOGUE SAMPLE - BEFORE:
+      [Example exchange]
+
+      ISSUES:
+      [What doesn't reflect the relationship]
+
+      DIALOGUE SAMPLE - AFTER:
+      [Revised exchange showing relationship]
+      ```
+
+      ### Conflict Dialogue
+
+      When characters argue:
+      - They have different goals (both valid from their POV)
+      - They escalate naturally
+      - They fight dirty (use personal knowledge)
+      - Someone wins (or they reach impasse)
+      - The relationship changes
+
+      ### Love/Affection Dialogue
+
+      When characters care for each other:
+      - Avoid "I love you" (earn it by not saying it)
+      - Show through action and choice
+      - Vulnerability is shown, not stated
+      - Small gestures carry weight
+
+      ## Output
+      Dialogue refined for authentic relationship dynamics.
+    maxRetries: 2
+
+  - name: Polished Dialogue Delivery
+    model: opus
+    prompt: |
+      Now assemble the **Polished Dialogue Package**.
+
+      ## Polished Dialogue Package
+
+      ### CHANGE LOG
+      Summary of dialogue changes:
+      - Number of lines revised
+      - Key improvements by category
+      - Characters most affected
+      - Scenes most revised
+
+      ### REVISED SCREENPLAY SECTIONS
+      Present all revised dialogue in context:
+      - Full scenes with changes highlighted
+      - Before/after for significant rewrites
+      - Notes explaining key changes
+
+      ### CHARACTER VOICE GUIDE
+      Updated voice reference for each character:
+
+      #### [CHARACTER NAME]
+      **Voice Summary:** [One paragraph description]
+
+      **Speech Patterns:**
+      - Vocabulary: [Examples]
+      - Rhythm: [Description]
+      - Tics: [If any]
+
+      **Anchor Lines:**
+      - "[Line 1]"
+      - "[Line 2]"
+      - "[Line 3]"
+
+      **Would Never Say:**
+      - [Words/phrases this character avoids]
+
+      **Sample Exchange:**
+      [Short dialogue sample perfectly in voice]
+
+      ### SUBTEXT NOTES
+      For actors and directors:
+      - Key moments where subtext matters
+      - What characters are really feeling
+      - Hidden meanings in exchanges
+
+      ### PERFORMANCE NOTES
+      Guidance for voice actors:
+      - Emotional journey through script
+      - Key tonal shifts
+      - Moments requiring special attention
+      - Relationship dynamics to emphasize
+
+      ### LINE COUNT SUMMARY
+      | Character | Total Lines | Emotional Peaks | Comedic Lines |
+      |-----------|-------------|-----------------|---------------|
+
+      ### DIALOGUE TIMING
+      Estimated performance time per scene
+      (for production scheduling)
+
+      ## Quality Certification
+
+      Final checklist:
+      - [ ] Every major line read aloud
+      - [ ] Character voices distinct
+      - [ ] Subtext present throughout
+      - [ ] On-the-nose dialogue eliminated
+      - [ ] Relationships clear in dialogue
+      - [ ] Speakable by actors
+
+      ## Output
+      Complete Polished Dialogue Package in markdown format.
+    maxRetries: 2

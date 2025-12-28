@@ -6,6 +6,7 @@ import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
   ArrowUp01Icon,
+  Book02Icon,
   BubbleChatIcon,
   Cancel01Icon,
   CancelCircleIcon,
@@ -40,6 +41,7 @@ import {
   Settings01Icon,
   ComputerTerminal01Icon,
   SidebarRightIcon,
+  TextIcon,
   ViewIcon,
   Wifi01Icon,
 } from "@hugeicons/core-free-icons";
@@ -84,6 +86,7 @@ export const Settings = makeIcon("Settings", Settings01Icon);
 
 export const AlertCircle = makeIcon("AlertCircle", AlertCircleIcon);
 export const Check = makeIcon("Check", Tick02Icon);
+export const CheckCircle = makeIcon("CheckCircle", CheckmarkCircle02Icon);
 export const CheckCircle2 = makeIcon("CheckCircle2", CheckmarkCircle02Icon);
 export const Download = makeIcon("Download", Download01Icon);
 export const RefreshCw = makeIcon("RefreshCw", Refresh01Icon);
@@ -120,3 +123,8 @@ export const Pencil = makeIcon("Pencil", FileEditIcon);
 export const Wifi = makeIcon("Wifi", Wifi01Icon);
 export const QrCode = makeIcon("QrCode", QrCode01Icon);
 export const Copy = makeIcon("Copy", Copy01Icon);
+
+// Narrative Studio icons
+export const Film = makeIcon("Film", PlayIcon);
+export const FileText = makeIcon("FileText", TextIcon);
+export const BookOpen = makeIcon("BookOpen", Book02Icon);

@@ -1,0 +1,237 @@
+name: Performance Optimization
+description: Analyze performance bottlenecks and implement targeted optimizations with measurable improvements
+version: 1.0.0
+model: opus
+
+steps:
+  - name: Performance Profiling
+    model: opus
+    prompt: |
+      You are a Performance Engineer. Performance optimization has been requested:
+
+      {{prompt}}
+
+      Your task is to profile the code and identify bottlenecks.
+
+      ## Sub-Agent Strategy
+      Use the Task tool to analyze the codebase:
+      - Use `subagent_type: Explore` to find the target code and critical paths
+      - Launch multiple Explore agents: (1) find hot paths, (2) find database queries, (3) find I/O operations
+      - Map the performance-critical code
+
+      ## Profiling Checklist
+      1. IDENTIFY - Find the performance-critical paths
+         - Most frequently executed code
+         - User-facing operations
+         - Data-intensive operations
+      2. MEASURE - Establish current performance baseline
+         - Run existing benchmarks or timing code
+         - Note current metrics (time, memory, etc.)
+      3. ANALYZE - Find specific bottlenecks
+         - Slow database queries
+         - Inefficient algorithms
+         - Memory-intensive operations
+         - I/O blocking
+         - Network latency
+
+      ## Bottleneck Categories
+      - CPU-bound (computation heavy)
+      - I/O-bound (disk, network)
+      - Memory-bound (allocation, GC pressure)
+      - Concurrency (blocking, contention)
+      - Database (slow queries, missing indexes)
+
+      ## Deliverables
+      Performance profile:
+      - Current Baseline (measured metrics)
+      - Identified Bottlenecks (prioritized list)
+      - Root Causes (why each is slow)
+      - Optimization Candidates (what to fix)
+      - Expected Impact (potential improvement)
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Optimization Planning
+    model: opus
+    prompt: |
+      Profiling complete. Now plan the optimizations.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find optimization patterns in the codebase
+      - Use `subagent_type: Plan` if optimizations require architectural changes
+      - Research optimization techniques for specific bottlenecks
+
+      ## Optimization Strategies by Type
+
+      ### CPU-Bound Optimizations
+      - Algorithm improvements (better Big-O)
+      - Caching computed results
+      - Lazy evaluation
+      - Parallel processing
+      - Loop optimizations
+
+      ### I/O-Bound Optimizations
+      - Async/non-blocking I/O
+      - Batching operations
+      - Buffering
+      - Connection pooling
+      - Compression
+
+      ### Memory Optimizations
+      - Object pooling
+      - Lazy loading
+      - Reduce allocations
+      - Stream processing
+      - Weak references for caches
+
+      ### Database Optimizations
+      - Query optimization
+      - Index additions
+      - N+1 query elimination
+      - Query caching
+      - Connection pooling
+
+      ## For Each Optimization
+      - Target (what to optimize)
+      - Technique (how to optimize)
+      - Expected Impact (quantified if possible)
+      - Risk Level (low/medium/high)
+      - Rollback Plan (how to undo if needed)
+
+      ## Deliverables
+      Optimization plan:
+      - Prioritized optimizations (by impact)
+      - Implementation order
+      - Risk assessment
+      - Success metrics
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
+
+  - name: Implement Optimizations
+    model: sonnet
+    prompt: |
+      Plan ready. Now implement the optimizations one at a time.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to reference optimization patterns
+      - Implement one optimization at a time
+      - Measure after each change
+
+      ## Implementation Rules
+      1. ONE OPTIMIZATION AT A TIME
+      2. MEASURE before and after each change
+      3. VERIFY correctness (tests must pass)
+      4. DOCUMENT the optimization
+
+      ## For Each Optimization
+      1. Document the current state (metrics)
+      2. Implement the change
+      3. Run tests (must still pass)
+      4. Measure the improvement
+      5. Record results
+
+      ## Optimization Principles
+      - Don't guess, measure
+      - Optimize the bottleneck, not everything
+      - Prefer simple optimizations over clever ones
+      - Maintain readability
+      - Don't sacrifice correctness for speed
+
+      ## Quality Checks
+      - All tests still pass
+      - No new bugs introduced
+      - Code is still maintainable
+      - Improvement is measurable
+
+      ## If Optimization Fails
+      - Revert the change
+      - Document why it didn't work
+      - Move to next optimization
+    maxRetries: 3
+
+  - name: Benchmark Verification
+    model: sonnet
+    prompt: |
+      Optimizations implemented. Now verify improvements with benchmarks.
+
+      ## Sub-Agent Strategy
+      - Use `subagent_type: Explore` to find or create benchmarks
+      - Run comprehensive performance tests
+      - Compare before and after
+
+      ## Verification Steps
+      1. Run existing benchmarks (if available)
+      2. Create new benchmarks for optimized areas
+      3. Compare against baseline metrics
+      4. Test under realistic load conditions
+
+      ## Benchmark Requirements
+      - Repeatable (consistent results)
+      - Realistic (mirrors production usage)
+      - Comprehensive (covers all optimized areas)
+      - Isolated (minimal external factors)
+
+      ## Metrics to Capture
+      - Execution time (average, p50, p95, p99)
+      - Memory usage (peak, average)
+      - Throughput (operations per second)
+      - Latency (response times)
+      - Resource utilization (CPU, I/O)
+
+      ## Comparison Report
+      For each optimized area:
+      - Before (baseline metric)
+      - After (new metric)
+      - Improvement (percentage or absolute)
+      - Regression check (nothing got worse)
+    maxRetries: 2
+
+  - name: Performance Report
+    model: opus
+    prompt: |
+      Verification complete. Generate final performance report.
+
+      ## Sub-Agent Strategy
+      - Compile all measurements from optimization work
+      - Create before/after comparison
+      - Document all changes made
+
+      ## Report Structure
+
+      ### Executive Summary
+      - Overall improvement (headline metric)
+      - Key optimizations implemented
+      - Remaining opportunities
+
+      ### Before vs After Comparison
+
+      | Metric | Before | After | Improvement |
+      |--------|--------|-------|-------------|
+      | [metric] | [value] | [value] | [%] |
+
+      ### Optimizations Implemented
+      For each optimization:
+      - What was changed
+      - Why it improved performance
+      - Files modified
+      - Measured improvement
+
+      ### Optimizations NOT Implemented
+      - What was considered
+      - Why it was deferred
+      - Potential future benefit
+
+      ### Recommendations
+      - Further optimization opportunities
+      - Monitoring suggestions
+      - Capacity planning notes
+
+      ## Verification
+      - All tests still pass
+      - No regressions introduced
+      - Improvements are significant and measurable
+    tools:
+      disable: [Write, Edit]
+    maxRetries: 1
