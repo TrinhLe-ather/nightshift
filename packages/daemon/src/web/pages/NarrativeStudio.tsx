@@ -283,20 +283,20 @@ export function NarrativeStudio() {
   };
 
   return (
-    <Container className="py-6 lg:py-8 flex-1 overflow-auto">
+    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
+      <div>
+        <div className="flex items-center lg:items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-amber-500/30 bg-amber-500/10">
+              <div className="h-10 w-10 items-center justify-center border border-amber-500/30 bg-amber-500/10 hidden md:flex">
                 <BookOpen className="h-5 w-5 text-amber-400" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">
                   Narrative Studio
                 </h1>
-                <p className="mt-0.5 text-xs text-muted-foreground hidden md:block">
+                <p className="mt-0.5 text-xs text-muted-foreground hidden lg:block">
                   Cinematic Scriptwriting Department
                 </p>
               </div>

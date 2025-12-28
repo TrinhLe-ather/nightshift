@@ -283,20 +283,20 @@ export function Repos() {
   };
 
   return (
-    <Container className="py-6 lg:py-8 flex-1 overflow-auto">
+    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
       {/* Header with technical aesthetic */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
+      <div>
+        <div className="flex items-center lg:items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
+              <div className="h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10 hidden md:flex">
                 <Folder className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">
                   Repositories
                 </h1>
-                <p className="mt-0.5 text-xs text-muted-foreground hidden md:block">
+                <p className="mt-0.5 text-xs text-muted-foreground hidden lg:block">
                   Configure repositories for task execution
                 </p>
               </div>
@@ -386,7 +386,7 @@ export function Repos() {
 
       {/* Repos Grid */}
       {!isLoading && filteredRepos && filteredRepos.length > 0 && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 lg:gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filteredRepos.map((repo, index) => (
             <RepoCard
               key={repo.id}

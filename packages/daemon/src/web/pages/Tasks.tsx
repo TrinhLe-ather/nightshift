@@ -296,7 +296,7 @@ export function Tasks() {
   return (
     <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
       {/* Header with technical aesthetic */}
-      <div className="">
+      <div>
         <div className="flex items-center lg:items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10 hidden md:flex">

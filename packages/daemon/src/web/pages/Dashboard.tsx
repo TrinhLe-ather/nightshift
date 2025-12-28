@@ -181,20 +181,20 @@ export function Dashboard() {
     : false;
 
   return (
-    <Container className="py-6 lg:py-8">
+    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
       {/* Header with technical aesthetic */}
-      <div className="mb-8">
-        <div className="flex items-start justify-between">
+      <div>
+        <div className="flex items-center lg:items-start justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10">
+              <div className="h-10 w-10 items-center justify-center border border-primary/30 bg-primary/10 hidden md:flex">
                 <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h1 className="text-xl font-semibold tracking-tight text-foreground">
                   Command Center
                 </h1>
-                <p className="mt-0.5 text-xs text-muted-foreground hidden md:block">
+                <p className="mt-0.5 text-xs text-muted-foreground hidden lg:block">
                   Night Shift task orchestration dashboard
                 </p>
               </div>
@@ -204,7 +204,7 @@ export function Dashboard() {
         </div>
 
         {/* Daemon Status Bar */}
-        <div className="mt-6 flex items-center gap-6 border-y border-border/50 py-3">
+        <div className="mt-6 flex flex-wrap items-center gap-6 border-y border-border/50 py-3">
           <div className="flex items-center gap-2">
             <div
               className={cn(
@@ -248,7 +248,7 @@ export function Dashboard() {
       {/* Stats Grid */}
       {isDaemonRunning && status ? (
         <>
-          <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 lg:gap-4 lg:grid-cols-5">
             <StatCard
               label="Pending"
               value={status.stats.pending}
@@ -298,7 +298,7 @@ export function Dashboard() {
 
           {/* Repos Count */}
           {status.stats.repoCount === 0 ? (
-            <div className="mb-8 overflow-hidden border border-dashed border-border bg-card/50">
+            <div className="overflow-hidden border border-dashed border-border bg-card/50">
               <div className="flex flex-col items-center justify-center py-16">
                 <div className="flex h-16 w-16 items-center justify-center border border-border bg-muted/50">
                   <FolderGit2 className="h-8 w-8 text-muted-foreground" />
@@ -324,21 +324,19 @@ export function Dashboard() {
               </div>
             </div>
           ) : (
-            <div className="mb-8">
-              <StatCard
-                label="Repositories"
-                value={status.stats.repoCount}
-                icon={FolderGit2}
-                color="text-violet-400"
-                bgColor="bg-violet-500/10"
-                borderColor="border-violet-500/30"
-                index={5}
-              />
-            </div>
+            <StatCard
+              label="Repositories"
+              value={status.stats.repoCount}
+              icon={FolderGit2}
+              color="text-violet-400"
+              bgColor="bg-violet-500/10"
+              borderColor="border-violet-500/30"
+              index={5}
+            />
           )}
         </>
       ) : (
-        <div className="mb-8 overflow-hidden border border-rose-500/30 bg-rose-500/5">
+        <div className="overflow-hidden border border-rose-500/30 bg-rose-500/5">
           <div className="flex flex-col items-center justify-center py-16">
             <div className="flex h-16 w-16 items-center justify-center border border-rose-500/30 bg-rose-500/10">
               <AlertCircle className="h-8 w-8 text-rose-400" />
