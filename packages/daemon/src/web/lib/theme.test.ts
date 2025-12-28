@@ -8,7 +8,7 @@ import { describe, it, expect } from "bun:test";
 import { themeSchema } from "@nightshift/shared";
 
 describe("Theme Schema", () => {
-  const validThemes = ["light", "dark", "solarized-light", "solarized-dark", "system"];
+  const validThemes = ["light", "dark", "solarized-light", "solarized-dark", "system"] as const;
 
   describe("themeSchema.parse", () => {
     it("should accept valid theme: light", () => {

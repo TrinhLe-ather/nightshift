@@ -1,7 +1,7 @@
 import type { ServerWebSocket } from "bun";
 import { spawn, type IPty } from "bun-pty";
 import { loadConfig } from "../config";
-import { resolveShell } from "./shells";
+import { resolveShellInfo } from "./shells";
 
 export interface PtySession {
   id: string;
@@ -25,15 +25,18 @@ class PtySessionManager {
   createSession(ws: ServerWebSocket<TerminalWsData>, cols: number, rows: number): PtySession {
     const id = crypto.randomUUID();
 
-    // Get configured shell
+    // Get configured shell with args (needed for WSL distro selection)
     const config = loadConfig();
-    const shell = resolveShell(config.terminalShell);
+    const shellInfo = resolveShellInfo(config.terminalShell);
 
     // Get home directory
     const isWindows = process.platform === "win32";
     const homeDir = isWindows ? process.env.USERPROFILE : process.env.HOME;
 
-    const pty = spawn(shell, [], {
+    // Use shell args if provided (e.g., for WSL: wsl.exe -d Ubuntu)
+    const shellArgs = shellInfo.args || [];
+
+    const pty = spawn(shellInfo.path, shellArgs, {
       name: "xterm-256color",
       cols,
       rows,
