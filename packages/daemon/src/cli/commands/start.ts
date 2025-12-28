@@ -5,12 +5,13 @@
  */
 
 import { existsSync, readFileSync, writeFileSync } from "fs";
+import { networkInterfaces } from "os";
 import { getVersionDisplay } from "@nightshift/shared";
 import { NIGHTSHIFT_DIR, PID_FILE } from "../../config/paths";
 import { ensureNightShiftDirectories } from "../../config/paths";
 import { closeDb, getDbStats, initDb, runMigrations } from "../../db";
 import { loadConfig } from "../../config";
-import { serverOptions } from "../../orpc/options";
+import { createServerOptions } from "../../orpc/options";
 import { findAvailablePort } from "../../orpc/utils";
 import { type TaskExecutor, createExecutor } from "../../executor";
 import { checkForUpdates } from "../../update";
@@ -20,6 +21,7 @@ import {
   setTranscriptReader,
 } from "../../orpc/router";
 import { initWorkflows } from "../../workflows/loader";
+import { generatePin, getLocalIpAddress, setPort } from "../../lan";
 
 /**
  * Check if daemon is already running
@@ -45,6 +47,24 @@ function isDaemonRunning(): boolean {
  */
 function writePidFile(): void {
   writeFileSync(PID_FILE, process.pid.toString(), "utf-8");
+}
+
+/**
+ * Get local IP address for LAN access
+ */
+function getLocalIpAddress(): string | null {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    const netInterface = nets[name];
+    if (!netInterface) continue;
+    for (const net of netInterface) {
+      // Skip internal (loopback) and non-IPv4 addresses
+      if (net.family === "IPv4" && !net.internal) {
+        return net.address;
+      }
+    }
+  }
+  return null;
 }
 
 /**
@@ -195,16 +215,60 @@ export async function startCommand(): Promise<void> {
 
   process.env.PORT = actualPort.toString();
 
+  // Set port for LAN URL generation
+  setPort(actualPort);
+
+  // Generate PIN and display LAN access info if enabled
+  if (config.allowLan) {
+    const pin = generatePin();
+    const localIp = getLocalIpAddress();
+
+    console.log("");
+    console.log("╔══════════════════════════════════════════════════╗");
+    console.log("║              LAN ACCESS ENABLED                  ║");
+    console.log("╠══════════════════════════════════════════════════╣");
+    console.log(`║  PIN: ${pin}                                      ║`);
+    if (localIp) {
+      const lanUrl = `http://${localIp}:${actualPort}`;
+      console.log(`║  Local IP: ${localIp.padEnd(37)}║`);
+      console.log(`║  URL: ${lanUrl.padEnd(42)}║`);
+    } else {
+      console.log("║  Local IP: Not available                         ║");
+    }
+    console.log("╚══════════════════════════════════════════════════╝");
+
+    // Show Windows firewall hint
+    if (process.platform === "win32") {
+      console.log("");
+      console.log("Tip: If mobile devices can't connect, ensure Windows Firewall");
+      console.log(`     allows port ${actualPort}. Run 'nightshift doctor' to check.`);
+    }
+    console.log("");
+  }
+
+  // Create server options with LAN config
+  const serverOpts = createServerOptions(config.allowLan);
+
   // Start server with oRPC routes
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const server = Bun.serve({
-    ...serverOptions,
+    ...serverOpts,
     port: actualPort,
     idleTimeout: 255,
-  });
+  } as any);
 
   const localUrl = `http://localhost:${actualPort}`;
+  const lanIp = getLocalIpAddress();
+  const lanUrl = lanIp ? `http://${lanIp}:${actualPort}` : null;
+
   console.log(`Night Shift running at ${localUrl}`);
+  if (lanUrl) {
+    console.log(`LAN access: ${lanUrl}`);
+  }
   console.log(`Version: ${getVersionDisplay()}`);
+  if (config.allowLan) {
+    console.log("LAN access: Enabled (see PIN above)");
+  }
 
   // Initialize and start task executor
   let executor: TaskExecutor | null = null;

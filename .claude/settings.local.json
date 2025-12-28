@@ -24,7 +24,9 @@
       "Bash(sqlite3:*)",
       "WebFetch(domain:orpc.dev)",
       "Bash(bun pm:*)",
-      "Skill(frontend-design:frontend-design)"
+      "Skill(frontend-design:frontend-design)",
+      "Bash(findstr:*)",
+      "Bash(ipconfig:*)"
     ]
   }
 }

@@ -41,6 +41,7 @@
     "drizzle-orm": "catalog:db",
     "execa": "^9.6.1",
     "next-themes": "^0.4.6",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.3",
     "react-day-picker": "^9.13.0",
     "react-dom": "^19.2.3",
