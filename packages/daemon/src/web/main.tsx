@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
+import { getThemeIds, DEFAULT_THEME } from "@/web/themes";
 import App from "./App";
 
 import "./globals.css";
@@ -22,8 +23,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="solarized-dark"
-        themes={["light", "dark", "solarized-light", "solarized-dark"]}
+        defaultTheme={DEFAULT_THEME}
+        themes={getThemeIds()}
         enableSystem={true}
         storageKey="nightshift-theme"
       >

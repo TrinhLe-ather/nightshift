@@ -36,6 +36,7 @@ import {
   Moon,
 } from "@/components/ui/icons";
 import { useThemeSync } from "@/web/hooks";
+import { getThemeOptions, DEFAULT_THEME } from "@/web/themes";
 import { Container } from "@/components/layout/Container";
 import { LanQRDialog } from "@/components/LanQRDialog";
 import {
@@ -549,7 +550,7 @@ export function Settings() {
                 </p>
               </div>
               <Select
-                value={theme || "dark"}
+                value={theme || DEFAULT_THEME}
                 onValueChange={(value) => value && setTheme(value)}
                 disabled={isThemeLoading}
               >
@@ -557,11 +558,11 @@ export function Settings() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="solarized-light">Solarized Light</SelectItem>
-                  <SelectItem value="solarized-dark">Solarized Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
+                  {getThemeOptions().map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
