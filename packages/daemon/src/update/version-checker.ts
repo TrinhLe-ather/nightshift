@@ -11,12 +11,12 @@ import { NIGHTSHIFT_DIR } from "../config/paths";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 
 /**
- * GitHub repository for releases
- * TODO: Update to actual repo when published
+ * GitHub repository for releases (matches install.sh)
+ * Can be overridden via NIGHTSHIFT_REPO env var
  */
-const GITHUB_OWNER = "nightshift-ai";
-const GITHUB_REPO = "nightshift";
-const RELEASES_URL = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`;
+const NIGHTSHIFT_REPO = process.env.NIGHTSHIFT_REPO || "sipherxyz/nightshift";
+const GITHUB_API = process.env.GITHUB_API || "https://api.github.com";
+const RELEASES_URL = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases/latest`;
 
 /**
  * Path to update state file
@@ -165,6 +165,10 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
       headers: {
         Accept: "application/vnd.github.v3+json",
         "User-Agent": `NightShift/${VERSION}`,
+        // Support GITHUB_TOKEN to avoid rate limits (matches install.sh)
+        ...(process.env.GITHUB_TOKEN
+          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+          : {}),
       },
     });
 
@@ -180,20 +184,29 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
     const release = (await response.json()) as GitHubRelease;
     const latestVersion = release.tag_name.replace(/^v/, "");
 
-    // Find binary for this platform
+    // Find binary for this platform (matches install.sh naming)
     const binaryName = getBinaryName();
     const binaryAsset = release.assets.find((a) => a.name === binaryName);
-    const checksumAsset = release.assets.find((a) => a.name === `${binaryName}.sha256`);
+    // Use combined SHA256SUMS file (matches install.sh)
+    const checksumAsset = release.assets.find((a) => a.name === "SHA256SUMS");
 
-    // Get checksum if available
+    // Get checksum from SHA256SUMS file (matches install.sh parsing)
     let checksum: string | null = null;
     if (checksumAsset) {
       try {
         const checksumResponse = await fetch(checksumAsset.browser_download_url);
         if (checksumResponse.ok) {
           const checksumText = await checksumResponse.text();
-          // Format: "sha256hash  filename"
-          checksum = checksumText.trim().split(/\s+/)[0] || null;
+          // Format: "sha256hash  filename" - match install.sh grep pattern
+          const lines = checksumText.split("\n");
+          for (const line of lines) {
+            // Match: hash followed by two spaces and filename
+            const match = line.match(/^([a-f0-9]{64})\s+(.+)$/);
+            if (match && match[2] === binaryName) {
+              checksum = match[1];
+              break;
+            }
+          }
         }
       } catch {
         // Checksum fetch failed - continue without
@@ -228,6 +241,83 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
       ...getUpdateState(),
       lastCheckAt: now,
     });
+    return null;
+  }
+}
+
+/**
+ * Fetch release info for a specific version (matches install.sh tag support)
+ * @param target - Version string (e.g., "0.1.0", "v0.1.0", "latest", "stable")
+ */
+export async function fetchRelease(
+  target: string = "latest",
+): Promise<UpdateInfo | null> {
+  // Resolve release URL based on target (matches install.sh logic)
+  let releaseUrl: string;
+  if (target === "latest" || target === "stable" || !target) {
+    releaseUrl = RELEASES_URL;
+  } else {
+    // Ensure tag has 'v' prefix
+    const tag = target.startsWith("v") ? target : `v${target}`;
+    releaseUrl = `${GITHUB_API}/repos/${NIGHTSHIFT_REPO}/releases/tags/${tag}`;
+  }
+
+  try {
+    const response = await fetch(releaseUrl, {
+      headers: {
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": `NightShift/${VERSION}`,
+        ...(process.env.GITHUB_TOKEN
+          ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+          : {}),
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const release = (await response.json()) as GitHubRelease;
+    const version = release.tag_name.replace(/^v/, "");
+
+    // Find binary for this platform
+    const binaryName = getBinaryName();
+    const binaryAsset = release.assets.find((a) => a.name === binaryName);
+    const checksumAsset = release.assets.find((a) => a.name === "SHA256SUMS");
+
+    if (!binaryAsset) {
+      return null;
+    }
+
+    // Get checksum from SHA256SUMS file
+    let checksum: string | null = null;
+    if (checksumAsset) {
+      try {
+        const checksumResponse = await fetch(checksumAsset.browser_download_url);
+        if (checksumResponse.ok) {
+          const checksumText = await checksumResponse.text();
+          const lines = checksumText.split("\n");
+          for (const line of lines) {
+            const match = line.match(/^([a-f0-9]{64})\s+(.+)$/);
+            if (match && match[2] === binaryName) {
+              checksum = match[1];
+              break;
+            }
+          }
+        }
+      } catch {
+        // Continue without checksum
+      }
+    }
+
+    return {
+      version,
+      downloadUrl: binaryAsset.browser_download_url,
+      checksum: checksum || "",
+      releaseNotes: release.body || undefined,
+      publishedAt: release.published_at,
+    };
+  } catch {
     return null;
   }
 }

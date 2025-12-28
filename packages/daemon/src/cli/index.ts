@@ -12,6 +12,7 @@ import { versionCommand } from "./commands/version";
 import { doctorCommand } from "./commands/doctor";
 import { configCommand } from "./commands/config";
 import { reposCommand } from "./commands/repos";
+import { updateCommand } from "./commands/update";
 
 /**
  * Display help message
@@ -35,6 +36,7 @@ Commands:
   repos      Manage configured repositories
   config     Open settings page in browser
   doctor     Validate system setup and prerequisites
+  update     Check for updates and install if available
   version    Show current version
   help       Show this help message
 
@@ -84,6 +86,10 @@ export async function cli(): Promise<void> {
 
     case "doctor":
       await doctorCommand();
+      break;
+
+    case "update":
+      await updateCommand();
       break;
 
     case "version":
