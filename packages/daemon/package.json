@@ -1,6 +1,6 @@
 {
   "name": "@nightshift/daemon",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "main": "src/index.ts",
   "bin": {
