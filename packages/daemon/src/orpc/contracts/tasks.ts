@@ -505,6 +505,70 @@ const continueTaskEndpoint = orpc
     return task;
   });
 
+// Retry a failed task (creates a new pending task with same settings)
+const retry = orpc
+  .input(z.object({ id: z.string() }))
+  .output(taskSchema)
+  .handler(async ({ input, errors }) => {
+    const db = getDb();
+    const { id } = input;
+
+    const task = db.select().from(tasks).where(eq(tasks.id, id)).get();
+
+    if (!task) {
+      throw errors.NOT_FOUND({
+        message: "Task not found",
+        data: { resource: "task", id },
+      });
+    }
+
+    // Only allow retrying failed or canceled tasks
+    if (task.status !== "failed" && task.status !== "canceled") {
+      throw errors.INVALID_STATE({
+        message: "Can only retry failed or canceled tasks",
+        data: { expected: ["failed", "canceled"], actual: task.status },
+      });
+    }
+
+    // Create a new task with the same settings
+    const newId = generateTaskId();
+    const now = new Date().toISOString();
+
+    db.insert(tasks)
+      .values({
+        id: newId,
+        prompt: task.prompt,
+        repoId: task.repoId,
+        repoPath: task.repoPath,
+        priority: task.priority,
+        status: "pending",
+        githubIssueUrl: task.githubIssueUrl,
+        branch: task.branch,
+        createdAt: now,
+        autoYes: task.autoYes ?? false,
+        model: task.model,
+        workflowId: task.workflowId,
+        executionMode: task.executionMode,
+      })
+      .run();
+
+    const newTask = db.select().from(tasks).where(eq(tasks.id, newId)).get();
+
+    if (!newTask) {
+      throw errors.INTERNAL_SERVER_ERROR({ message: "Failed to create retry task" });
+    }
+
+    // Ensure prompt is visible immediately in transcript
+    ensureInitialPromptInTranscript({
+      taskId: newId,
+      prompt: task.prompt,
+      createdAt: now,
+      dataDirOverride: process.env.NIGHTSHIFT_DATA_DIR,
+    });
+
+    return newTask;
+  });
+
 // Get git diff stats from base commit
 const getDiff = orpc
   .input(z.object({ id: z.string() }))
@@ -565,4 +629,5 @@ export const tasksRouter = {
   resume,
   continue: continueTaskEndpoint,
   getDiff,
+  retry,
 };

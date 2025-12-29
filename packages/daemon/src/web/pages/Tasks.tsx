@@ -9,8 +9,9 @@
 
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useTasks, useDeleteTask } from "@/hooks/useTasks";
+import { useTasks, useDeleteTask, useRetryTask } from "@/hooks/useTasks";
 import { useRepos } from "@/hooks/useRepos";
+import { getErrorMessage, isRetryableError, type ErrorCode } from "@nightshift/shared";
 import { cn, truncate, formatDate } from "@/lib/utils";
 import { getStatusStyle, getPriorityStyle } from "@/lib/status";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,8 @@ import {
   FolderGit2,
   Check,
   ChevronDown,
+  RefreshCw,
+  AlertCircle,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { NewTaskButton } from "@/components/NewTaskButton";
@@ -86,16 +89,24 @@ interface TaskRowProps {
     repoPath: string | null;
     createdAt: string;
     executionMode?: string | null;
+    failureCode?: string | null;
   };
   repoName?: string;
   index: number;
   onDelete: () => void;
   onClick: () => void;
+  onRetry: () => void;
+  isRetrying?: boolean;
 }
 
-function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
+function TaskRow({ task, repoName, index, onDelete, onClick, onRetry, isRetrying }: TaskRowProps) {
   const statusStyle = getStatusStyle(task.status);
   const priorityStyle = getPriorityStyle(task.priority ?? "medium");
+  const isFailed = task.status === "failed";
+  const isCanceled = task.status === "canceled";
+  const canRetry = isFailed || isCanceled;
+  const failureMessage = task.failureCode ? getErrorMessage(task.failureCode as ErrorCode) : null;
+  const isRetryable = task.failureCode ? isRetryableError(task.failureCode as ErrorCode) : false;
 
   return (
     <div
@@ -132,6 +143,18 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
               <Clock className="h-3 w-3" />
               {formatDate(task.createdAt)}
             </span>
+            {/* Show failure reason for failed tasks */}
+            {isFailed && failureMessage && (
+              <span className="flex items-center gap-1 text-rose-400" title={task.failureCode ?? undefined}>
+                <AlertCircle className="h-3 w-3" />
+                <span className="truncate max-w-[200px]">{failureMessage}</span>
+                {isRetryable && (
+                  <Badge variant="outline" className="ml-1 px-1 py-0 text-[9px] border-amber-500/30 bg-amber-500/10 text-amber-400">
+                    Retryable
+                  </Badge>
+                )}
+              </span>
+            )}
           </div>
         </div>
 
@@ -159,6 +182,23 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
           >
             {task.status.toLowerCase().replace("_", " ")}
           </Badge>
+
+          {/* Retry button - visible on hover for failed/canceled tasks */}
+          {canRetry && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRetry();
+              }}
+              disabled={isRetrying}
+              className="h-7 w-7 shrink-0 p-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-muted-foreground hover:text-primary"
+              title="Retry task"
+            >
+              <RefreshCw className={cn("h-3.5 w-3.5", isRetrying && "animate-spin")} />
+            </Button>
+          )}
 
           {/* Delete button - visible on hover */}
           <Button
@@ -191,6 +231,7 @@ export function Tasks() {
   } | null>(null);
 
   const deleteTask = useDeleteTask();
+  const retryTask = useRetryTask();
   const { data: repos = [] } = useRepos();
 
   const { data, isLoading } = useTasks({
@@ -254,6 +295,20 @@ export function Tasks() {
     executionMode?: string | null;
   }) => {
     setDeleteConfirm(task);
+  };
+
+  const handleRetryClick = async (taskId: string) => {
+    try {
+      const newTask = await retryTask.mutateAsync(taskId);
+      toast.success("Task queued for retry", {
+        description: "A new task has been created and added to the queue",
+      });
+      navigate(`/tasks/${newTask.id}`);
+    } catch (error) {
+      toast.error("Failed to retry task", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
   };
 
   const confirmDelete = async (deleteBranch: boolean) => {
@@ -513,6 +568,8 @@ export function Tasks() {
                     index={index}
                     onClick={() => handleRowClick(task.id)}
                     onDelete={() => handleDeleteClick(task)}
+                    onRetry={() => handleRetryClick(task.id)}
+                    isRetrying={retryTask.isPending}
                   />
                 ))}
               </div>
@@ -538,6 +595,8 @@ export function Tasks() {
                     index={index}
                     onClick={() => handleRowClick(task.id)}
                     onDelete={() => handleDeleteClick(task)}
+                    onRetry={() => handleRetryClick(task.id)}
+                    isRetrying={retryTask.isPending}
                   />
                 ))}
               </div>
@@ -563,6 +622,8 @@ export function Tasks() {
                     index={index}
                     onClick={() => handleRowClick(task.id)}
                     onDelete={() => handleDeleteClick(task)}
+                    onRetry={() => handleRetryClick(task.id)}
+                    isRetrying={retryTask.isPending}
                   />
                 ))}
               </div>

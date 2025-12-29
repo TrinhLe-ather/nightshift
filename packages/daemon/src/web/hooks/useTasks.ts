@@ -148,6 +148,18 @@ export function useContinueTask() {
   });
 }
 
+export function useRetryTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => client.tasks.retry({ id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["status"] });
+    },
+  });
+}
+
 export function useTaskDiff(id: string, enabled = true) {
   return useQuery({
     queryKey: ["task-diff", id],
