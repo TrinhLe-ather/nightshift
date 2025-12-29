@@ -72,6 +72,8 @@ interface UpdateState {
   channel: UpdateChannel | null;
   /** Whether the available update is a prerelease */
   isPrerelease: boolean | null;
+  /** Whether an update is available (stored decision, accounts for channel logic) */
+  hasUpdate: boolean | null;
 }
 
 /**
@@ -102,6 +104,7 @@ export function getUpdateState(): UpdateState {
     dismissed: false,
     channel: null,
     isPrerelease: null,
+    hasUpdate: null,
   };
 
   if (!existsSync(UPDATE_STATE_PATH)) {
@@ -199,11 +202,12 @@ export function compareVersions(a: string, b: string): number {
 
 /**
  * Check if update is available
+ * Uses the stored hasUpdate flag which accounts for channel-specific logic
  */
 export function isUpdateAvailable(): boolean {
   const state = getUpdateState();
-  if (!state.availableVersion) return false;
-  return compareVersions(state.availableVersion, VERSION) > 0;
+  // Use stored decision which accounts for channel logic (e.g., stable→dev on latest channel)
+  return state.hasUpdate === true && state.availableVersion !== null;
 }
 
 /**
@@ -362,6 +366,7 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
       dismissed: false,
       channel: isNewer ? channel : null,
       isPrerelease: isNewer ? release.prerelease : null,
+      hasUpdate: isNewer,
     });
 
     return isNewer ? updateInfo : null;
@@ -456,6 +461,7 @@ export async function fetchRelease(target: string = "latest"): Promise<UpdateInf
 
 /**
  * Get cached update info without checking network
+ * Uses stored hasUpdate flag which accounts for channel-specific logic
  */
 export function getCachedUpdateInfo(): UpdateInfo | null {
   const state = getUpdateState();
@@ -464,7 +470,8 @@ export function getCachedUpdateInfo(): UpdateInfo | null {
     return null;
   }
 
-  if (compareVersions(state.availableVersion, VERSION) <= 0) {
+  // Use stored decision which accounts for channel logic
+  if (!state.hasUpdate) {
     return null;
   }
 

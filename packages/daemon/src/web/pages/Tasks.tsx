@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Loading } from "../components";
 
 type TaskStatus =
   | "pending"
@@ -270,17 +271,7 @@ export function Tasks() {
   };
 
   if (isLoading) {
-    return (
-      <Container className="py-4 lg:py-6">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative">
-            <div className="h-12 w-12 border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">Loading task queue...</p>
-        </div>
-      </Container>
-    );
+    return <Loading message="Loading task queue..." />;
   }
 
   // Bucket tasks by day

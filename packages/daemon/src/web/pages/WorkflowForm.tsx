@@ -49,6 +49,7 @@ import {
   Play,
   Settings,
 } from "@/components/ui/icons";
+import { Loading } from "../components";
 
 // Available Claude Code tools
 const AVAILABLE_TOOLS = [
@@ -817,17 +818,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
   }
 
   if (isEdit && isLoadingWorkflow) {
-    return (
-      <Container className="py-4 lg:py-6">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative">
-            <div className="h-12 w-12 border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">Loading workflow...</p>
-        </div>
-      </Container>
-    );
+    return <Loading message="Loading workflow..." />;
   }
 
   return (

@@ -42,6 +42,7 @@ import {
   Settings,
 } from "@/components/ui/icons";
 import { CloneWorkflowDialog } from "@/components/CloneWorkflowDialog";
+import { Loading } from "../components";
 
 interface WorkflowStep {
   name: string;
@@ -352,17 +353,7 @@ export function WorkflowDetail() {
   };
 
   if (isLoading) {
-    return (
-      <Container className="py-4 lg:py-6">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative">
-            <div className="h-12 w-12 border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">Loading workflow...</p>
-        </div>
-      </Container>
-    );
+    return <Loading message="Loading workflow..." />;
   }
 
   if (error || !workflow) {
