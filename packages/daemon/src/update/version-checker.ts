@@ -128,26 +128,71 @@ function saveUpdateState(state: UpdateState): void {
 }
 
 /**
+ * Parse version string into components
+ * Returns { base: [major, minor, patch], prerelease: string | null, devTimestamp: string | null }
+ */
+function parseVersionComponents(v: string): {
+  base: number[];
+  prerelease: string | null;
+  devTimestamp: string | null;
+} {
+  const cleaned = v.replace(/^v/, "");
+
+  // Split on first hyphen to separate base version from prerelease
+  const [baseStr, ...prereleaseParts] = cleaned.split("-");
+  const prereleaseStr = prereleaseParts.length > 0 ? prereleaseParts.join("-") : null;
+
+  // Parse base version (e.g., "0.1.0" -> [0, 1, 0])
+  const base = (baseStr ?? "").split(".").map((n) => parseInt(n, 10) || 0);
+
+  // Check if this is a dev version (e.g., "dev.20251229.123456")
+  let devTimestamp: string | null = null;
+  if (prereleaseStr?.startsWith("dev.")) {
+    // Extract timestamp portion for comparison
+    devTimestamp = prereleaseStr.slice(4); // Remove "dev." prefix
+  }
+
+  return { base, prerelease: prereleaseStr, devTimestamp };
+}
+
+/**
  * Compare semantic versions
  * Returns 1 if a > b, -1 if a < b, 0 if equal
+ *
+ * Handles:
+ * - Standard semver (1.0.0 > 0.9.0)
+ * - Prerelease versions (1.0.0 > 1.0.0-beta)
+ * - Dev versions with timestamps (0.0.0-dev.20251229.120000 > 0.0.0-dev.20251229.110000)
  */
 export function compareVersions(a: string, b: string): number {
-  const parseVersion = (v: string): number[] => {
-    return v
-      .replace(/^v/, "")
-      .split(".")
-      .map((n) => parseInt(n, 10) || 0);
-  };
+  const vA = parseVersionComponents(a);
+  const vB = parseVersionComponents(b);
 
-  const vA = parseVersion(a);
-  const vB = parseVersion(b);
-
-  for (let i = 0; i < Math.max(vA.length, vB.length); i++) {
-    const numA = vA[i] || 0;
-    const numB = vB[i] || 0;
+  // First compare base versions
+  for (let i = 0; i < Math.max(vA.base.length, vB.base.length); i++) {
+    const numA = vA.base[i] || 0;
+    const numB = vB.base[i] || 0;
     if (numA > numB) return 1;
     if (numA < numB) return -1;
   }
+
+  // Base versions are equal, compare prerelease
+  // No prerelease > has prerelease (1.0.0 > 1.0.0-beta)
+  if (!vA.prerelease && vB.prerelease) return 1;
+  if (vA.prerelease && !vB.prerelease) return -1;
+  if (!vA.prerelease && !vB.prerelease) return 0;
+
+  // Both have prerelease - check if both are dev versions
+  if (vA.devTimestamp && vB.devTimestamp) {
+    // Compare dev timestamps lexicographically (YYYYMMDD.HHMMSS format)
+    if (vA.devTimestamp > vB.devTimestamp) return 1;
+    if (vA.devTimestamp < vB.devTimestamp) return -1;
+    return 0;
+  }
+
+  // One is dev, one is other prerelease - compare lexicographically
+  if (vA.prerelease! > vB.prerelease!) return 1;
+  if (vA.prerelease! < vB.prerelease!) return -1;
 
   return 0;
 }
@@ -287,7 +332,25 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
     };
 
     // Check if this is actually newer
-    const isNewer = compareVersions(latestVersion, VERSION) > 0;
+    // For "latest" channel with dev builds: offer update if it's a different dev version
+    // This allows users switching from stable to latest to get dev builds
+    const isDevBuild = latestVersion.includes("-dev.");
+    const currentIsDevBuild = VERSION.includes("-dev.");
+    const isDifferentVersion = latestVersion !== VERSION;
+
+    let isNewer: boolean;
+    if (channel === "latest" && isDevBuild && isDifferentVersion) {
+      // On latest channel, offer any dev build that's different from current
+      // If both are dev builds, only offer if newer by timestamp
+      if (currentIsDevBuild) {
+        isNewer = compareVersions(latestVersion, VERSION) > 0;
+      } else {
+        // Switching from stable to dev - always offer the dev build
+        isNewer = true;
+      }
+    } else {
+      isNewer = compareVersions(latestVersion, VERSION) > 0;
+    }
 
     saveUpdateState({
       lastCheckAt: now,

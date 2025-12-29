@@ -478,7 +478,8 @@ export function Workflows() {
           </ModalHeader>
           <ModalBody>
             <p className="text-sm text-muted-foreground">
-              This action cannot be undone. Any tasks using this workflow will no longer reference it.
+              This action cannot be undone. Any tasks using this workflow will no longer reference
+              it.
             </p>
           </ModalBody>
           <ModalFooter>

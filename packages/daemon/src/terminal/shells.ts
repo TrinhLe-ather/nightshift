@@ -1,3 +1,5 @@
+/* eslint-disable eslint(no-control-regex) */
+
 import { existsSync } from "node:fs";
 
 export interface ShellInfo {
@@ -73,9 +75,7 @@ function getWslShells(): ShellInfo[] {
     return [];
   }
 
-  const shells: ShellInfo[] = [
-    { id: "wsl", name: "WSL (Default)", path: "wsl.exe" },
-  ];
+  const shells: ShellInfo[] = [{ id: "wsl", name: "WSL (Default)", path: "wsl.exe" }];
 
   const distros = getWslDistros();
   for (const distro of distros) {

@@ -15,7 +15,7 @@
   --popover-foreground: oklch(0.607 0.022 215);
 
   /* Primary = blue accent */
-  --primary: oklch(0.580 0.150 240);
+  --primary: oklch(0.58 0.15 240);
   --primary-foreground: oklch(0.205 0.031 215);
 
   /* Secondary = base01 */
@@ -27,32 +27,32 @@
   --muted-foreground: oklch(0.533 0.023 215);
 
   /* Accent = cyan */
-  --accent: oklch(0.630 0.100 185);
+  --accent: oklch(0.63 0.1 185);
   --accent-foreground: oklch(0.205 0.031 215);
 
   /* Destructive = red */
-  --destructive: oklch(0.550 0.200 25);
-  --destructive-foreground: oklch(0.970 0.021 95);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.97 0.021 95);
 
   /* Borders & inputs */
   --border: oklch(0.483 0.024 215 / 50%);
   --input: oklch(0.483 0.024 215 / 30%);
-  --ring: oklch(0.580 0.150 240);
+  --ring: oklch(0.58 0.15 240);
 
   /* Charts - Solarized accent colors */
-  --chart-1: oklch(0.580 0.150 240);
-  --chart-2: oklch(0.630 0.100 185);
-  --chart-3: oklch(0.610 0.160 115);
-  --chart-4: oklch(0.640 0.160 85);
-  --chart-5: oklch(0.560 0.180 45);
+  --chart-1: oklch(0.58 0.15 240);
+  --chart-2: oklch(0.63 0.1 185);
+  --chart-3: oklch(0.61 0.16 115);
+  --chart-4: oklch(0.64 0.16 85);
+  --chart-5: oklch(0.56 0.18 45);
 
   /* Sidebar */
   --sidebar: oklch(0.247 0.034 215);
   --sidebar-foreground: oklch(0.607 0.022 215);
-  --sidebar-primary: oklch(0.580 0.150 240);
+  --sidebar-primary: oklch(0.58 0.15 240);
   --sidebar-primary-foreground: oklch(0.205 0.031 215);
   --sidebar-accent: oklch(0.247 0.034 215);
   --sidebar-accent-foreground: oklch(0.607 0.022 215);
   --sidebar-border: oklch(0.483 0.024 215 / 50%);
-  --sidebar-ring: oklch(0.580 0.150 240);
+  --sidebar-ring: oklch(0.58 0.15 240);
 }
