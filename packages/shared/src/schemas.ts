@@ -43,6 +43,15 @@ export type ClaudeModel = z.infer<typeof modelSchema>;
 export const updateChannelSchema = z.enum(["stable", "latest"]);
 export type UpdateChannel = z.infer<typeof updateChannelSchema>;
 
+export const themeSchema = z.enum([
+  "light",
+  "dark",
+  "solarized-light",
+  "solarized-dark",
+  "system",
+]);
+export type Theme = z.infer<typeof themeSchema>;
+
 // =============================================================================
 // Task Schema
 // =============================================================================
@@ -281,6 +290,8 @@ export const configSchema = z.object({
   terminalShell: z.string().default("auto"),
   /** Update channel: stable (default) or latest (includes prereleases) */
   updateChannel: updateChannelSchema.default("stable"),
+  /** UI theme preference */
+  theme: themeSchema.default("dark"),
 });
 
 export const updateConfigSchema = configSchema.partial();

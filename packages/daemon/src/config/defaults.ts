@@ -41,4 +41,7 @@ export const DEFAULT_CONFIG: Config = {
 
   /** Update channel: stable (production) or latest (includes prereleases) */
   updateChannel: "stable",
+
+  /** UI theme preference */
+  theme: "solarized-dark",
 };

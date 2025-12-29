@@ -3,7 +3,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Solarized Themes */
+@import "./themes/solarized-dark.css";
+@import "./themes/solarized-light.css";
+
+@custom-variant dark (&:is(.dark *, .solarized-dark *));
 
 @theme inline {
   --font-sans: var(--font-sans);

@@ -96,7 +96,9 @@ export type {
   UpdateChannel,
 } from "./schemas";
 
-export { modelSchema, updateChannelSchema } from "./schemas";
+export { modelSchema, updateChannelSchema, themeSchema } from "./schemas";
+
+export type { Theme } from "./schemas";
 
 // =============================================================================
 // TypeScript Types

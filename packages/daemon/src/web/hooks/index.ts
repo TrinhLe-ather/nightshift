@@ -30,3 +30,4 @@ export {
   type WorkflowDetail,
 } from "./useWorkflows";
 export { useTaskStream, type TaskStreamState, type StreamEvent } from "./useTaskStream";
+export { useThemeSync } from "./useThemeSync";
