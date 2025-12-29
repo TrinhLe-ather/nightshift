@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "@/components/layout";
-import { KeyboardShortcutsDialog } from "@/web/components";
+import { KeyboardShortcutsDialog, PinAuthGate } from "@/web/components";
 import {
   Dashboard,
   // NarrativeProject,
@@ -61,6 +61,9 @@ function App() {
 
       {/* Global Dialogs */}
       <KeyboardShortcutsDialog open={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
+      {/* LAN PIN Auth Gate */}
+      <PinAuthGate />
     </>
   );
 }

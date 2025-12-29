@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { Badge } from "@/components/ui/badge";
-import { AddRepoDialog, NewTaskButton } from "@/components";
+import { AddRepoDialog, NewTaskButton, Loading } from "@/components";
 import { Button } from "@/components/ui/button";
 
 interface StatCardProps {
@@ -158,17 +158,7 @@ export function Dashboard() {
   const isDaemonRunning = !error && status?.running === true;
 
   if (isLoading) {
-    return (
-      <Container className="py-4 lg:py-6">
-        <div className="flex flex-col items-center justify-center py-20">
-          <div className="relative">
-            <div className="h-12 w-12 border-2 border-border" />
-            <div className="absolute inset-0 h-12 w-12 animate-spin border-2 border-primary border-t-transparent" />
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">Initializing command center...</p>
-        </div>
-      </Container>
-    );
+    return <Loading message="Initializing command center..." />;
   }
 
   const hasTasks = status

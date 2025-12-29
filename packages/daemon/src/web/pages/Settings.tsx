@@ -519,7 +519,9 @@ export function Settings() {
                   disabled={updateChannelMutation.isPending}
                 >
                   <SelectTrigger className="w-28">
-                    <SelectValue />
+                    <SelectValue>
+                      {config?.updateChannel === "latest" ? "Latest" : "Stable"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="stable">Stable</SelectItem>
@@ -555,7 +557,9 @@ export function Settings() {
                 disabled={isThemeLoading}
               >
                 <SelectTrigger className="w-40">
-                  <SelectValue />
+                  <SelectValue>
+                    {getThemeOptions().find((t) => t.id === theme)?.name || "System"}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {getThemeOptions().map((t) => (
@@ -860,7 +864,10 @@ export function Settings() {
                   disabled={updateShellMutation.isPending}
                 >
                   <SelectTrigger className="w-36">
-                    <SelectValue />
+                    <SelectValue>
+                      {availableShells?.find((shell) => shell.id === config?.terminalShell)?.name ||
+                        "Auto Detect"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auto">Auto Detect</SelectItem>

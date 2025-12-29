@@ -8,14 +8,15 @@
  */
 
 import { validatePin, getCurrentPin } from "./index";
+import type { Middleware } from "../orpc/middleware";
 
-const AUTH_COOKIE_NAME = "nightshift_lan_auth";
-const AUTH_COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
+export const AUTH_COOKIE_NAME = "nightshift_lan_auth";
+export const AUTH_COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 
 /**
  * Check if request is from localhost (bypasses PIN)
  */
-function isLocalhost(request: Request): boolean {
+export function isLocalhost(request: Request): boolean {
   const url = new URL(request.url);
   const host = url.hostname;
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
@@ -37,7 +38,7 @@ function parseCookies(cookieHeader: string | null): Record<string, string> {
 /**
  * Check if request has valid auth cookie
  */
-function hasValidAuthCookie(request: Request): boolean {
+export function hasValidAuthCookie(request: Request): boolean {
   const cookieHeader = request.headers.get("cookie");
   const cookies = parseCookies(cookieHeader);
   const authValue = cookies[AUTH_COOKIE_NAME];
@@ -48,7 +49,7 @@ function hasValidAuthCookie(request: Request): boolean {
 /**
  * Create auth cookie for response
  */
-function createAuthCookie(pin: string): string {
+export function createAuthCookie(pin: string): string {
   return `${AUTH_COOKIE_NAME}=${pin}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${AUTH_COOKIE_MAX_AGE}`;
 }
 
@@ -235,15 +236,16 @@ function renderPinPage(error?: string): string {
  * PIN authentication middleware
  * Returns null if authenticated, or a Response to send back
  */
-export function pinAuthMiddleware(request: Request, allowLan: boolean): Response | null {
-  // If LAN mode disabled, no auth needed
-  if (!allowLan) return null;
+type PinAuthMiddleware = (enable: boolean) => Middleware;
+
+export const pinAuthMiddleware: PinAuthMiddleware = (enable: boolean) => (request: Request) => {
+  if (!enable) return;
 
   // Localhost always bypasses
-  if (isLocalhost(request)) return null;
+  if (isLocalhost(request)) return;
 
   // Check for valid auth cookie
-  if (hasValidAuthCookie(request)) return null;
+  if (hasValidAuthCookie(request)) return;
 
   // Check for PIN in query params (initial auth)
   const url = new URL(request.url);
@@ -271,26 +273,9 @@ export function pinAuthMiddleware(request: Request, allowLan: boolean): Response
     }
   }
 
-  // Check if this is an API request (return 401 JSON)
-  if (url.pathname.startsWith("/rpc")) {
-    return new Response(
-      JSON.stringify({
-        ok: false,
-        error: {
-          code: "LAN_AUTH_REQUIRED",
-          message: "PIN authentication required for LAN access",
-        },
-      }),
-      {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  }
-
   // Return PIN entry page for browser requests
   return new Response(renderPinPage(), {
     status: 401,
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
-}
+};

@@ -1,5 +1,6 @@
 export { Layout, AppSidebar } from "./layout";
 export { KeyboardShortcutsDialog } from "./KeyboardShortcutsDialog";
+export { PinAuthGate } from "./PinAuthGate";
 export { ChatMessage } from "./ChatMessage";
 export { ChatMessageList } from "./ChatMessageList";
 export { TaskListSidebar } from "./TaskListSidebar";
@@ -8,3 +9,4 @@ export { NewTaskDialog } from "./NewTaskDialog";
 export { DeleteTaskDialog } from "./DeleteTaskDialog";
 export { AddRepoDialog } from "./AddRepoDialog";
 export { CloneWorkflowDialog } from "./CloneWorkflowDialog";
+export { Loading } from "./Loading";
