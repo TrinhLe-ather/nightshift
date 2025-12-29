@@ -1,6 +1,7 @@
 /* eslint-disable eslint(no-control-regex) */
 
-import { existsSync } from "node:fs";
+import path from "path";
+import { existsSync } from "fs";
 
 export interface ShellInfo {
   id: string;
@@ -145,7 +146,7 @@ export function getDefaultShell(): string {
   const isWindows = process.platform === "win32";
 
   if (isWindows) {
-    return process.env.COMSPEC || "cmd.exe";
+    return path.basename(process.env.COMSPEC || "cmd.exe");
   }
 
   return process.env.SHELL || "/bin/bash";

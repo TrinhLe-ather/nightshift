@@ -1,0 +1,81 @@
+diff --git a/dist/index.js b/dist/index.js
+index 53ed0ce81471bc7e86ec891affc7bb0d77d6460b..544cb286fced473137b33f809195c3f785ebcda5 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -70,33 +70,42 @@ Checked:
+ 
+ Set BUN_PTY_LIB or ensure one of these paths contains the file.`);
+ }
+-var libPath = resolveLibPath();
++
+ var lib;
+-try {
+-  lib = dlopen(libPath, {
+-    bun_pty_spawn: {
+-      args: [FFIType.cstring, FFIType.cstring, FFIType.cstring, FFIType.i32, FFIType.i32],
+-      returns: FFIType.i32
+-    },
+-    bun_pty_write: {
+-      args: [FFIType.i32, FFIType.pointer, FFIType.i32],
+-      returns: FFIType.i32
+-    },
+-    bun_pty_read: {
+-      args: [FFIType.i32, FFIType.pointer, FFIType.i32],
+-      returns: FFIType.i32
+-    },
+-    bun_pty_resize: {
+-      args: [FFIType.i32, FFIType.i32, FFIType.i32],
+-      returns: FFIType.i32
+-    },
+-    bun_pty_kill: { args: [FFIType.i32], returns: FFIType.i32 },
+-    bun_pty_get_pid: { args: [FFIType.i32], returns: FFIType.i32 },
+-    bun_pty_get_exit_code: { args: [FFIType.i32], returns: FFIType.i32 },
+-    bun_pty_close: { args: [FFIType.i32], returns: FFIType.void }
+-  });
+-} catch (error) {
+-  console.error("Failed to load lib", error);
++
++function loadLib() {
++  if (lib) {
++    return;
++  }
++
++  var libPath = resolveLibPath();
++
++  try {
++    lib = dlopen(libPath, {
++      bun_pty_spawn: {
++        args: [FFIType.cstring, FFIType.cstring, FFIType.cstring, FFIType.i32, FFIType.i32],
++        returns: FFIType.i32
++      },
++      bun_pty_write: {
++        args: [FFIType.i32, FFIType.pointer, FFIType.i32],
++        returns: FFIType.i32
++      },
++      bun_pty_read: {
++        args: [FFIType.i32, FFIType.pointer, FFIType.i32],
++        returns: FFIType.i32
++      },
++      bun_pty_resize: {
++        args: [FFIType.i32, FFIType.i32, FFIType.i32],
++        returns: FFIType.i32
++      },
++      bun_pty_kill: { args: [FFIType.i32], returns: FFIType.i32 },
++      bun_pty_get_pid: { args: [FFIType.i32], returns: FFIType.i32 },
++      bun_pty_get_exit_code: { args: [FFIType.i32], returns: FFIType.i32 },
++      bun_pty_close: { args: [FFIType.i32], returns: FFIType.void }
++    });
++  } catch (error) {
++    console.error("Failed to load lib", error);
++  }
+ }
+ 
+ class Terminal {
+@@ -119,6 +128,7 @@ class Terminal {
+       const envPairs = Object.entries(opts.env).map(([k, v]) => `${k}=${v}`);
+       envStr = envPairs.join("\x00") + "\x00";
+     }
++    loadLib();
+     this.handle = lib.symbols.bun_pty_spawn(Buffer.from(`${cmdline}\x00`, "utf8"), Buffer.from(`${cwd}\x00`, "utf8"), Buffer.from(`${envStr}\x00`, "utf8"), this._cols, this._rows);
+     if (this.handle < 0)
+       throw new Error("PTY spawn failed");

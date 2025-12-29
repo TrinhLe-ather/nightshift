@@ -1,7 +1,9 @@
+import "./patch-bun-pty";
+
 import type { ServerWebSocket } from "bun";
-import { spawn, type IPty } from "bun-pty";
 import { loadConfig } from "../config";
 import { resolveShellInfo } from "./shells";
+import { spawn, type IPty } from "bun-pty";
 
 export interface PtySession {
   id: string;

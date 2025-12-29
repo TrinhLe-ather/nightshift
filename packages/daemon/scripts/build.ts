@@ -36,6 +36,7 @@ await Bun.$`mkdir -p ${outdir}`.quiet();
 const compileTargets: Bun.Build.Target[] = [
   "bun-darwin-arm64",
   "bun-linux-x64",
+  "bun-linux-arm64",
   "bun-windows-x64",
 ] as const;
 

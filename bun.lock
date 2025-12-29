@@ -25,7 +25,7 @@
     },
     "packages/daemon": {
       "name": "@nightshift/daemon",
-      "version": "0.2.3",
+      "version": "0.2.4",
       "bin": {
         "nightshift": "src/index.ts",
       },
@@ -92,6 +92,9 @@
         "zod": "catalog:",
       },
     },
+  },
+  "patchedDependencies": {
+    "bun-pty@0.4.2": "patches/bun-pty@0.4.2.patch",
   },
   "catalog": {
     "typescript": "5.9.3",
