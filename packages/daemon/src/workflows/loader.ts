@@ -97,7 +97,10 @@ INSTRUCTIONS:
 5. Stage all changes: git add -A
 6. Commit with your generated message: git commit -m "message"
 7. Push to remote: git push -u origin HEAD
-8. Create PR using gh CLI (if available): gh pr create --title "title" --body "body" --base main
+8. Get the default branch name: git symbolic-ref refs/remotes/origin/HEAD --short | sed 's|origin/||'
+   - If that fails, use: gh repo view --json defaultBranchRef -q '.defaultBranchRef.name'
+   - If both fail, default to 'main'
+9. Create PR using gh CLI: gh pr create --title "title" --body "body" --base <default-branch>
 
 COMMIT MESSAGE GUIDELINES:
 - Subject: imperative mood, lowercase, no period, <50 chars
@@ -109,7 +112,13 @@ PR DESCRIPTION GUIDELINES:
 - Link to any relevant context
 - List key changes as bullets
 
-If any git operation fails, explain what happened and why.`,
+TROUBLESHOOTING:
+- If push fails with "permission denied": Check 'gh auth status' and ensure you're authenticated
+- If push fails with "Write access not granted": Your token may lack 'repo' scope - re-authenticate with 'gh auth login'
+- If push fails with "protected branch": You may be trying to push directly to a protected branch
+- If PR creation fails: Make sure the branch was pushed first with 'git push -u origin HEAD'
+
+If any git operation fails, explain what happened, the likely cause, and suggest a fix.`,
   };
 }
 
