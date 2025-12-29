@@ -9,8 +9,9 @@
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect, type FormEvent } from "react";
-import { useParams } from "react-router-dom";
-import { useTask, useContinueTask, useTasks } from "@/hooks/useTasks";
+import { useParams, useNavigate } from "react-router-dom";
+import { useTask, useContinueTask, useTasks, useRetryTask } from "@/hooks/useTasks";
+import { getErrorMessage, isRetryableError, type ErrorCode } from "@nightshift/shared";
 import { useQuery } from "@tanstack/react-query";
 import { client } from "@/web/integrations/orpc";
 import { cn } from "@/lib/utils";
@@ -40,7 +41,10 @@ import {
   ListTodo,
   FileCode,
   ChevronUp,
+  RefreshCw,
+  XCircle,
 } from "@/components/ui/icons";
+import { toast } from "sonner";
 import {
   InputGroup,
   InputGroupAddon,
@@ -179,6 +183,8 @@ function TaskHeader({
   formattedCreatedAt,
   taskDuration,
   isMobile,
+  onRetry,
+  isRetrying,
 }: {
   task: NonNullable<ReturnType<typeof useTask>["data"]>;
   isLive: boolean;
@@ -188,8 +194,15 @@ function TaskHeader({
   formattedCreatedAt: string | null;
   taskDuration: string | null;
   isMobile: boolean;
+  onRetry?: () => void;
+  isRetrying?: boolean;
 }) {
   const statusStyle = getStatusStyle(task.status);
+  const isFailed = task.status === "failed";
+  const isCanceled = task.status === "canceled";
+  const canRetry = isFailed || isCanceled;
+  const failureMessage = task.failureCode ? getErrorMessage(task.failureCode as ErrorCode) : null;
+  const isRetryable = task.failureCode ? isRetryableError(task.failureCode as ErrorCode) : false;
 
   return (
     <div className="shrink-0 overflow-hidden border-b border-border/50 bg-card">
@@ -298,6 +311,19 @@ function TaskHeader({
                 <ExternalLink className="h-3 w-3" />
               </a>
             )}
+            {/* Retry button for failed/canceled tasks */}
+            {canRetry && onRetry && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                disabled={isRetrying}
+                className="h-7 gap-1.5 px-2.5 text-xs border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", isRetrying && "animate-spin")} />
+                {!isMobile && "Retry"}
+              </Button>
+            )}
             {/* Only show sidebar toggle on desktop */}
             {!isMobile && fileChanges.length > 0 && (
               <Button
@@ -323,6 +349,27 @@ function TaskHeader({
             </Badge>
           </div>
         </div>
+
+        {/* Failure context banner for failed tasks */}
+        {isFailed && failureMessage && (
+          <div className="px-4 py-2 pl-5 border-t border-rose-500/20 bg-rose-500/5">
+            <div className="flex items-center gap-2 text-xs">
+              <XCircle className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+              <span className="text-rose-400 font-medium">{failureMessage}</span>
+              {isRetryable && (
+                <Badge
+                  variant="outline"
+                  className="ml-1 px-1.5 py-0 text-[9px] border-amber-500/30 bg-amber-500/10 text-amber-400"
+                >
+                  Auto-retryable
+                </Badge>
+              )}
+              {task.failureCode && (
+                <span className="ml-auto text-muted-foreground font-mono">{task.failureCode}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -412,6 +459,7 @@ export function TaskChat() {
   const { id } = useParams<{ id: string }>();
   const taskId = id ?? "";
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
 
   const { data: task, isLoading: taskLoading, error: taskError } = useTask(taskId);
   const isLive = task?.status === "claimed" || task?.status === "running";
@@ -452,8 +500,25 @@ export function TaskChat() {
   const [continuePrompt, setContinuePrompt] = useState("");
   const [continueModel, setContinueModel] = useState("");
   const continueTask = useContinueTask();
+  const retryTask = useRetryTask();
   const showContinueInput = !!task?.sdkSessionId;
   const canSubmitContinue = isTerminal && !continueTask.isPending;
+
+  // Retry handler
+  const handleRetry = useCallback(async () => {
+    if (!taskId) return;
+    try {
+      const newTask = await retryTask.mutateAsync(taskId);
+      toast.success("Task queued for retry", {
+        description: "A new task has been created and added to the queue",
+      });
+      navigate(`/tasks/${newTask.id}`);
+    } catch (error) {
+      toast.error("Failed to retry task", {
+        description: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  }, [taskId, retryTask, navigate]);
 
   const handleContinueSubmit = useCallback(
     (e: FormEvent) => {
@@ -556,6 +621,8 @@ export function TaskChat() {
             formattedCreatedAt={formattedCreatedAt}
             taskDuration={taskDuration}
             isMobile={true}
+            onRetry={handleRetry}
+            isRetrying={retryTask.isPending}
           />
         )}
 
@@ -670,6 +737,8 @@ export function TaskChat() {
                 formattedCreatedAt={formattedCreatedAt}
                 taskDuration={taskDuration}
                 isMobile={false}
+                onRetry={handleRetry}
+                isRetrying={retryTask.isPending}
               />
             )}
 
