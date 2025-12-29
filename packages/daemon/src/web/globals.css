@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap");
 @import "@git-diff-view/react/styles/diff-view-pure.css";
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -55,8 +54,8 @@
 
 :root {
   --font-mono:
-    "JetBrains Mono", "Geist Mono", "Geist Mono Fallback", "Monaco", "Inconsolata", "Fira Code",
-    monospace;
+    "JetBrains Mono", "Geist Mono", "Geist Mono Fallback", "Monaco",
+    "Inconsolata", "Fira Code", monospace;
 
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
