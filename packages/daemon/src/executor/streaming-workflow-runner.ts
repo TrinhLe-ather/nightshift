@@ -27,6 +27,7 @@ import type { SessionManager } from "./session-manager";
 import type { WorkflowStep, WorkflowDefinition } from "../workflows/loader";
 import { streamEventBus } from "../streaming/event-bus";
 import { isRepoDirty } from "../repo/git";
+import { getClaudeCodePath } from "./claude-path";
 
 // ============================================================================
 // Types
@@ -133,6 +134,9 @@ export class StreamingWorkflowRunner {
     });
 
     try {
+      // Resolve Claude Code executable path (handles compiled Bun binary issue)
+      const claudePath = await getClaudeCodePath();
+
       const queryOptions: Options = {
         cwd: workDir,
         model: this.resolveWorkflowModel(task, workflow),
@@ -141,6 +145,8 @@ export class StreamingWorkflowRunner {
         allowDangerouslySkipPermissions: true,
         abortController: this.abortController,
         enableFileCheckpointing: true,
+        // Explicitly set Claude Code path (bypasses import.meta.url detection)
+        pathToClaudeCodeExecutable: claudePath,
         // Resume existing Claude session if continuing a task
         ...(task.sdkSessionId && { resume: task.sdkSessionId }),
       };

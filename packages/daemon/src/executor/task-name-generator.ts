@@ -8,6 +8,7 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import { updateTask } from "../tasks/repository";
 import type { Task } from "@nightshift/shared";
+import { getClaudeCodePath } from "./claude-path";
 
 const NAME_GENERATION_TIMEOUT = 30000; // 30 seconds
 const MAX_NAME_LENGTH = 50;
@@ -32,6 +33,9 @@ export async function generateTaskName(task: Task): Promise<NameGenerationResult
     }, NAME_GENERATION_TIMEOUT);
 
     try {
+      // Resolve Claude Code executable path (handles compiled Bun binary issue)
+      const claudePath = await getClaudeCodePath();
+
       // Use SDK query with Haiku model for fast, cheap name generation
       const queryIterator = query({
         prompt,
@@ -39,6 +43,7 @@ export async function generateTaskName(task: Task): Promise<NameGenerationResult
           model: "haiku",
           permissionMode: "bypassPermissions", // No file access needed
           abortController,
+          pathToClaudeCodeExecutable: claudePath,
         },
       });
 
