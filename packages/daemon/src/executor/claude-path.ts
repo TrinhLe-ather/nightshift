@@ -39,12 +39,23 @@ export async function getClaudeCodePath(): Promise<string> {
     return cachedPath;
   }
 
-  // 2. Check native installer location
-  const nativeInstallerPath = join(homedir(), ".claude", "local", "claude");
-  if (existsSync(nativeInstallerPath)) {
-    cachedPath = nativeInstallerPath;
-    console.log(`[ClaudePath] Using native installer: ${nativeInstallerPath}`);
-    return cachedPath;
+  // 2. Check native installer location (platform-specific)
+  const nativeInstallerPaths =
+    process.platform === "win32"
+      ? [
+          join(homedir(), ".local", "bin", "claude.exe"),
+          join(homedir(), "AppData", "Local", "Programs", "claude", "claude.exe"),
+          "C:\\Program Files\\claude\\claude.exe",
+          "C:\\Program Files (x86)\\claude\\claude.exe",
+        ]
+      : [join(homedir(), ".claude", "local", "claude")];
+
+  for (const nativeInstallerPath of nativeInstallerPaths) {
+    if (existsSync(nativeInstallerPath)) {
+      cachedPath = nativeInstallerPath;
+      console.log(`[ClaudePath] Using native installer: ${nativeInstallerPath}`);
+      return cachedPath;
+    }
   }
 
   // 3. Try to find via system PATH

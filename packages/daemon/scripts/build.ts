@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs/promises";
 import tailwind from "bun-plugin-tailwind";
 
 const rootDir = path.resolve(import.meta.dir, "..");
@@ -29,9 +30,9 @@ if (!buildCommit) {
   }
 }
 
-// Clean output directory
-await Bun.$`rm -rf ${outdir}`.quiet();
-await Bun.$`mkdir -p ${outdir}`.quiet();
+// Clean output directory (cross-platform)
+await fs.rm(outdir, { recursive: true, force: true });
+await fs.mkdir(outdir, { recursive: true });
 
 const compileTargets: Bun.Build.Target[] = [
   "bun-darwin-arm64",
@@ -43,7 +44,7 @@ const compileTargets: Bun.Build.Target[] = [
 for (const target of compileTargets) {
   const platform = target.replace("bun-", "");
   const tmpOutdir = path.join(outdir, `.tmp-${platform}`);
-  await Bun.$`rm -rf ${tmpOutdir}`.quiet();
+  await fs.rm(tmpOutdir, { recursive: true, force: true });
 
   const result = await Bun.build({
     entrypoints: [path.join(rootDir, "src/index.ts")],
@@ -81,8 +82,8 @@ for (const target of compileTargets) {
   const ext = platform.startsWith("windows-") ? ".exe" : "";
   const finalPath = path.join(outdir, `nightshift-${platform}${ext}`);
 
-  await Bun.$`mv ${builtPath} ${finalPath}`.quiet();
-  await Bun.$`rm -rf ${tmpOutdir}`.quiet();
+  await fs.rename(builtPath, finalPath);
+  await fs.rm(tmpOutdir, { recursive: true, force: true });
 
   console.log(`Build succeeded: ${finalPath}`);
 }

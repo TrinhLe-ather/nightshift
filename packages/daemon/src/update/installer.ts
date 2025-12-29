@@ -5,6 +5,7 @@
  */
 
 import { chmodSync, copyFileSync, existsSync, mkdirSync, renameSync, unlinkSync } from "fs";
+import path from "path";
 import { inArray } from "drizzle-orm";
 import { BIN_DIR, BINARY_PATH } from "../config/paths";
 
@@ -22,7 +23,7 @@ export interface InstallResult {
  */
 export function isCompiledBinary(): boolean {
   // In compiled mode, execPath ends with 'nightshift' (or 'nightshift.exe' on Windows)
-  const execName = process.execPath.split("/").pop() || "";
+  const execName = path.basename(process.execPath);
   return execName === "nightshift" || execName === "nightshift.exe";
 }
 
