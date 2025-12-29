@@ -11,12 +11,13 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { client } from "@/web/integrations/orpc";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
@@ -156,26 +157,26 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
     !createTask.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
-        <DialogHeader>
-          <DialogTitle>New Task</DialogTitle>
-        </DialogHeader>
+    <Modal open={open} onOpenChange={onOpenChange}>
+      <ModalContent className="sm:max-w-[600px]">
+        <ModalHeader>
+          <ModalTitle>New Task</ModalTitle>
+        </ModalHeader>
 
-        {/* Prompt Input */}
-        <div>
-          <Label htmlFor="prompt">Task Description</Label>
-          <Textarea
-            id="prompt"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="Describe your task..."
-            rows={3}
-            className="mt-1"
-          />
-        </div>
+        <ModalBody className="space-y-4">
+          {/* Prompt Input */}
+          <div>
+            <Label htmlFor="prompt">Task Description</Label>
+            <Textarea
+              id="prompt"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="Describe your task..."
+              rows={3}
+              className="mt-1"
+            />
+          </div>
 
-        <div className="space-y-4">
           {/* Workflow Selection */}
           <div>
             <Label htmlFor="workflow-select">Workflow</Label>
@@ -419,9 +420,9 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
               )}
             </div>
           )}
-        </div>
+        </ModalBody>
 
-        <DialogFooter>
+        <ModalFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -435,8 +436,8 @@ export function NewTaskDialog({ open, onOpenChange }: NewTaskDialogProps) {
               "Create Task"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

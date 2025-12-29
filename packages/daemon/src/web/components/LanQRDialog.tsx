@@ -6,12 +6,13 @@
 
 import { QRCodeSVG } from "qrcode.react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 
 interface LanQRDialogProps {
   open: boolean;
@@ -29,13 +30,13 @@ export function LanQRDialog({
   description = "Scan this QR code with your mobile device to connect to Night Shift",
 }: LanQRDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        <div className="flex flex-col items-center gap-4 py-6">
+    <Modal open={open} onOpenChange={onClose}>
+      <ModalContent className="sm:max-w-md">
+        <ModalHeader>
+          <ModalTitle>{title}</ModalTitle>
+          <ModalDescription>{description}</ModalDescription>
+        </ModalHeader>
+        <ModalBody className="flex flex-col items-center gap-4 py-2">
           {url ? (
             <>
               <div className="bg-white p-4">
@@ -51,8 +52,8 @@ export function LanQRDialog({
           ) : (
             <p className="text-muted-foreground">LAN access not available</p>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 }

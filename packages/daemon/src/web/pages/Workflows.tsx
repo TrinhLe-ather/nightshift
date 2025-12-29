@@ -16,13 +16,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Container } from "@/components/layout/Container";
 import {
@@ -460,25 +461,27 @@ export function Workflows() {
         </div>
       )}
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      {/* Delete Confirmation Modal */}
+      <Modal
         open={deleteDialogOpen}
         onOpenChange={(open) => {
           if (!open) closeDeleteDialog();
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Workflow</DialogTitle>
-            <DialogDescription>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Delete Workflow</ModalTitle>
+            <ModalDescription>
               Are you sure you want to delete{" "}
               <strong className="text-foreground">{workflowToDelete?.name}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This action cannot be undone. Any tasks using this workflow will no longer reference it.
-          </p>
-          <DialogFooter>
+            </ModalDescription>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-muted-foreground">
+              This action cannot be undone. Any tasks using this workflow will no longer reference it.
+            </p>
+          </ModalBody>
+          <ModalFooter>
             <Button variant="outline" onClick={closeDeleteDialog}>
               Cancel
             </Button>
@@ -496,9 +499,9 @@ export function Workflows() {
                 "Delete"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Clone Workflow Dialog */}
       <CloneWorkflowDialog

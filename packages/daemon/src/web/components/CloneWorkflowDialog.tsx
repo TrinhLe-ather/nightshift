@@ -8,13 +8,14 @@ import { useState, useEffect } from "react";
 import { useCloneWorkflow } from "@/hooks/useWorkflows";
 import { toast } from "sonner";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -93,17 +94,17 @@ export function CloneWorkflowDialog({
   const canSubmit = name.trim().length >= 3 && !cloneWorkflowMutation.isPending;
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Clone Workflow</DialogTitle>
-          <DialogDescription>
+    <Modal open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
+      <ModalContent className="sm:max-w-[500px]">
+        <ModalHeader>
+          <ModalTitle>Clone Workflow</ModalTitle>
+          <ModalDescription>
             Create a customizable copy of{" "}
             <strong className="text-(--color-text-primary)">{workflow?.name}</strong>
-          </DialogDescription>
-        </DialogHeader>
+          </ModalDescription>
+        </ModalHeader>
 
-        <div className="space-y-4">
+        <ModalBody className="space-y-4">
           <div>
             <Label htmlFor="clone-name">
               Name <span className="text-destructive">*</span>
@@ -131,9 +132,9 @@ export function CloneWorkflowDialog({
               className="mt-1"
             />
           </div>
-        </div>
+        </ModalBody>
 
-        <DialogFooter>
+        <ModalFooter>
           <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
@@ -147,8 +148,8 @@ export function CloneWorkflowDialog({
               "Clone Workflow"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

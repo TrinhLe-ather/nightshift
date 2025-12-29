@@ -17,13 +17,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AddRepoDialog } from "@/components";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import {
   Select,
   SelectContent,
@@ -407,23 +408,23 @@ export function Repos() {
       {/* Add Repo Dialog */}
       <AddRepoDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} />
 
-      {/* Edit Repo Dialog */}
-      <Dialog
+      {/* Edit Repo Modal */}
+      <Modal
         open={editDialogOpen}
         onOpenChange={(open) => {
           setEditDialogOpen(open);
           if (!open) closeEditDialog();
         }}
       >
-        <DialogContent className="w-3xl md:max-w-3xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+        <ModalContent className="w-3xl md:max-w-3xl">
+          <ModalHeader>
+            <ModalTitle className="flex items-center gap-2">
               <Settings className="h-5 w-5 text-primary" />
               Edit Repository
-            </DialogTitle>
-            <DialogDescription>Configure execution settings for this repository.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6">
+            </ModalTitle>
+            <ModalDescription>Configure execution settings for this repository.</ModalDescription>
+          </ModalHeader>
+          <ModalBody className="space-y-6">
             {/* Repository info */}
             <div className="border border-border/50 bg-muted/20 p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -579,8 +580,8 @@ export function Repos() {
                 </label>
               </RadioGroup>
             </div>
-          </div>
-          <DialogFooter>
+          </ModalBody>
+          <ModalFooter>
             <Button variant="outline" onClick={closeEditDialog}>
               Cancel
             </Button>
@@ -594,31 +595,33 @@ export function Repos() {
                 "Save Changes"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
+      {/* Delete Confirmation Modal */}
+      <Modal
         open={deleteDialogOpen}
         onOpenChange={(open) => {
           setDeleteDialogOpen(open);
           if (!open) closeDeleteDialog();
         }}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Remove Repository</DialogTitle>
-            <DialogDescription>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Remove Repository</ModalTitle>
+            <ModalDescription>
               Are you sure you want to remove{" "}
               <strong className="text-foreground">{repoToDelete?.name}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will only remove the repository from Night Shift configuration. Your actual
-            repository and task history will not be affected.
-          </p>
-          <DialogFooter>
+            </ModalDescription>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-muted-foreground">
+              This will only remove the repository from Night Shift configuration. Your actual
+              repository and task history will not be affected.
+            </p>
+          </ModalBody>
+          <ModalFooter>
             <Button variant="outline" onClick={closeDeleteDialog}>
               Cancel
             </Button>
@@ -636,9 +639,9 @@ export function Repos() {
                 "Remove"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 }
