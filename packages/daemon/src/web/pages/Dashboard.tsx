@@ -181,7 +181,7 @@ export function Dashboard() {
     : false;
 
   return (
-    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
+    <Container className="py-4 lg:py-6 flex flex-col gap-4 lg:gap-6">
       {/* Header with technical aesthetic */}
       <div>
         <div className="flex items-center lg:items-start justify-between">

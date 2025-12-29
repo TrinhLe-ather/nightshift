@@ -4,7 +4,7 @@
  * Shows all available keyboard shortcuts.
  */
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Modal, ModalBody, ModalContent, ModalHeader, ModalTitle } from "@/components/ui/modal";
 import { KEYBOARD_SHORTCUTS } from "@/hooks/useKeyboardShortcuts";
 
 interface KeyboardShortcutsDialogProps {
@@ -14,17 +14,17 @@ interface KeyboardShortcutsDialogProps {
 
 export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDialogProps) {
   return (
-    <Dialog
+    <Modal
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) onClose();
       }}
     >
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
+      <ModalContent>
+        <ModalHeader>
+          <ModalTitle>Keyboard Shortcuts</ModalTitle>
+        </ModalHeader>
+        <ModalBody className="space-y-6">
           {KEYBOARD_SHORTCUTS.map((category) => (
             <div key={category.category}>
               <h3 className="mb-3 text-sm font-medium text-muted-foreground">
@@ -49,8 +49,8 @@ export function KeyboardShortcutsDialog({ open, onClose }: KeyboardShortcutsDial
               </div>
             </div>
           ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 }

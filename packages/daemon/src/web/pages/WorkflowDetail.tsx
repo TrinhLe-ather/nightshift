@@ -16,13 +16,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { Container } from "@/components/layout/Container";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -388,20 +389,20 @@ export function WorkflowDetail() {
   const usedModels = new Set(workflow.definition.steps.map((s) => s.model).filter(Boolean));
 
   return (
-    <Container className="py-4 lg:py-6">
+    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
       {/* Navigation */}
       <Button
         variant="ghost"
         size="sm"
         onClick={handleBack}
-        className="mb-4 -ml-2 h-8 text-muted-foreground hover:text-foreground"
+        className="-ml-2 h-8 text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Workflows
       </Button>
 
       {/* Header */}
-      <div className="mb-4 lg:mb-6">
+      <div>
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3">
@@ -520,7 +521,7 @@ export function WorkflowDetail() {
       </div>
 
       {/* Steps section */}
-      <div className="mb-4 lg:mb-6">
+      <div>
         <div className="mb-3 lg:mb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
@@ -539,7 +540,7 @@ export function WorkflowDetail() {
         </div>
 
         {/* Visual flow indicator */}
-        <div className="mb-4 lg:mb-6 flex items-center gap-2 border border-border/50 bg-muted/20 p-3">
+        <div className="mb-4 flex items-center gap-2 border border-border/50 bg-muted/20 p-3">
           <div className="flex items-center gap-1">
             <Play className="h-4 w-4 text-emerald-400" />
             <span className="text-xs text-muted-foreground">Start</span>
@@ -594,20 +595,22 @@ export function WorkflowDetail() {
         </div>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Workflow</DialogTitle>
-            <DialogDescription>
+      {/* Delete Confirmation Modal */}
+      <Modal open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Delete Workflow</ModalTitle>
+            <ModalDescription>
               Are you sure you want to delete{" "}
               <strong className="text-foreground">{workflow.name}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This action cannot be undone. Any tasks using this workflow will no longer reference it.
-          </p>
-          <DialogFooter>
+            </ModalDescription>
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-muted-foreground">
+              This action cannot be undone. Any tasks using this workflow will no longer reference it.
+            </p>
+          </ModalBody>
+          <ModalFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               Cancel
             </Button>
@@ -625,9 +628,9 @@ export function WorkflowDetail() {
                 "Delete"
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Clone Dialog */}
       <CloneWorkflowDialog
