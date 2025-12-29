@@ -5,7 +5,7 @@
  * Colors converted to oklch for modern CSS compatibility.
  */
 
-.solarized-dark {
+:root.solarized-dark {
   /* Base colors - dark background */
   --background: oklch(0.205 0.031 215);
   --foreground: oklch(0.607 0.022 215);
