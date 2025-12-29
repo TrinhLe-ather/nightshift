@@ -11,13 +11,14 @@ import { useAddRepo, useInspectRepo } from "@/hooks/useRepos";
 import type { Repo } from "@nightshift/shared";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AlertCircle, Loader2 } from "@/components/ui/icons";
@@ -114,7 +115,7 @@ export function AddRepoDialog({ open, onOpenChange, onCreated }: AddRepoDialogPr
   };
 
   return (
-    <Dialog
+    <Modal
       open={open}
       onOpenChange={(nextOpen) => {
         onOpenChange(nextOpen);
@@ -127,15 +128,15 @@ export function AddRepoDialog({ open, onOpenChange, onCreated }: AddRepoDialogPr
         }
       }}
     >
-      <DialogContent className="md:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Add Repository</DialogTitle>
-          <DialogDescription>
+      <ModalContent className="md:max-w-lg">
+        <ModalHeader>
+          <ModalTitle>Add Repository</ModalTitle>
+          <ModalDescription>
             Enter the absolute path to a git repository on your machine.
-          </DialogDescription>
-        </DialogHeader>
+          </ModalDescription>
+        </ModalHeader>
 
-        <div className="space-y-4">
+        <ModalBody className="space-y-4">
           <div>
             <label htmlFor="repo-path" className="mb-2 block text-sm font-medium text-foreground">
               Repository Path
@@ -227,9 +228,9 @@ export function AddRepoDialog({ open, onOpenChange, onCreated }: AddRepoDialogPr
               {addError}
             </div>
           )}
-        </div>
+        </ModalBody>
 
-        <DialogFooter>
+        <ModalFooter>
           <Button variant="outline" onClick={closeDialog}>
             Cancel
           </Button>
@@ -243,8 +244,8 @@ export function AddRepoDialog({ open, onOpenChange, onCreated }: AddRepoDialogPr
               "Add Repo"
             )}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 }

@@ -41,7 +41,7 @@ export function Layout() {
         style={{ "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}
       >
         <AppSidebar />
-        <SidebarInset className="relative overflow-hidden">
+        <SidebarInset className="relative flex flex-col overflow-hidden">
           {/* Global grid pattern background */}
           <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
             <div
@@ -66,7 +66,9 @@ export function Layout() {
               <div className="w-8" />
             </div>
           </div>
-          <Outlet />
+          <div className="relative flex-1 overflow-auto">
+            <Outlet />
+          </div>
         </SidebarInset>
       </SidebarProvider>
 

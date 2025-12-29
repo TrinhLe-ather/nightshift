@@ -17,13 +17,14 @@ import { ButtonGroup } from "@/components/ui/button-group";
 import { Container } from "@/components/layout/Container";
 import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalDescription,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
+} from "@/components/ui/modal";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -441,21 +442,21 @@ export function NarrativeStudio() {
         </div>
       )}
 
-      {/* Create Project Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+      {/* Create Project Modal */}
+      <Modal open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <ModalContent className="max-w-lg">
+          <ModalHeader>
+            <ModalTitle className="flex items-center gap-2">
               <Film className="h-5 w-5 text-amber-400" />
               New Narrative Project
-            </DialogTitle>
-            <DialogDescription>
+            </ModalTitle>
+            <ModalDescription>
               Create a new game narrative project. The 8 narrative agents will help you develop your
               story from concept to final screenplay.
-            </DialogDescription>
-          </DialogHeader>
+            </ModalDescription>
+          </ModalHeader>
 
-          <div className="space-y-4 py-4">
+          <ModalBody className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="name">Project Name</Label>
               <Input
@@ -539,9 +540,9 @@ export function NarrativeStudio() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
+          </ModalBody>
 
-          <DialogFooter>
+          <ModalFooter>
             <Button variant="outline" onClick={() => setCreateDialogOpen(false)}>
               Cancel
             </Button>
@@ -562,9 +563,9 @@ export function NarrativeStudio() {
                 </>
               )}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Container>
   );
 }

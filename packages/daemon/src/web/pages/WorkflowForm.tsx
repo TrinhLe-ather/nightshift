@@ -831,22 +831,22 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
   }
 
   return (
-    <Container className="py-4 lg:py-6">
-      <form onSubmit={handleSubmit(onSubmit)}>
+    <Container className="py-4 lg:py-6 flex-1 overflow-auto flex flex-col gap-4 lg:gap-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 lg:gap-6">
         {/* Navigation */}
         <Button
           type="button"
           variant="ghost"
           size="sm"
           onClick={handleBack}
-          className="mb-4 -ml-2 h-8 text-muted-foreground hover:text-foreground"
+          className="-ml-2 h-8 text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           {isEdit ? "Back to Workflow" : "Back to Workflows"}
         </Button>
 
         {/* Header */}
-        <div className="mb-4 lg:mb-6 flex items-start justify-between gap-4">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center border border-primary/30 bg-primary/10">
               <Workflow className="h-6 w-6 text-primary" />
@@ -883,7 +883,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
         </div>
 
         {/* Two-column layout */}
-        <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 lg:gap-6 lg:grid-cols-3 flex-1">
           {/* Left column - Basic info */}
           <div className="lg:col-span-1">
             <div className="sticky top-4 lg:top-6 space-y-4 lg:space-y-6">
@@ -1077,7 +1077,7 @@ export function WorkflowForm({ mode }: WorkflowFormProps) {
         </div>
 
         {/* Sticky footer */}
-        <div className="sticky bottom-0 mt-4 lg:mt-6 -mx-4 border-t border-border bg-background/95 px-4 py-3 lg:py-4 backdrop-blur-sm xl:-mx-6 xl:px-6">
+        <div className="sticky bottom-0 -mx-4 border-t border-border bg-background/95 px-4 py-3 lg:py-4 backdrop-blur-sm xl:-mx-6 xl:px-6">
           <div className="flex items-center justify-between">
             <div className="text-xs text-muted-foreground">
               {isDirty ? (
