@@ -1,58 +1,57 @@
 /**
- * Solarized Light Theme
+ * Solarized Light Theme (Improved)
  *
- * Based on https://ethanschoonover.com/solarized/
- * Colors converted to oklch for modern CSS compatibility.
+ * Clean, bright theme with good contrast for readability.
  */
 
 :root.solarized-light {
-  /* Base colors - light background */
-  --background: oklch(0.97 0.021 95);
-  --foreground: oklch(0.483 0.024 215);
-  --card: oklch(0.929 0.021 90);
-  --card-foreground: oklch(0.483 0.024 215);
-  --popover: oklch(0.929 0.021 90);
-  --popover-foreground: oklch(0.483 0.024 215);
+  /* Base colors - clean light background */
+  --background: oklch(0.98 0.005 90);
+  --foreground: oklch(0.25 0.02 215);
+  --card: oklch(0.96 0.008 90);
+  --card-foreground: oklch(0.25 0.02 215);
+  --popover: oklch(0.99 0.003 90);
+  --popover-foreground: oklch(0.25 0.02 215);
 
   /* Primary = blue accent */
-  --primary: oklch(0.58 0.15 240);
-  --primary-foreground: oklch(0.97 0.021 95);
+  --primary: oklch(0.55 0.18 240);
+  --primary-foreground: oklch(0.98 0.005 90);
 
-  /* Secondary = base1 */
-  --secondary: oklch(0.66 0.017 195);
-  --secondary-foreground: oklch(0.483 0.024 215);
+  /* Secondary = light gray */
+  --secondary: oklch(0.92 0.01 90);
+  --secondary-foreground: oklch(0.30 0.02 215);
 
-  /* Muted = base2 */
-  --muted: oklch(0.929 0.021 90);
-  --muted-foreground: oklch(0.533 0.023 215);
+  /* Muted = subtle backgrounds */
+  --muted: oklch(0.94 0.008 90);
+  --muted-foreground: oklch(0.45 0.02 215);
 
-  /* Accent = cyan */
-  --accent: oklch(0.63 0.1 185);
-  --accent-foreground: oklch(0.97 0.021 95);
+  /* Accent = teal */
+  --accent: oklch(0.60 0.12 185);
+  --accent-foreground: oklch(0.98 0.005 90);
 
   /* Destructive = red */
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.97 0.021 95);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 90);
 
-  /* Borders & inputs */
-  --border: oklch(0.66 0.017 195 / 70%);
-  --input: oklch(0.66 0.017 195 / 50%);
-  --ring: oklch(0.58 0.15 240);
+  /* Borders & inputs - subtle but visible */
+  --border: oklch(0.85 0.01 215);
+  --input: oklch(0.92 0.008 90);
+  --ring: oklch(0.55 0.18 240);
 
-  /* Charts - Solarized accent colors */
-  --chart-1: oklch(0.58 0.15 240);
-  --chart-2: oklch(0.63 0.1 185);
-  --chart-3: oklch(0.61 0.16 115);
-  --chart-4: oklch(0.64 0.16 85);
-  --chart-5: oklch(0.56 0.18 45);
+  /* Charts */
+  --chart-1: oklch(0.55 0.18 240);
+  --chart-2: oklch(0.60 0.12 185);
+  --chart-3: oklch(0.58 0.16 115);
+  --chart-4: oklch(0.62 0.16 85);
+  --chart-5: oklch(0.55 0.18 45);
 
   /* Sidebar */
-  --sidebar: oklch(0.929 0.021 90);
-  --sidebar-foreground: oklch(0.483 0.024 215);
-  --sidebar-primary: oklch(0.58 0.15 240);
-  --sidebar-primary-foreground: oklch(0.97 0.021 95);
-  --sidebar-accent: oklch(0.929 0.021 90);
-  --sidebar-accent-foreground: oklch(0.483 0.024 215);
-  --sidebar-border: oklch(0.66 0.017 195 / 70%);
-  --sidebar-ring: oklch(0.58 0.15 240);
+  --sidebar: oklch(0.96 0.008 90);
+  --sidebar-foreground: oklch(0.25 0.02 215);
+  --sidebar-primary: oklch(0.55 0.18 240);
+  --sidebar-primary-foreground: oklch(0.98 0.005 90);
+  --sidebar-accent: oklch(0.94 0.008 90);
+  --sidebar-accent-foreground: oklch(0.30 0.02 215);
+  --sidebar-border: oklch(0.85 0.01 215);
+  --sidebar-ring: oklch(0.55 0.18 240);
 }

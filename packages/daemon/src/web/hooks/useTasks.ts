@@ -59,6 +59,8 @@ type TaskStatus =
   | "canceled";
 type TaskPriority = "low" | "medium" | "high" | "urgent";
 
+type ExecutionMode = "worktree" | "direct";
+
 export function useUpdateTask() {
   const queryClient = useQueryClient();
 
@@ -68,7 +70,15 @@ export function useUpdateTask() {
       data,
     }: {
       id: string;
-      data: { status?: TaskStatus; priority?: TaskPriority };
+      data: {
+        status?: TaskStatus;
+        priority?: TaskPriority;
+        prompt?: string;
+        workflowId?: string;
+        model?: string | null;
+        repoId?: string;
+        executionMode?: ExecutionMode | null;
+      };
     }) => client.tasks.update({ id, ...data }),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });

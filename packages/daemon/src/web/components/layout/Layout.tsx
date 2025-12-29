@@ -4,14 +4,21 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from "@/components/ui/s
 import { AppSidebar } from "./Sidebar";
 import { Moon } from "../ui/icons";
 import { NewTaskDialogProvider } from "@/web/contexts/newTaskDialog";
+import { EditTaskDialogProvider } from "@/web/contexts/editTaskDialog";
 import { NewTaskDialog } from "../NewTaskDialog";
+import { EditTaskDialog } from "../EditTaskDialog";
 import { useKeyboardShortcuts } from "@/web/hooks";
+import type { Task } from "../../../db/drizzle";
 
 export function Layout() {
   const [showNewTaskDialog, setShowNewTaskDialog] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
 
   const openNewTaskDialog = useCallback(() => setShowNewTaskDialog(true), []);
   const closeNewTaskDialog = useCallback(() => setShowNewTaskDialog(false), []);
+
+  const openEditTaskDialog = useCallback((task: Task) => setEditTask(task), []);
+  const closeEditTaskDialog = useCallback(() => setEditTask(null), []);
 
   // Keyboard shortcuts for new task dialog
   const shortcuts = useMemo(
@@ -36,44 +43,60 @@ export function Layout() {
         close: closeNewTaskDialog,
       }}
     >
-      <SidebarProvider
-        className="overflow-hidden h-svh"
-        style={{ "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}
+      <EditTaskDialogProvider
+        value={{
+          task: editTask,
+          setTask: setEditTask,
+          open: openEditTaskDialog,
+          close: closeEditTaskDialog,
+        }}
       >
-        <AppSidebar />
-        <SidebarInset className="relative flex flex-col overflow-hidden">
-          {/* Global grid pattern background */}
-          <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
-            <div
-              className="h-full w-full"
-              style={{
-                backgroundImage:
-                  "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
-                backgroundSize: "20px 20px",
-              }}
-            />
-          </div>
-
-          <div className="md:hidden shrink-0 border-b border-border bg-card text-card-foreground sticky top-0 z-20">
-            <div className="flex h-12 items-center gap-2 px-3 pt-[env(safe-area-inset-top)]">
-              <SidebarTrigger />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-foreground flex items-center gap-2">
-                  <Moon className="h-6 w-6 shrink-0 text-primary" />
-                  <span className="text-lg font-semibold text-foreground">Night Shift</span>
-                </div>
-              </div>
-              <div className="w-8" />
+        <SidebarProvider
+          className="overflow-hidden h-svh"
+          style={{ "--sidebar-width-icon": "3.5rem" } as React.CSSProperties}
+        >
+          <AppSidebar />
+          <SidebarInset className="relative flex flex-col overflow-hidden">
+            {/* Global grid pattern background */}
+            <div className="pointer-events-none absolute inset-0 opacity-[0.02]">
+              <div
+                className="h-full w-full"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+                  backgroundSize: "20px 20px",
+                }}
+              />
             </div>
-          </div>
-          <div className="relative flex-1 overflow-auto">
-            <Outlet />
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
 
-      {/* Global NewTaskDialog */}
-      <NewTaskDialog open={showNewTaskDialog} onOpenChange={setShowNewTaskDialog} />
+            <div className="md:hidden shrink-0 border-b border-border bg-card text-card-foreground sticky top-0 z-20">
+              <div className="flex h-12 items-center gap-2 px-3 pt-[env(safe-area-inset-top)]">
+                <SidebarTrigger />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-foreground flex items-center gap-2">
+                    <Moon className="h-6 w-6 shrink-0 text-primary" />
+                    <span className="text-lg font-semibold text-foreground">Night Shift</span>
+                  </div>
+                </div>
+                <div className="w-8" />
+              </div>
+            </div>
+            <div className="relative flex-1 overflow-auto">
+              <Outlet />
+            </div>
+          </SidebarInset>
+        </SidebarProvider>
+
+        {/* Global NewTaskDialog */}
+        <NewTaskDialog open={showNewTaskDialog} onOpenChange={setShowNewTaskDialog} />
+
+        {/* Global EditTaskDialog */}
+        <EditTaskDialog
+          open={!!editTask}
+          onOpenChange={(open) => !open && closeEditTaskDialog()}
+          task={editTask}
+        />
+      </EditTaskDialogProvider>
     </NewTaskDialogProvider>
   );
 }

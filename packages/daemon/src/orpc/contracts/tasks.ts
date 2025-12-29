@@ -263,6 +263,11 @@ const update = orpc
       status: taskStatusSchema.optional(),
       priority: prioritySchema.optional(),
       clarificationResponse: z.string().optional(),
+      prompt: z.string().min(1).optional(),
+      workflowId: z.string().optional(),
+      model: z.string().nullable().optional(),
+      repoId: z.string().optional(),
+      executionMode: executionModeSchema.nullable().optional(),
     }),
   )
   .output(taskSchema)
@@ -276,6 +281,76 @@ const update = orpc
     }
 
     const updates: Partial<Task> = {};
+    const editableStatuses = ["pending", "failed"];
+
+    // Handle fields that can only be edited for PENDING or FAILED tasks
+    if (updateFields.prompt !== undefined) {
+      if (!editableStatuses.includes(task.status)) {
+        throw errors.INVALID_STATE({
+          message: "Can only edit task for pending or failed tasks",
+          data: { expected: editableStatuses, actual: task.status },
+        });
+      }
+      updates.prompt = updateFields.prompt.trim();
+    }
+
+    if (updateFields.workflowId !== undefined) {
+      if (!editableStatuses.includes(task.status)) {
+        throw errors.INVALID_STATE({
+          message: "Can only edit task for pending or failed tasks",
+          data: { expected: editableStatuses, actual: task.status },
+        });
+      }
+      updates.workflowId = updateFields.workflowId;
+    }
+
+    if (updateFields.model !== undefined) {
+      if (!editableStatuses.includes(task.status)) {
+        throw errors.INVALID_STATE({
+          message: "Can only edit task for pending or failed tasks",
+          data: { expected: editableStatuses, actual: task.status },
+        });
+      }
+      updates.model = updateFields.model;
+    }
+
+    if (updateFields.repoId !== undefined) {
+      if (!editableStatuses.includes(task.status)) {
+        throw errors.INVALID_STATE({
+          message: "Can only edit task for pending or failed tasks",
+          data: { expected: editableStatuses, actual: task.status },
+        });
+      }
+      // Get repo path from repoId
+      if (updateFields.repoId) {
+        const repo = db
+          .select({ path: repos.path })
+          .from(repos)
+          .where(eq(repos.id, updateFields.repoId))
+          .get();
+        if (!repo) {
+          throw errors.NOT_FOUND({
+            message: "Repo not found",
+            data: { resource: "repo", id: updateFields.repoId },
+          });
+        }
+        updates.repoId = updateFields.repoId;
+        updates.repoPath = repo.path;
+      } else {
+        updates.repoId = null;
+        updates.repoPath = null;
+      }
+    }
+
+    if (updateFields.executionMode !== undefined) {
+      if (!editableStatuses.includes(task.status)) {
+        throw errors.INVALID_STATE({
+          message: "Can only edit task for pending or failed tasks",
+          data: { expected: editableStatuses, actual: task.status },
+        });
+      }
+      updates.executionMode = updateFields.executionMode;
+    }
 
     if (updateFields.status) {
       const validStatuses = Object.values(TaskState).map((s) => s.toLowerCase());
@@ -305,6 +380,16 @@ const update = orpc
     }
 
     db.update(tasks).set(updates).where(eq(tasks.id, id)).run();
+
+    // Update transcript if prompt was changed
+    if (updates.prompt) {
+      ensureInitialPromptInTranscript({
+        taskId: id,
+        prompt: updates.prompt,
+        createdAt: task.createdAt,
+        dataDirOverride: process.env.NIGHTSHIFT_DATA_DIR,
+      });
+    }
 
     const updatedTask = db.select().from(tasks).where(eq(tasks.id, id)).get();
 

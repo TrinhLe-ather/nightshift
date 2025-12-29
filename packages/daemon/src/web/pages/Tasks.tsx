@@ -26,10 +26,13 @@ import {
   FolderGit2,
   Check,
   ChevronDown,
+  Pencil,
 } from "@/components/ui/icons";
 import { Container } from "@/components/layout/Container";
 import { NewTaskButton } from "@/components/NewTaskButton";
 import { DeleteTaskDialog } from "@/components/DeleteTaskDialog";
+import { useEditTaskDialog } from "@/web/contexts/editTaskDialog";
+import type { Task } from "../../db/drizzle";
 import {
   Select,
   SelectContent,
@@ -90,10 +93,12 @@ interface TaskRowProps {
   repoName?: string;
   index: number;
   onDelete: () => void;
+  onEdit: () => void;
   onClick: () => void;
 }
 
-function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
+function TaskRow({ task, repoName, index, onDelete, onEdit, onClick }: TaskRowProps) {
+  const isEditable = task.status === "pending" || task.status === "failed";
   const statusStyle = getStatusStyle(task.status);
   const priorityStyle = getPriorityStyle(task.priority ?? "medium");
 
@@ -160,6 +165,22 @@ function TaskRow({ task, repoName, index, onDelete, onClick }: TaskRowProps) {
             {task.status.toLowerCase().replace("_", " ")}
           </Badge>
 
+          {/* Edit button - visible on hover for pending/failed tasks */}
+          {isEditable && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="h-7 w-7 shrink-0 p-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 text-muted-foreground hover:text-primary"
+              title="Edit task"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
+
           {/* Delete button - visible on hover */}
           <Button
             variant="ghost"
@@ -190,6 +211,7 @@ export function Tasks() {
     executionMode?: string | null;
   } | null>(null);
 
+  const editTaskDialog = useEditTaskDialog();
   const deleteTask = useDeleteTask();
   const { data: repos = [] } = useRepos();
 
@@ -254,6 +276,10 @@ export function Tasks() {
     executionMode?: string | null;
   }) => {
     setDeleteConfirm(task);
+  };
+
+  const handleEditClick = (task: Task) => {
+    editTaskDialog.open(task);
   };
 
   const confirmDelete = async (deleteBranch: boolean) => {
@@ -513,6 +539,7 @@ export function Tasks() {
                     index={index}
                     onClick={() => handleRowClick(task.id)}
                     onDelete={() => handleDeleteClick(task)}
+                    onEdit={() => handleEditClick(task as Task)}
                   />
                 ))}
               </div>
@@ -538,6 +565,7 @@ export function Tasks() {
                     index={index}
                     onClick={() => handleRowClick(task.id)}
                     onDelete={() => handleDeleteClick(task)}
+                    onEdit={() => handleEditClick(task as Task)}
                   />
                 ))}
               </div>
@@ -563,6 +591,7 @@ export function Tasks() {
                     index={index}
                     onClick={() => handleRowClick(task.id)}
                     onDelete={() => handleDeleteClick(task)}
+                    onEdit={() => handleEditClick(task as Task)}
                   />
                 ))}
               </div>
